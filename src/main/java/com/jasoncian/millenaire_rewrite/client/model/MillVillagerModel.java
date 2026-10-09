@@ -27,6 +27,11 @@ public class MillVillagerModel extends HumanoidModel<MillVillager> {
         new net.minecraft.client.model.geom.ModelLayerLocation(
             new net.minecraft.resources.ResourceLocation(
                 com.jasoncian.millenaire_rewrite.MillenaireRewrite.MOD_ID, "mill_villager"), "main");
+    /** 衣服层：比身体略大，与原版一样每层外扩 0.1 */
+    public static final net.minecraft.client.model.geom.ModelLayerLocation CLOTHES_0 =
+        new net.minecraft.client.model.geom.ModelLayerLocation(LAYER_LOCATION.getModel(), "clothes_0");
+    public static final net.minecraft.client.model.geom.ModelLayerLocation CLOTHES_1 =
+        new net.minecraft.client.model.geom.ModelLayerLocation(LAYER_LOCATION.getModel(), "clothes_1");
 
     public MillVillagerModel(ModelPart root) {
         super(root);
@@ -37,7 +42,19 @@ public class MillVillagerModel extends HumanoidModel<MillVillager> {
      * 使用标准人形模型布局
      */
     public static LayerDefinition createBodyLayer() {
-        MeshDefinition meshDefinition = HumanoidModel.createMesh(CubeDeformation.NONE, 0.0F);
+        return createLayer(CubeDeformation.NONE);
+    }
+
+    public static LayerDefinition createClothesLayer0() {
+        return createLayer(new CubeDeformation(0.1F));
+    }
+
+    public static LayerDefinition createClothesLayer1() {
+        return createLayer(new CubeDeformation(0.2F));
+    }
+
+    private static LayerDefinition createLayer(CubeDeformation deformation) {
+        MeshDefinition meshDefinition = HumanoidModel.createMesh(deformation, 0.0F);
         PartDefinition partDefinition = meshDefinition.getRoot();
 
         // 使用标准人形模型部件

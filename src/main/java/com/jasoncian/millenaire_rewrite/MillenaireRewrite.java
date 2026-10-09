@@ -186,6 +186,10 @@ public class MillenaireRewrite {
         public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
             event.registerLayerDefinition(com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.LAYER_LOCATION,
                 com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel::createBodyLayer);
+            event.registerLayerDefinition(com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.CLOTHES_0,
+                com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel::createClothesLayer0);
+            event.registerLayerDefinition(com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.CLOTHES_1,
+                com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel::createClothesLayer1);
         }
 
         @SubscribeEvent

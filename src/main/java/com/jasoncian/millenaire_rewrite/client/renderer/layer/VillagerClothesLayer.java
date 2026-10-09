@@ -14,10 +14,8 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * 村民衣服渲染层 - 在基础皮肤上渲染衣服纹理
  *
- * 特性：
- * - 支持多层衣服（layer 0和layer 1）
- * - 轻微的垂直偏移防止z-fighting
- * - 基于文化和职业选择纹理
+ * 与原版 LayerVillagerClothes 一致：每层使用略微膨胀的独立模型（第 0 层 +0.1，第 1 层 +0.2），
+ * 像盔甲一样包在身体外面，避免和皮肤处在同一平面上产生闪烁。
  *
  * @author Based on OldSource LayerVillagerClothes
  * @version 1.0.0
@@ -27,14 +25,14 @@ public class VillagerClothesLayer extends RenderLayer<MillVillager, MillVillager
     /** 衣服层索引（0或1） */
     private final int layerIndex;
 
-    /** 垂直偏移量，用于防止z-fighting */
-    private final float verticalOffset;
+    /** 该层专用的膨胀模型 */
+    private final MillVillagerModel clothModel;
 
-    public VillagerClothesLayer(RenderLayerParent<MillVillager, MillVillagerModel> renderer, int layerIndex) {
+    public VillagerClothesLayer(RenderLayerParent<MillVillager, MillVillagerModel> renderer, int layerIndex,
+                                MillVillagerModel clothModel) {
         super(renderer);
         this.layerIndex = layerIndex;
-        // 每层略微向外偏移
-        this.verticalOffset = 0.001f * (layerIndex + 1);
+        this.clothModel = clothModel;
     }
 
     @Override
@@ -42,24 +40,16 @@ public class VillagerClothesLayer extends RenderLayer<MillVillager, MillVillager
                        MillVillager villager, float limbSwing, float limbSwingAmount,
                        float partialTick, float ageInTicks, float netHeadYaw, float headPitch) {
 
-        // 获取该层的衣服纹理
         ResourceLocation clothTexture = villager.getClothTexture(layerIndex);
-
         if (clothTexture == null) {
-            return; // 没有衣服纹理，跳过渲染
+            return;
         }
 
-        // 应用轻微偏移防止z-fighting
-        poseStack.pushPose();
-        poseStack.scale(1.0f + verticalOffset, 1.0f + verticalOffset, 1.0f + verticalOffset);
+        // 同步身体模型的姿态（包括动画状态对四肢的调整）
+        this.getParentModel().copyPropertiesTo(clothModel);
 
-        // 获取模型并设置姿态
-        MillVillagerModel model = this.getParentModel();
-
-        // 渲染衣服纹理
         VertexConsumer vertexConsumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(clothTexture));
-        model.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-
-        poseStack.popPose();
+        clothModel.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY,
+            1.0F, 1.0F, 1.0F, 1.0F);
     }
 }
