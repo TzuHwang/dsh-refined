@@ -510,12 +510,12 @@ lava;minecraft:lava[level=0];true;232/57/16;;;0
 lavastill;minecraft:lava[level=0];true;232/57/17;;;0
 netherrack;minecraft:netherrack;false;253/56/11;;;
 tnt;minecraft:tnt[unstable=false];false;253/52/6;;;
-oak leaves;minecraft:oak_leaves[check_decay=false,decayable=false];false;40/107/14;;;0
-pine leaves;minecraft:spruce_leaves[check_decay=false,decayable=false];false;42/111/15;;;0
-birch leaves;minecraft:birch_leaves[check_decay=false,decayable=false];false;44/119/15;;;0
-jungle leaves;minecraft:jungle_leaves[check_decay=false,decayable=false];false;46/119/15;;;0
-acacia leaves;minecraft:acacia_leaves[check_decay=false,decayable=false];false;48/119/15;;;0
-dark oak leaves;minecraft:dark_oak_leaves[check_decay=false,decayable=false];false;50/119/15;;;0
+oak leaves;minecraft:oak_leaves[persistent=true];false;40/107/14;;;0
+pine leaves;minecraft:spruce_leaves[persistent=true];false;42/111/15;;;0
+birch leaves;minecraft:birch_leaves[persistent=true];false;44/119/15;;;0
+jungle leaves;minecraft:jungle_leaves[persistent=true];false;46/119/15;;;0
+acacia leaves;minecraft:acacia_leaves[persistent=true];false;48/119/15;;;0
+dark oak leaves;minecraft:dark_oak_leaves[persistent=true];false;50/119/15;;;0
 melon;minecraft:melon;false;75/243/10;;;
 pine sappling;minecraft:spruce_sapling[stage=0];true;21/147/21;;;0
 bedrock;minecraft:bedrock;false;40/42/40;;;

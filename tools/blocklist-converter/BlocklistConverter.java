@@ -221,6 +221,12 @@ public class BlocklistConverter {
     private static String stateString(Dynamic<?> d) {
         String name = d.get("Name").asString("minecraft:air");
         Map<String, String> props = propsOf(d);
+        if (props.containsKey("check_decay") || props.containsKey("decayable")) {
+            // 1.14 起树叶改用 distance/persistent（区块级 LeavesFix，不在方块状态修复器中）
+            props.remove("check_decay");
+            props.remove("decayable");
+            props.put("persistent", "true");
+        }
         if (props.isEmpty()) {
             return name;
         }

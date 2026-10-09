@@ -11,16 +11,22 @@ import net.minecraft.world.level.block.BannerBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.WallBannerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoorHingeSide;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 按图纸在世界中立即放置一栋建筑（村庄生成时使用）。
@@ -45,6 +51,7 @@ public final class BuildingPlacer {
         @Nullable
         public BlockPos mainChest;
         public int blocksPlaced;
+        final List<BlockPos> doors = new ArrayList<>();
 
         void addPoint(String type, BlockPos pos) {
             specialPoints.computeIfAbsent(type, k -> new ArrayList<>()).add(pos.immutable());
@@ -82,6 +89,7 @@ public final class BuildingPlacer {
                 }
             }
         }
+        completeDoors(level, result);
         return result;
     }
 
@@ -109,10 +117,49 @@ public final class BuildingPlacer {
     }
 
     private static void set(ServerLevel level, BlockPos pos, BlockState state, Result result) {
+        if (state.getBlock() instanceof DoorBlock) {
+            result.doors.add(pos.immutable());
+        }
         if (level.getBlockState(pos) != state) {
             level.setBlock(pos, state, FLAGS);
             result.blocksPlaced++;
         }
+    }
+
+    // ================ 门 ================
+
+    /**
+     * 图纸只记录门的下半部（1.12 的门方块），这里补上上半部并决定铰链方向：
+     * 并排同朝向的两扇门组成双开门，左边一扇铰链在左、右边一扇铰链在右。
+     * 若图纸在相邻两层都画了门，则把上面那格视为上半部。
+     */
+    private static void completeDoors(ServerLevel level, Result result) {
+        Set<BlockPos> doorSet = new HashSet<>(result.doors);
+        result.doors.sort(Comparator.comparingInt(BlockPos::getY));
+        for (BlockPos pos : result.doors) {
+            BlockState state = level.getBlockState(pos);
+            if (!(state.getBlock() instanceof DoorBlock)) {
+                continue;
+            }
+            BlockPos below = pos.below();
+            if (doorSet.contains(below) && level.getBlockState(below).getBlock() == state.getBlock()) {
+                continue;
+            }
+            Direction facing = state.getValue(DoorBlock.FACING);
+            DoorHingeSide hinge = isDoor(level, pos.relative(facing.getClockWise()), facing)
+                ? DoorHingeSide.LEFT
+                : isDoor(level, pos.relative(facing.getCounterClockWise()), facing)
+                    ? DoorHingeSide.RIGHT
+                    : DoorHingeSide.LEFT;
+            BlockState lower = state.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER).setValue(DoorBlock.HINGE, hinge);
+            level.setBlock(pos, lower, FLAGS);
+            level.setBlock(pos.above(), lower.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), FLAGS);
+        }
+    }
+
+    private static boolean isDoor(ServerLevel level, BlockPos pos, Direction facing) {
+        BlockState state = level.getBlockState(pos);
+        return state.getBlock() instanceof DoorBlock && state.getValue(DoorBlock.FACING) == facing;
     }
 
     // ================ 特殊标记 ================
