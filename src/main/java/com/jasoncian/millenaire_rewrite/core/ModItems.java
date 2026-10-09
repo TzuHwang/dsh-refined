@@ -1122,10 +1122,10 @@ public class ModItems {
     // ================ Spawn Eggs ================
 
     /** Millenaire村民生成蛋 */
-    public static final RegistryObject<net.minecraft.world.item.SpawnEggItem> MILL_VILLAGER_SPAWN_EGG =
+    public static final RegistryObject<net.minecraftforge.common.ForgeSpawnEggItem> MILL_VILLAGER_SPAWN_EGG =
         ITEMS.register("mill_villager_spawn_egg",
-            () -> new net.minecraft.world.item.SpawnEggItem(
-                ModEntities.MILL_VILLAGER.get(),
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                ModEntities.MILL_VILLAGER,
                 0x8B4513, // 主色：棕色
                 0xF5DEB3, // 次色：小麦色
                 new Item.Properties()));
