@@ -1,11 +1,15 @@
 package com.jasoncian.millenaire_rewrite.client.model;
 
+import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import com.jasoncian.millenaire_rewrite.entity.MillVillager;
 import com.jasoncian.millenaire_rewrite.entity.villager.VillagerAnimationState;
+import com.jasoncian.millenaire_rewrite.entity.villager.VillagerModelType;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 /**
@@ -22,45 +26,59 @@ import net.minecraft.util.Mth;
  */
 public class MillVillagerModel extends HumanoidModel<MillVillager> {
 
-    /** 村民模型层：原版 Millénaire 皮肤为 64x32 旧式人形布局 */
-    public static final net.minecraft.client.model.geom.ModelLayerLocation LAYER_LOCATION =
-        new net.minecraft.client.model.geom.ModelLayerLocation(
-            new net.minecraft.resources.ResourceLocation(
-                com.jasoncian.millenaire_rewrite.MillenaireRewrite.MOD_ID, "mill_villager"), "main");
-    /** 衣服层：比身体略大，与原版一样每层外扩 0.1 */
-    public static final net.minecraft.client.model.geom.ModelLayerLocation CLOTHES_0 =
-        new net.minecraft.client.model.geom.ModelLayerLocation(LAYER_LOCATION.getModel(), "clothes_0");
-    public static final net.minecraft.client.model.geom.ModelLayerLocation CLOTHES_1 =
-        new net.minecraft.client.model.geom.ModelLayerLocation(LAYER_LOCATION.getModel(), "clothes_1");
-
     public MillVillagerModel(ModelPart root) {
         super(root);
     }
 
+    // ================ 模型层 ================
+
     /**
-     * 创建模型层定义
-     * 使用标准人形模型布局
+     * 模型层位置。原版皮肤都是 64x32；衣服层与原版一样每层外扩 0.1。
+     *
+     * @param clothesLayer -1 为身体，0/1 为衣服层
      */
-    public static LayerDefinition createBodyLayer() {
-        return createLayer(CubeDeformation.NONE);
+    public static ModelLayerLocation layer(VillagerModelType type, int clothesLayer) {
+        return new ModelLayerLocation(
+            new ResourceLocation(MillenaireRewrite.MOD_ID, "mill_villager_" + type.getId()),
+            clothesLayer < 0 ? "main" : "clothes_" + clothesLayer);
     }
 
-    public static LayerDefinition createClothesLayer0() {
-        return createLayer(new CubeDeformation(0.1F));
+    public static LayerDefinition createLayer(VillagerModelType type, int clothesLayer) {
+        CubeDeformation deformation = clothesLayer < 0
+            ? CubeDeformation.NONE
+            : new CubeDeformation(0.1F * (clothesLayer + 1));
+        MeshDefinition mesh = type == VillagerModelType.DEFAULT
+            ? HumanoidModel.createMesh(deformation, 0.0F)
+            : createFemaleMesh(deformation, type == VillagerModelType.FEMALE_ASYMMETRICAL);
+        return LayerDefinition.create(mesh, 64, 32);
     }
 
-    public static LayerDefinition createClothesLayer1() {
-        return createLayer(new CubeDeformation(0.2F));
-    }
-
-    private static LayerDefinition createLayer(CubeDeformation deformation) {
-        MeshDefinition meshDefinition = HumanoidModel.createMesh(deformation, 0.0F);
-        PartDefinition partDefinition = meshDefinition.getRoot();
-
-        // 使用标准人形模型部件
-        // 可以在此处添加额外的装饰部件
-
-        return LayerDefinition.create(meshDefinition, 64, 32);
+    /**
+     * 原版 ModelFemaleAsymmetrical / ModelFemaleSymmetrical
+     */
+    private static MeshDefinition createFemaleMesh(CubeDeformation d, boolean asymmetrical) {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        root.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 0)
+            .addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, d), PartPose.ZERO);
+        root.addOrReplaceChild("hat", CubeListBuilder.create().texOffs(32, 0)
+            .addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, d.extend(0.5F)), PartPose.ZERO);
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create().texOffs(16, 17)
+            .addBox(-3.5F, 0.0F, -1.5F, 7, 12, 3, d), PartPose.ZERO);
+        body.addOrReplaceChild("breast", CubeListBuilder.create().texOffs(17, 18)
+            .addBox(-3.5F, 0.75F, -3.0F, 7, 4, 2, d), PartPose.ZERO);
+        root.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(36, 17)
+            .addBox(-1.5F, -2.0F, -1.5F, 3, 12, 3, d), PartPose.offset(-5.0F, 2.0F, 0.0F));
+        root.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(36, 17).mirror()
+            .addBox(-1.5F, -2.0F, -1.5F, 3, 12, 3, d), PartPose.offset(5.0F, 2.0F, 0.0F));
+        root.addOrReplaceChild("right_leg", CubeListBuilder.create().texOffs(0, 16)
+            .addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4, d), PartPose.offset(-2.0F, 12.0F, 0.0F));
+        CubeListBuilder leftLeg = asymmetrical
+            ? CubeListBuilder.create().texOffs(48, 16)
+            : CubeListBuilder.create().texOffs(0, 16).mirror();
+        root.addOrReplaceChild("left_leg", leftLeg
+            .addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4, d), PartPose.offset(2.0F, 12.0F, 0.0F));
+        return mesh;
     }
 
     @Override

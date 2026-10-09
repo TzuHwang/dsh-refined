@@ -129,6 +129,10 @@ public class BuildingPlanTests {
                 if (v.getFirstName().isEmpty() || v.getSkinTexture() == null) {
                     helper.fail("resident without name or skin: " + v.getVillagerType());
                 }
+                if (v.getVillagerType().equals("lady")
+                    && v.getModelType() != com.jasoncian.millenaire_rewrite.entity.villager.VillagerModelType.FEMALE_ASYMMETRICAL) {
+                    helper.fail("lady should use the female asymmetrical model, got " + v.getModelType());
+                }
             }
             if (spawned.size() != expected) {
                 helper.fail("expected " + expected + " residents, spawned " + spawned.size());

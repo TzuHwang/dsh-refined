@@ -2,14 +2,19 @@ package com.jasoncian.millenaire_rewrite.client.renderer.layer;
 
 import com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel;
 import com.jasoncian.millenaire_rewrite.entity.MillVillager;
+import com.jasoncian.millenaire_rewrite.entity.villager.VillagerModelType;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * 村民衣服渲染层 - 在基础皮肤上渲染衣服纹理
@@ -25,14 +30,16 @@ public class VillagerClothesLayer extends RenderLayer<MillVillager, MillVillager
     /** 衣服层索引（0或1） */
     private final int layerIndex;
 
-    /** 该层专用的膨胀模型 */
-    private final MillVillagerModel clothModel;
+    /** 各模型类型在该层的膨胀模型 */
+    private final Map<VillagerModelType, MillVillagerModel> clothModels = new EnumMap<>(VillagerModelType.class);
 
     public VillagerClothesLayer(RenderLayerParent<MillVillager, MillVillagerModel> renderer, int layerIndex,
-                                MillVillagerModel clothModel) {
+                                EntityRendererProvider.Context context) {
         super(renderer);
         this.layerIndex = layerIndex;
-        this.clothModel = clothModel;
+        for (VillagerModelType type : VillagerModelType.values()) {
+            clothModels.put(type, new MillVillagerModel(context.bakeLayer(MillVillagerModel.layer(type, layerIndex))));
+        }
     }
 
     @Override
@@ -46,6 +53,7 @@ public class VillagerClothesLayer extends RenderLayer<MillVillager, MillVillager
         }
 
         // 同步身体模型的姿态（包括动画状态对四肢的调整）
+        MillVillagerModel clothModel = clothModels.get(villager.getModelType());
         this.getParentModel().copyPropertiesTo(clothModel);
 
         VertexConsumer vertexConsumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(clothTexture));

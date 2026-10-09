@@ -2,6 +2,7 @@ package com.jasoncian.millenaire_rewrite.entity;
 
 import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import com.jasoncian.millenaire_rewrite.entity.culture.Culture;
+import com.jasoncian.millenaire_rewrite.entity.villager.VillagerModelType;
 import com.jasoncian.millenaire_rewrite.entity.villager.VillagerProfession;
 import com.jasoncian.millenaire_rewrite.entity.villager.VillagerAnimationState;
 import net.minecraft.core.BlockPos;
@@ -82,6 +83,9 @@ public class MillVillager extends PathfinderMob {
     private static final EntityDataAccessor<String> DATA_CLOTHES_0 =
         SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_CLOTHES_1 =
+        SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
+    /** 模型类型（VillagerModelType id），皮肤必须用对应模型渲染 */
+    private static final EntityDataAccessor<String> DATA_MODEL =
         SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
 
     // ================ 常量 ================
@@ -241,6 +245,7 @@ public class MillVillager extends PathfinderMob {
         this.entityData.define(DATA_SKIN, "");
         this.entityData.define(DATA_CLOTHES_0, "");
         this.entityData.define(DATA_CLOTHES_1, "");
+        this.entityData.define(DATA_MODEL, VillagerModelType.DEFAULT.getId());
     }
 
     // ================ AI目标 ================
@@ -395,6 +400,7 @@ public class MillVillager extends PathfinderMob {
         tag.putString("Skin", this.entityData.get(DATA_SKIN));
         tag.putString("Clothes0", this.entityData.get(DATA_CLOTHES_0));
         tag.putString("Clothes1", this.entityData.get(DATA_CLOTHES_1));
+        tag.putString("Model", this.entityData.get(DATA_MODEL));
         tag.putFloat("Scale", getVillagerScale());
 
         if (housePos != null) {
@@ -460,6 +466,18 @@ public class MillVillager extends PathfinderMob {
         this.entityData.set(DATA_SKIN, tag.getString("Skin"));
         this.entityData.set(DATA_CLOTHES_0, tag.getString("Clothes0"));
         this.entityData.set(DATA_CLOTHES_1, tag.getString("Clothes1"));
+        if (tag.contains("Model")) {
+            setModelType(VillagerModelType.fromId(tag.getString("Model")));
+        } else if (!getVillagerType().isEmpty()) {
+            // 旧存档没有模型字段：按村民类型配置补上
+            try {
+                setModelType(VillagerModelType.fromId(com.jasoncian.millenaire_rewrite.content.VillagerTypes.get(
+                    com.jasoncian.millenaire_rewrite.buildingplan.VillageTypes.cultureFolder(getCulture()),
+                    getVillagerType()).model()));
+            } catch (java.io.IOException ignored) {
+                // 保持默认模型
+            }
+        }
         if (tag.contains("Scale")) {
             setVillagerScale(tag.getFloat("Scale"));
         }
@@ -813,6 +831,14 @@ public class MillVillager extends PathfinderMob {
     /**
      * 设置外观（路径相对于 assets/millenaire_rewrite/，空字符串表示不使用）
      */
+    public VillagerModelType getModelType() {
+        return VillagerModelType.fromId(this.entityData.get(DATA_MODEL));
+    }
+
+    public void setModelType(VillagerModelType type) {
+        this.entityData.set(DATA_MODEL, type.getId());
+    }
+
     public void setAppearance(String skin, String clothes0, String clothes1) {
         this.entityData.set(DATA_SKIN, skin);
         this.entityData.set(DATA_CLOTHES_0, clothes0);

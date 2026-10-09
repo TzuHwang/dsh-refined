@@ -2,6 +2,7 @@ package com.jasoncian.millenaire_rewrite.client.renderer;
 
 import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel;
+import com.jasoncian.millenaire_rewrite.entity.villager.VillagerModelType;
 import com.jasoncian.millenaire_rewrite.entity.MillVillager;
 import com.jasoncian.millenaire_rewrite.entity.culture.Culture;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -40,8 +41,16 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
 
     // ================ 构造函数 ================
 
+    /** 各模型类型的身体模型；渲染时按村民切换 */
+    private final java.util.Map<VillagerModelType, MillVillagerModel> bodyModels =
+        new java.util.EnumMap<>(VillagerModelType.class);
+
     public MillVillagerRenderer(EntityRendererProvider.Context context) {
-        super(context, new MillVillagerModel(context.bakeLayer(MillVillagerModel.LAYER_LOCATION)), 0.5F);
+        super(context, new MillVillagerModel(
+            context.bakeLayer(MillVillagerModel.layer(VillagerModelType.DEFAULT, -1))), 0.5F);
+        for (VillagerModelType type : VillagerModelType.values()) {
+            bodyModels.put(type, new MillVillagerModel(context.bakeLayer(MillVillagerModel.layer(type, -1))));
+        }
 
         // 添加护甲层
         this.addLayer(new HumanoidArmorLayer<>(this,
@@ -53,10 +62,8 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
         this.addLayer(new ItemInHandLayer<>(this, context.getItemInHandRenderer()));
 
         // 添加衣服渲染层（2层）
-        this.addLayer(new VillagerClothesLayer(this, 0,
-            new MillVillagerModel(context.bakeLayer(MillVillagerModel.CLOTHES_0))));
-        this.addLayer(new VillagerClothesLayer(this, 1,
-            new MillVillagerModel(context.bakeLayer(MillVillagerModel.CLOTHES_1))));
+        this.addLayer(new VillagerClothesLayer(this, 0, context));
+        this.addLayer(new VillagerClothesLayer(this, 1, context));
     }
 
     // ================ 纹理获取 ================
@@ -89,6 +96,7 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
     @Override
     public void render(MillVillager entity, float entityYaw, float partialTicks,
                        PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+        this.model = bodyModels.get(entity.getModelType());
         super.render(entity, entityYaw, partialTicks, poseStack, bufferSource, packedLight);
 
         // TODO: 渲染职业特定物品（如农民的锄头）

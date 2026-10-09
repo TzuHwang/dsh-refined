@@ -5,6 +5,7 @@ import com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer;
 import com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan;
 import com.jasoncian.millenaire_rewrite.core.ModEntities;
 import com.jasoncian.millenaire_rewrite.entity.MillVillager;
+import com.jasoncian.millenaire_rewrite.entity.villager.VillagerModelType;
 import com.jasoncian.millenaire_rewrite.entity.villager.VillagerProfession;
 import com.jasoncian.millenaire_rewrite.village.Village;
 import net.minecraft.core.BlockPos;
@@ -68,6 +69,7 @@ public final class ResidentSpawner {
         villager.setFamilyName(VillagerTypes.randomName(type.culture(), type.familyNameList(), level.random));
         villager.setAppearance(type.randomTexture(level.random),
             type.randomClothes(0, level.random), type.randomClothes(1, level.random));
+        villager.setModelType(VillagerModelType.fromId(type.model()));
         villager.setVillagerScale(type.baseHeight());
         villager.getAttribute(Attributes.MAX_HEALTH).setBaseValue(type.health());
         villager.setHealth(type.health());

@@ -27,7 +27,7 @@ public final class VillagerTypes {
     public record VillagerType(String culture, String key, String nativeName, boolean female,
                                @Nullable String firstNameList, @Nullable String familyNameList,
                                List<String> textures, Map<Integer, List<String>> clothes,
-                               float baseHeight, int health, List<String> tags) {
+                               float baseHeight, int health, List<String> tags, String model) {
 
         public String randomTexture(RandomSource random) {
             return textures.isEmpty() ? "" : textures.get(random.nextInt(textures.size()));
@@ -93,6 +93,7 @@ public final class VillagerTypes {
         List<String> textures = new ArrayList<>();
         Map<Integer, List<String>> clothes = new HashMap<>();
         List<String> tags = new ArrayList<>();
+        String model = "";
 
         for (String raw : MillContent.readLines(file)) {
             String line = raw.trim();
@@ -110,6 +111,7 @@ public final class VillagerTypes {
                 case "health" -> health = Integer.parseInt(v);
                 case "texture" -> textures.add(v.toLowerCase());
                 case "tag" -> tags.add(v);
+                case "model" -> model = v;
                 case "clothes" -> {
                     // clothes=名称,材质 或 clothes=名称,层,材质；只使用默认衣服 "free"
                     String[] parts = v.split(",");
@@ -123,6 +125,6 @@ public final class VillagerTypes {
             }
         }
         return new VillagerType(culture, key, nativeName, female, firstNames, familyNames,
-            List.copyOf(textures), clothes, baseHeight, health, List.copyOf(tags));
+            List.copyOf(textures), clothes, baseHeight, health, List.copyOf(tags), model);
     }
 }

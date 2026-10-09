@@ -184,12 +184,15 @@ public class MillenaireRewrite {
 
         @SubscribeEvent
         public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
-            event.registerLayerDefinition(com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.LAYER_LOCATION,
-                com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel::createBodyLayer);
-            event.registerLayerDefinition(com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.CLOTHES_0,
-                com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel::createClothesLayer0);
-            event.registerLayerDefinition(com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.CLOTHES_1,
-                com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel::createClothesLayer1);
+            // 每种村民模型：身体 + 两层衣服
+            for (var type : com.jasoncian.millenaire_rewrite.entity.villager.VillagerModelType.values()) {
+                for (int layer = -1; layer <= 1; layer++) {
+                    int clothesLayer = layer;
+                    event.registerLayerDefinition(
+                        com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.layer(type, clothesLayer),
+                        () -> com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.createLayer(type, clothesLayer));
+                }
+            }
         }
 
         @SubscribeEvent
