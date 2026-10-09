@@ -51,14 +51,10 @@ public class GoalSleep extends MillGoal {
     @Nullable
     @Override
     public GoalInformation getDestination(MillVillager villager) {
-        // 首先检查是否有家
+        // 图纸中的睡觉位置（生成时记录为家）；原版的稻草床等在 1.20 中没有床方块
         BlockPos housePos = villager.getHousePos();
         if (housePos != null) {
-            // 在家附近搜索床
-            BlockPos bedPos = findBedNear(villager, housePos, 10);
-            if (bedPos != null) {
-                return GoalInformation.ofDestination(bedPos);
-            }
+            return GoalInformation.ofDestination(housePos);
         }
 
         // 在附近搜索任意床

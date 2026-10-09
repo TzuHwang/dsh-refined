@@ -85,6 +85,9 @@ public abstract class MillGoal {
      */
     public abstract int priority(MillVillager villager);
 
+    /** 目标目的地离村庄中心的最大距离 */
+    public static final int MAX_DISTANCE_FROM_VILLAGE = 48;
+
     /**
      * 获取目标的目的地信息
      * 返回null表示目标无法执行
@@ -213,7 +216,14 @@ public abstract class MillGoal {
 
         // 检查是否能获取目的地
         GoalInformation dest = getDestination(villager);
-        return dest != null && dest.hasDestination();
+        if (dest == null || !dest.hasDestination()) {
+            return false;
+        }
+
+        // 安全绳：任何目标都不能把村民带离村庄中心太远
+        net.minecraft.core.BlockPos target = dest.getEffectiveDestination();
+        return target == null
+            || target.distSqr(villager.getVillageCentre()) <= MAX_DISTANCE_FROM_VILLAGE * MAX_DISTANCE_FROM_VILLAGE;
     }
 
     /**

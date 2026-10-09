@@ -206,18 +206,9 @@ public class MillVillager extends PathfinderMob {
         goalManager.getAvailableGoals().removeIf(goal ->
             goal.getTags().contains("work"));
 
-        // 根据当前职业添加对应目标
-        VillagerProfession profession = getProfession();
-
-        switch (profession) {
-            case FARMER, SILK_FARMER -> goalManager.addGoal(new GoalFarm());
-            case MINER -> goalManager.addGoal(new GoalMine());
-            case LUMBERJACK -> goalManager.addGoal(new GoalChop());
-            // TODO: 添加更多职业的工作目标
-            default -> {
-                // 无特定工作目标
-            }
-        }
+        // 暂不添加工作目标：GoalFarm/GoalChop/GoalMine 会在村民当前位置周围
+        // 翻耕草地、砍树、挖方块。原版 Millénaire 只在建筑图纸指定的工作点工作，
+        // 等村庄能建造工作建筑（农田、伐木场、采石场）后再按工作点接回这些目标。
     }
 
     // ================ 属性定义 ================
@@ -258,13 +249,7 @@ public class MillVillager extends PathfinderMob {
         this.goalSelector.addGoal(2, new OpenDoorGoal(this, true));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
-        this.goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.6D));
-
-        // TODO: 添加自定义Millenaire目标系统
-        // - GoalSleep
-        // - GoalEat
-        // - GoalWork (profession-specific)
-        // - GoalSocialize
+        // 移动由 Millénaire 目标系统（GoalManager）负责，不使用原版随机漫步
     }
 
     // ================ Tick更新 ================
@@ -642,6 +627,16 @@ public class MillVillager extends PathfinderMob {
     }
 
     @Nullable
+    /**
+     * 村民活动的中心：村庄市政厅，其次是家，最后是当前位置
+     */
+    public BlockPos getVillageCentre() {
+        if (townHallPos != null) {
+            return townHallPos;
+        }
+        return housePos != null ? housePos : blockPosition();
+    }
+
     public BlockPos getTownHallPos() {
         return townHallPos;
     }

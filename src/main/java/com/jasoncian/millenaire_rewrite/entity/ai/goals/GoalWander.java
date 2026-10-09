@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 public class GoalWander extends MillGoal {
 
     /** 漫游范围（方块） */
-    private int wanderRadius = 10;
+    private int wanderRadius = 16;
 
     /** 漫游时长（ticks） */
     private int wanderDuration = 200;
@@ -43,8 +43,8 @@ public class GoalWander extends MillGoal {
     @Nullable
     @Override
     public GoalInformation getDestination(MillVillager villager) {
-        // 在附近随机选择一个目的地
-        BlockPos currentPos = villager.blockPosition();
+        // 以村庄中心为圆心随机选择目的地，避免以当前位置为圆心越走越远
+        BlockPos currentPos = villager.getVillageCentre();
 
         for (int attempts = 0; attempts < 10; attempts++) {
             int dx = villager.getRandom().nextInt(wanderRadius * 2 + 1) - wanderRadius;
