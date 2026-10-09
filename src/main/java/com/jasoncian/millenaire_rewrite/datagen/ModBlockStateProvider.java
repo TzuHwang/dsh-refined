@@ -15,6 +15,7 @@ import com.jasoncian.millenaire_rewrite.blocks.system.BasicBuildingMaterial;
 import com.jasoncian.millenaire_rewrite.blocks.system.BlockVariantType;
 import com.jasoncian.millenaire_rewrite.blocks.system.BuildingBlockRegistry;
 import com.jasoncian.millenaire_rewrite.core.ModBlocks;
+import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -257,18 +258,38 @@ public class ModBlockStateProvider extends BlockStateProvider {
 
     // ================ 建筑方块 ================
 
+    /**
+     * 道路方块：高 15/16。原版的 path*_side 材质只画了上缘 4 行，其余透明，
+     * 是叠在泥土侧面上的贴皮，所以侧面用两层：泥土 + 道路边缘贴皮（cutout）。
+     */
     private void pathBlock(String registryName, Block block, BasicBuildingMaterial material) {
         ResourceLocation top = materialTexture(material);
-        ResourceLocation side = new ResourceLocation(top.getNamespace(), top.getPath() + "_side");
-        if (!textureExists(side)) {
-            side = top;
-        }
-        ModelFile model = models().withExistingParent(registryName, mcLoc("block/dirt_path"))
+        ResourceLocation overlay = new ResourceLocation(top.getNamespace(), top.getPath() + "_side");
+        boolean hasOverlay = textureExists(overlay);
+        ResourceLocation side = hasOverlay ? mcLoc("block/dirt") : top;
+
+        var builder = models().getBuilder(registryName)
             .texture("top", top)
             .texture("side", side)
-            .texture("bottom", top)
-            .texture("particle", top);
-        simpleBlock(block, model);
+            .texture("bottom", mcLoc("block/dirt"))
+            .texture("particle", top)
+            .renderType("cutout");
+        var base = builder.element().from(0, 0, 0).to(16, 15, 16);
+        base.face(Direction.UP).texture("#top").end();
+        base.face(Direction.DOWN).texture("#bottom").cullface(Direction.DOWN).end();
+        for (Direction d : Direction.Plane.HORIZONTAL) {
+            base.face(d).texture("#side").uvs(0, 1, 16, 16).cullface(d).end();
+        }
+        base.end();
+        if (hasOverlay) {
+            builder.texture("overlay", overlay);
+            var edge = builder.element().from(0, 0, 0).to(16, 15, 16);
+            for (Direction d : Direction.Plane.HORIZONTAL) {
+                edge.face(d).texture("#overlay").uvs(0, 1, 16, 16).cullface(d).end();
+            }
+            edge.end();
+        }
+        simpleBlock(block, builder);
     }
 
     private ResourceLocation materialTexture(BasicBuildingMaterial material) {

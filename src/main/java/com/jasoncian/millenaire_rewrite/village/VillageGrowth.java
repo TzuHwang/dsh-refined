@@ -427,18 +427,18 @@ public class VillageGrowth {
     }
 
     /**
-     * 采样占地范围内的地面高度；有水/岩浆或高差过大时返回 null
+     * 采样占地范围内的地面高度；有水/岩浆/冰面或高差过大时返回 null
      */
     @Nullable
-    private static Integer averageGround(ServerLevel level, BoundingBox box) {
+    public static Integer averageGround(ServerLevel level, BoundingBox box) {
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
         long sum = 0;
         int count = 0;
-        for (int x = box.minX(); x <= box.maxX(); x += 3) {
-            for (int z = box.minZ(); z <= box.maxZ(); z += 3) {
+        for (int x = box.minX(); x <= box.maxX(); x += 2) {
+            for (int z = box.minZ(); z <= box.maxZ(); z += 2) {
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                if (!level.getFluidState(new BlockPos(x, y - 1, z)).isEmpty()) {
+                if (isWaterSurface(level, new BlockPos(x, y - 1, z))) {
                     return null;
                 }
                 min = Math.min(min, y);
@@ -451,6 +451,16 @@ public class VillageGrowth {
             return null;
         }
         return (int) Math.round(sum / (double) count);
+    }
+
+    /**
+     * 地表是否为水面：液体、冰（结冰的河/湖），或下一格是液体（薄冰层下的水）
+     */
+    public static boolean isWaterSurface(ServerLevel level, BlockPos surface) {
+        net.minecraft.world.level.block.state.BlockState state = level.getBlockState(surface);
+        return !state.getFluidState().isEmpty()
+            || state.is(net.minecraft.tags.BlockTags.ICE)
+            || !level.getFluidState(surface.below()).isEmpty();
     }
 
     // ================ 存档 ================

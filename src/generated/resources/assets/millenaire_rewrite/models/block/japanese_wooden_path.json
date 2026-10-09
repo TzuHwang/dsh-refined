@@ -1,7 +1,46 @@
 {
-  "parent": "minecraft:block/dirt_path",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#bottom"
+        },
+        "east": {
+          "cullface": "east",
+          "texture": "#side"
+        },
+        "north": {
+          "cullface": "north",
+          "texture": "#side"
+        },
+        "south": {
+          "cullface": "south",
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "west": {
+          "cullface": "west",
+          "texture": "#side"
+        }
+      },
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        15,
+        16
+      ]
+    }
+  ],
+  "render_type": "minecraft:cutout",
   "textures": {
-    "bottom": "millenaire_rewrite:block/planks_oak",
+    "bottom": "minecraft:block/dirt",
     "particle": "millenaire_rewrite:block/planks_oak",
     "side": "millenaire_rewrite:block/planks_oak",
     "top": "millenaire_rewrite:block/planks_oak"

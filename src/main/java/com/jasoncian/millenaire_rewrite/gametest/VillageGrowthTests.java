@@ -66,6 +66,39 @@ public class VillageGrowthTests {
         }
     }
 
+    /**
+     * 选址拒绝结冰的水面（冰层下有水），接受旁边的普通地面
+     */
+    @GameTest(template = "empty")
+    public static void siteSelectionRejectsFrozenWater(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos corner = helper.absolutePos(new BlockPos(0, 0, 2600));
+        setForced(level, corner, true);
+        // 测试世界是正常地形，在高空搭两个平台避免受地形影响：冰面（结冰的水）和石头地面
+        int y = 250;
+        for (int x = 0; x < 10; x++) {
+            for (int z = 0; z < 10; z++) {
+                level.setBlock(new BlockPos(corner.getX() + x, y, corner.getZ() + z),
+                    net.minecraft.world.level.block.Blocks.ICE.defaultBlockState(), 2);
+                level.setBlock(new BlockPos(corner.getX() + 20 + x, y, corner.getZ() + z),
+                    net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 2);
+            }
+        }
+        BoundingBox pond = new BoundingBox(corner.getX(), 0, corner.getZ(), corner.getX() + 9, 0, corner.getZ() + 9);
+        BoundingBox land = new BoundingBox(corner.getX() + 20, 0, corner.getZ(), corner.getX() + 29, 0, corner.getZ() + 9);
+        Integer pondGround = VillageGrowth.averageGround(level, pond);
+        Integer landGround = VillageGrowth.averageGround(level, land);
+        setForced(level, corner, false);
+        MillenaireRewrite.LOGGER.info("[gametest] site: frozen pond -> {}, land -> {}", pondGround, landGround);
+        if (pondGround != null) {
+            helper.fail("frozen pond accepted as building ground");
+        }
+        if (landGround == null) {
+            helper.fail("normal ground rejected");
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void villageGrowsWithoutOverlaps(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
