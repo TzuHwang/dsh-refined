@@ -50,6 +50,8 @@ public final class BuildingPlacer {
         @Nullable
         public BlockPos mainChest;
         public int blocksPlaced;
+        /** 本次放置过的位置，用于最后统一刷新形状 */
+        final List<BlockPos> placed = new ArrayList<>();
         /** 图纸中门的预定状态，延后到最后统一放置 */
         final Map<BlockPos, BlockState> plannedDoors = new HashMap<>();
 
@@ -90,6 +92,7 @@ public final class BuildingPlacer {
             }
         }
         completeDoors(level, result);
+        settleShapes(level, result);
         return result;
     }
 
@@ -125,6 +128,24 @@ public final class BuildingPlacer {
         if (level.getBlockState(pos) != state) {
             level.setBlock(pos, state, FLAGS);
             result.blocksPlaced++;
+            result.placed.add(pos.immutable());
+        }
+    }
+
+    /**
+     * 栅栏、墙、玻璃板、楼梯转角等的连接形状只在邻居变化时重新计算；
+     * 先放的方块不会因为后放的邻居而刷新（反之亦然），所以建造完成后统一按邻居重算一次。
+     */
+    private static void settleShapes(ServerLevel level, Result result) {
+        for (BlockPos pos : result.placed) {
+            BlockState state = level.getBlockState(pos);
+            if (state.isAir() || state.getBlock() instanceof DoorBlock) {
+                continue;
+            }
+            BlockState updated = Block.updateFromNeighbourShapes(state, level, pos);
+            if (updated != state) {
+                level.setBlock(pos, updated, FLAGS | Block.UPDATE_KNOWN_SHAPE);
+            }
         }
     }
 
