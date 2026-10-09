@@ -255,12 +255,15 @@ public class VillageGenerator {
             if (type == null) {
                 throw new java.io.IOException("No village types for culture " + culture.getId());
             }
-            BuildingPlan plan = BuildingPlan.load(VillageTypes.cultureFolder(culture), type.centre(), 'A', 0);
-            BuildingPlacer.Result result = BuildingPlacer.place(level, plan, pos, random.nextInt(4));
+            BuildingPlan plan = BuildingPlan.get(VillageTypes.cultureFolder(culture), type.centre(), 'A', 0);
+            int orientation = random.nextInt(4);
+            BuildingPlacer.Result result = BuildingPlacer.place(level, plan, pos, orientation);
             BuildingPlacer.spawnAnimals(level, result);
             int residents = ResidentSpawner.spawnResidents(level, village, plan, result).size();
             MillenaireRewrite.LOGGER.info("Built town hall {} for village type '{}': {} blocks, {} residents",
                 plan, type.name(), result.blocksPlaced, residents);
+            // 记录市政厅并建好 start 建筑，之后由 VillageGrowth 按时间继续成长
+            village.getGrowth().initialise(level, type, plan, pos, orientation, random);
         } catch (Exception e) {
             MillenaireRewrite.LOGGER.error("Failed to build town hall for {} at {}, placing marker instead",
                 culture.getId(), pos, e);

@@ -30,6 +30,8 @@ public final class BuildingPlan {
     public int width;
     public int buildingOrientation = 1;
     public int startLevel;
+    /** 建造优先级：初始建筑取 initial.priority，升级取 upgradeN.priority */
+    public int priority = 1;
     public String nativeName;
     public final List<String> maleResidents = new ArrayList<>();
     public final List<String> femaleResidents = new ArrayList<>();
@@ -51,6 +53,33 @@ public final class BuildingPlan {
 
     public int widthOffset() {
         return width / 2;
+    }
+
+    private static final java.util.Map<String, BuildingPlan> CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * 读取图纸（带缓存，图纸内容在游戏运行期间不变）
+     */
+    public static BuildingPlan get(String culture, String key, char variation, int level) throws IOException {
+        String cacheKey = culture + "/" + key + "_" + variation + level;
+        BuildingPlan plan = CACHE.get(cacheKey);
+        if (plan == null) {
+            plan = load(culture, key, variation, level);
+            CACHE.put(cacheKey, plan);
+        }
+        return plan;
+    }
+
+    /**
+     * 该建筑是否有指定等级的图纸（用于判断能否升级）
+     */
+    public static boolean exists(String culture, String key, char variation, int level) {
+        try {
+            Path txt = MillContent.find(MillContent.resolve("cultures", culture, "buildings"), key + "_" + variation + ".txt");
+            return txt != null && Files.exists(txt.resolveSibling(key + "_" + variation + level + ".png"));
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     /**
@@ -82,6 +111,8 @@ public final class BuildingPlan {
     private void readConfig(Path txt) throws IOException {
         String upgradePrefix = "upgrade" + level + ".";
         Integer upgradeStartLevel = null;
+        Integer initialPriority = null;
+        Integer upgradePriority = null;
         for (String raw : MillContent.readLines(txt)) {
             String line = raw.trim();
             if (line.isEmpty() || line.startsWith("//") || !line.contains("=")) {
@@ -96,17 +127,24 @@ public final class BuildingPlan {
                 case "building.buildingorientation" -> buildingOrientation = Integer.parseInt(v);
                 case "initial.startlevel" -> startLevel = Integer.parseInt(v);
                 case "initial.nativename" -> nativeName = v;
+                case "initial.priority" -> initialPriority = Integer.parseInt(v);
                 case "initial.male" -> maleResidents.add(v);
                 case "initial.female" -> femaleResidents.add(v);
                 default -> {
                     if (k.equals(upgradePrefix + "startlevel")) {
                         upgradeStartLevel = Integer.parseInt(v);
+                    } else if (k.equals(upgradePrefix + "priority")) {
+                        upgradePriority = Integer.parseInt(v);
                     }
                 }
             }
         }
         if (level > 0 && upgradeStartLevel != null) {
             startLevel = upgradeStartLevel;
+        }
+        Integer p = level == 0 ? initialPriority : upgradePriority;
+        if (p != null) {
+            priority = p;
         }
         if (length <= 0 || width <= 0) {
             throw new IOException(txt + ": missing building.length/building.width");

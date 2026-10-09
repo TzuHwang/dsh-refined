@@ -91,6 +91,9 @@ public class Village {
     /** 建筑建造管理器 */
     private transient BuildingConstructionManager constructionManager;
 
+    /** 村庄成长：建筑清单、施工进度（随村庄存档） */
+    private final VillageGrowth growth = new VillageGrowth(this);
+
     /** 所在世界引用 */
     private transient ServerLevel level;
 
@@ -401,15 +404,10 @@ public class Village {
         // 清理无效的村民引用
         activeVillagers.removeIf(v -> v.isRemoved() || !v.isAlive());
 
-        // 更新村民生成
-        if (villagerSpawner != null) {
-            villagerSpawner.tick(level);
-        }
-
-        // 更新建筑建造
-        if (constructionManager != null) {
-            constructionManager.tick(level);
-        }
+        // 村庄成长：选址、逐格建造、完工后住进居民。
+        // 1.21 版移植来的 VillagerSpawner（随机生成村民）和 BuildingConstructionManager
+        // 尚未验证，暂不 tick，人口和建造统一由 VillageGrowth 按原版图纸驱动。
+        growth.tick(level);
 
         // TODO: 更新村庄经济
         // TODO: 触发村庄事件
@@ -420,6 +418,10 @@ public class Village {
     /**
      * 获取村民生成器
      */
+    public VillageGrowth getGrowth() {
+        return growth;
+    }
+
     public VillagerSpawner getVillagerSpawner() {
         if (villagerSpawner == null) {
             villagerSpawner = new VillagerSpawner(this);
@@ -557,6 +559,8 @@ public class Village {
         }
         tag.put("BuildingProjects", projectsTag);
 
+        tag.put("Growth", growth.save());
+
         return tag;
     }
 
@@ -621,6 +625,10 @@ public class Village {
         for (int i = 0; i < projectsTag.size(); i++) {
             BuildingProject project = BuildingProject.load(projectsTag.getCompound(i));
             buildingProjects.add(project);
+        }
+
+        if (tag.contains("Growth")) {
+            growth.load(tag.getCompound("Growth"));
         }
 
         loaded = true;

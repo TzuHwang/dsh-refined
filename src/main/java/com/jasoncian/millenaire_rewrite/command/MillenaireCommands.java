@@ -90,6 +90,14 @@ public class MillenaireCommands {
                 .executes(MillenaireCommands::showNearestVillageInfo)
             )
 
+            // /millenaire grow [count] - 立即完成最近村庄的下一个（或 count 个）工程
+            .then(Commands.literal("grow")
+                .executes(ctx -> growNearestVillage(ctx, 1))
+                .then(Commands.argument("count", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 50))
+                    .executes(ctx -> growNearestVillage(ctx,
+                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "count"))))
+            )
+
             // /millenaire tp <村庄名>
             .then(Commands.literal("tp")
                 .then(Commands.argument("village", StringArgumentType.greedyString())
@@ -217,11 +225,39 @@ public class MillenaireCommands {
         source.sendSuccess(() -> Component.literal("§7Position: §f" + villagePos.toShortString()), false);
         source.sendSuccess(() -> Component.literal("§7Distance: §f" + String.format("%.1f", distance) + " blocks"), false);
         source.sendSuccess(() -> Component.literal("§7Villagers: §f" + nearest.getActiveVillagerCount()), false);
-        source.sendSuccess(() -> Component.literal("§7Buildings: §f" + nearest.getBuildingCount()), false);
+        source.sendSuccess(() -> Component.literal("§7Buildings: §f" + nearest.getGrowth().getBuildings().size()), false);
+        String project = nearest.getGrowth().getCurrentProjectKey();
+        source.sendSuccess(() -> Component.literal("§7Constructing: §f" + (project != null ? project : "-")), false);
         source.sendSuccess(() -> Component.literal("§7Deniers: §e" + nearest.getDeniers()), false);
         source.sendSuccess(() -> Component.literal("§7Level: §f" + nearest.getLevel()), false);
 
         return 1;
+    }
+
+    /**
+     * 立即完成最近村庄的工程
+     */
+    private static int growNearestVillage(CommandContext<CommandSourceStack> ctx, int count) {
+        CommandSourceStack source = ctx.getSource();
+        ServerLevel level = source.getLevel();
+        Village nearest = VillageManager.get(level).getNearestVillage(BlockPos.containing(source.getPosition()));
+        if (nearest == null) {
+            source.sendFailure(Component.literal("No villages nearby"));
+            return 0;
+        }
+        int done = 0;
+        for (int i = 0; i < count; i++) {
+            String project = nearest.getGrowth().forceNext(level);
+            if (project == null) {
+                break;
+            }
+            done++;
+            source.sendSuccess(() -> Component.literal("§aCompleted " + project), true);
+        }
+        if (done == 0) {
+            source.sendFailure(Component.literal(nearest.getName() + " has nothing left to build"));
+        }
+        return done;
     }
 
     /**

@@ -21,8 +21,21 @@ public final class VillageTypes {
      * @param name       显示名称
      * @param centre     中心建筑（市政厅）的键名，如 manor
      * @param weight     随机选择权重
+     * @param start      村庄生成时一起建好的建筑
+     * @param core       优先建造的建筑
+     * @param secondary  核心建筑之后建造的建筑
      */
-    public record VillageType(String fileName, String name, String centre, int weight) {
+    public record VillageType(String fileName, String name, String centre, int weight,
+                              List<String> start, List<String> core, List<String> secondary) {
+    }
+
+    /**
+     * 按文件名读取村庄类型（用于从存档恢复）
+     */
+    @Nullable
+    public static VillageType get(Culture culture, String fileName) throws IOException {
+        Path file = MillContent.resolve("cultures", cultureFolder(culture), "villages", fileName + ".txt");
+        return Files.exists(file) ? read(file) : null;
     }
 
     private VillageTypes() {
@@ -82,6 +95,9 @@ public final class VillageTypes {
         String name = fileName;
         String centre = null;
         int weight = 1;
+        List<String> start = new ArrayList<>();
+        List<String> core = new ArrayList<>();
+        List<String> secondary = new ArrayList<>();
         for (String raw : MillContent.readLines(file)) {
             String line = raw.trim();
             if (line.startsWith("//") || !line.contains("=")) {
@@ -92,10 +108,14 @@ public final class VillageTypes {
                 case "name" -> name = kv[1].trim();
                 case "centre" -> centre = kv[1].trim();
                 case "weight" -> weight = Integer.parseInt(kv[1].trim());
+                case "start" -> start.add(kv[1].trim());
+                case "core" -> core.add(kv[1].trim());
+                case "secondary" -> secondary.add(kv[1].trim());
                 default -> {
                 }
             }
         }
-        return centre == null ? null : new VillageType(fileName, name, centre, weight);
+        return centre == null ? null
+            : new VillageType(fileName, name, centre, weight, List.copyOf(start), List.copyOf(core), List.copyOf(secondary));
     }
 }
