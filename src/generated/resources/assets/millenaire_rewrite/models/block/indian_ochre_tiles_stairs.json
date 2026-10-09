@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/pathochretiles",
+    "side": "millenaire_rewrite:block/pathochretiles",
+    "top": "millenaire_rewrite:block/pathochretiles"
+  }
+}

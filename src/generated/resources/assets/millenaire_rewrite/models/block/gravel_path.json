@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/dirt_path",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/pathgravel",
+    "particle": "millenaire_rewrite:block/pathgravel",
+    "side": "millenaire_rewrite:block/pathgravel_side",
+    "top": "millenaire_rewrite:block/pathgravel"
+  }
+}

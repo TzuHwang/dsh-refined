@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab_top",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/gold_ornament",
+    "side": "millenaire_rewrite:block/gold_ornament",
+    "top": "millenaire_rewrite:block/gold_ornament"
+  }
+}

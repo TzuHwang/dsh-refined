@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "millenaire_rewrite:block/sandstone_slab"
+    },
+    "type=double": {
+      "model": "millenaire_rewrite:block/sandstone"
+    },
+    "type=top": {
+      "model": "millenaire_rewrite:block/sandstone_slab_top"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "millenaire_rewrite:block/norman_gold_ornament_slab"
+    },
+    "type=double": {
+      "model": "millenaire_rewrite:block/norman_gold_ornament"
+    },
+    "type=top": {
+      "model": "millenaire_rewrite:block/norman_gold_ornament_slab_top"
+    }
+  }
+}

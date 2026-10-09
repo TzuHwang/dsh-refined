@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "millenaire_rewrite:block/norman_cooked_bricks_slab"
+    },
+    "type=double": {
+      "model": "millenaire_rewrite:block/norman_cooked_bricks"
+    },
+    "type=top": {
+      "model": "millenaire_rewrite:block/norman_cooked_bricks_slab_top"
+    }
+  }
+}

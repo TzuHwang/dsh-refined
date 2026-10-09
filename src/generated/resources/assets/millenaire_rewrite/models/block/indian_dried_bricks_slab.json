@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/dried_brick",
+    "side": "millenaire_rewrite:block/dried_brick",
+    "top": "millenaire_rewrite:block/dried_brick"
+  }
+}

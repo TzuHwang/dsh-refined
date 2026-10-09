@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "millenaire_rewrite:item/village_sign"
+    "layer0": "minecraft:item/oak_sign"
   }
 }

@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "progress=empty": {
+      "model": "millenaire_rewrite:block/silkworm_silkwormempty"
+    },
+    "progress=full": {
+      "model": "millenaire_rewrite:block/silkworm_silkwormfull"
+    },
+    "progress=progress_1": {
+      "model": "millenaire_rewrite:block/silkworm_silkwormip1"
+    },
+    "progress=progress_2": {
+      "model": "millenaire_rewrite:block/silkworm_silkwormip2"
+    }
+  }
+}

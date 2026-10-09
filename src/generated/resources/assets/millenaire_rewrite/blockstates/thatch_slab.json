@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "millenaire_rewrite:block/thatch_slab"
+    },
+    "type=double": {
+      "model": "millenaire_rewrite:block/thatch"
+    },
+    "type=top": {
+      "model": "millenaire_rewrite:block/thatch_slab_top"
+    }
+  }
+}

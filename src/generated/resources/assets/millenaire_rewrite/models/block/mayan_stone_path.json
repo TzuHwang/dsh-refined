@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/dirt_path",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/pathslabs",
+    "particle": "millenaire_rewrite:block/pathslabs",
+    "side": "millenaire_rewrite:block/pathslabs_side",
+    "top": "millenaire_rewrite:block/pathslabs"
+  }
+}

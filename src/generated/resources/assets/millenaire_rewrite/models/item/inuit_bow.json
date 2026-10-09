@@ -23,6 +23,6 @@
     }
   ],
   "textures": {
-    "layer0": "millenaire_rewrite:item/inuit_bow"
+    "layer0": "millenaire_rewrite:item/inuitbow_standby"
   }
 }

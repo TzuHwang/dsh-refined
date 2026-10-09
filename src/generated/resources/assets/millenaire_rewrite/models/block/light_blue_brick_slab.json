@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/lightbluebrick_block",
+    "side": "millenaire_rewrite:block/lightbluebrick_block",
+    "top": "millenaire_rewrite:block/lightbluebrick_block"
+  }
+}

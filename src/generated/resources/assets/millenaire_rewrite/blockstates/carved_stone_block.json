@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "millenaire_rewrite:block/carved_stone_block"
+    }
+  }
+}

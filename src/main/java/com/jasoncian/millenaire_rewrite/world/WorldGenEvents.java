@@ -18,7 +18,8 @@ import net.minecraftforge.event.level.LevelEvent;
  * @author Based on OldSource world gen hooks
  * @version 1.0.0
  */
-@EventBusSubscriber(modid = MillenaireRewrite.MOD_ID)
+// 已停用：在 ChunkEvent.Load 中同步读取邻近区块高度会使服务端线程死锁。
+// 村庄生成改由 worldgen.WorldGenEvents 的延迟队列处理。
 public class WorldGenEvents {
 
     /**

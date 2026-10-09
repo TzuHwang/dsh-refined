@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/dirt_path",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/planks_oak",
+    "particle": "millenaire_rewrite:block/planks_oak",
+    "side": "millenaire_rewrite:block/planks_oak",
+    "top": "millenaire_rewrite:block/planks_oak"
+  }
+}

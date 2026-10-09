@@ -4,9 +4,11 @@ import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import com.jasoncian.millenaire_rewrite.core.ModItems;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.client.model.generators.ItemModelBuilder;
 import net.minecraftforge.client.model.generators.ItemModelProvider;
+import net.minecraftforge.client.model.generators.ModelProvider;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.registries.RegistryObject;
 
@@ -14,6 +16,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.data.CachedOutput;
 
@@ -33,6 +36,65 @@ import net.minecraft.data.CachedOutput;
  * @version 0.1.0-alpha
  */
 public class ModItemModelProvider extends ItemModelProvider {
+
+    /**
+     * 没有同名材质时使用的替代材质。"minecraft:" 前缀表示原版物品材质（占位），
+     * 其余为本模组 item/ 目录下名称不同的材质。
+     */
+    private static final Map<String, String> TEXTURE_FALLBACKS = Map.ofEntries(
+        // 名称不一致的本模组材质
+        Map.entry("parchmentvillagers", "village_scroll"),
+        Map.entry("parchmentbuildings", "village_scroll"),
+        Map.entry("parchmentitems", "village_scroll"),
+        Map.entry("parchmentall", "village_scroll"),
+        Map.entry("ancient_scroll", "blank_scroll"),
+        Map.entry("sadhu_scroll", "sages_tome"),
+        Map.entry("inuit_bow", "inuitbow_standby"),
+        Map.entry("wine", "winebasic"),
+        Map.entry("amulet_creation", "amulet_yggdrasil"),
+        Map.entry("ancient_coin", "denier_or"),
+        Map.entry("bandits_pouch", "purse"),
+        Map.entry("fallen_king_artifact", "mayan_quest_crown"),
+        Map.entry("galianite_ore_item", "galianite_dust"),
+        Map.entry("obsidian_shard", "obsidian_flake"),
+        // 尚无专用材质，暂用原版材质占位
+        Map.entry("alchemist_notes", "minecraft:paper"),
+        Map.entry("bandit_key", "minecraft:name_tag"),
+        Map.entry("broken_armor_fragment", "minecraft:iron_nugget"),
+        Map.entry("byzantine_tile", "minecraft:brick"),
+        Map.entry("carved_stone", "minecraft:flint"),
+        Map.entry("cochineal", "minecraft:red_dye"),
+        Map.entry("cochineal_dye", "minecraft:red_dye"),
+        Map.entry("cooked_brick", "minecraft:brick"),
+        Map.entry("glazed_tile", "minecraft:nether_brick"),
+        Map.entry("indigo", "minecraft:blue_dye"),
+        Map.entry("indigo_dye", "minecraft:blue_dye"),
+        Map.entry("limestone", "minecraft:clay_ball"),
+        Map.entry("marble_chunk", "minecraft:quartz"),
+        Map.entry("mud_brick", "minecraft:brick"),
+        Map.entry("murex_shell", "minecraft:nautilus_shell"),
+        Map.entry("mysterious_gem", "minecraft:emerald"),
+        Map.entry("packed_snow_item", "minecraft:snowball"),
+        Map.entry("plaster", "minecraft:clay_ball"),
+        Map.entry("rice_straw", "minecraft:wheat"),
+        Map.entry("rose_petals", "minecraft:pink_dye"),
+        Map.entry("rose_water", "minecraft:honey_bottle"),
+        Map.entry("rusted_sword", "minecraft:iron_sword"),
+        Map.entry("saffron", "minecraft:orange_dye"),
+        Map.entry("sumac", "minecraft:red_dye"),
+        Map.entry("thatch", "minecraft:wheat"),
+        Map.entry("timber_frame", "minecraft:stick"),
+        Map.entry("treasure_map", "minecraft:map"),
+        Map.entry("tuning_fork", "minecraft:stick"),
+        Map.entry("tyrian_purple", "minecraft:purple_dye"),
+        Map.entry("village_sign", "minecraft:oak_sign"),
+        Map.entry("washi_paper", "minecraft:paper"),
+        Map.entry("wattle_daub", "minecraft:stick"),
+        Map.entry("wet_brick", "minecraft:clay_ball"),
+        Map.entry("whale_bone", "minecraft:bone"),
+        Map.entry("woad", "minecraft:blue_dye"),
+        Map.entry("woad_dye", "minecraft:blue_dye")
+    );
 
     public ModItemModelProvider(PackOutput output, ExistingFileHelper existingFileHelper) {
         super(output, MillenaireRewrite.MOD_ID, existingFileHelper);
@@ -328,6 +390,20 @@ public class ModItemModelProvider extends ItemModelProvider {
         simpleItem(ModItems.PAINT_BUCKET_GREEN);
         simpleItem(ModItems.PAINT_BUCKET_RED);
         simpleItem(ModItems.PAINT_BUCKET_BLACK);
+
+        // ================ 生成蛋 ================
+        withExistingParent(ModItems.MILL_VILLAGER_SPAWN_EGG.getId().getPath(), mcLoc("item/template_spawn_egg"));
+
+        // ================ 其余未单独列出的物品 ================
+        // 方块物品的模型由 ModBlockStateProvider 生成
+        for (RegistryObject<Item> item : ModItems.ITEMS.getEntries()) {
+            if (item.get() instanceof BlockItem) {
+                continue;
+            }
+            if (!generatedModels.containsKey(modLoc("item/" + item.getId().getPath()))) {
+                simpleItem(item);
+            }
+        }
     }
 
     /**
@@ -337,8 +413,7 @@ public class ModItemModelProvider extends ItemModelProvider {
     private ItemModelBuilder simpleItem(RegistryObject<Item> item) {
         return withExistingParent(item.getId().getPath(),
                 new ResourceLocation("item/generated")).texture("layer0",
-                        new ResourceLocation(MillenaireRewrite.MOD_ID,
-                                "item/" + item.getId().getPath()));
+                        itemTexture(item.getId().getPath()));
     }
 
     /**
@@ -348,8 +423,7 @@ public class ModItemModelProvider extends ItemModelProvider {
     private ItemModelBuilder handheldItem(RegistryObject<Item> item) {
         return withExistingParent(item.getId().getPath(),
                 new ResourceLocation("item/handheld")).texture("layer0",
-                        new ResourceLocation(MillenaireRewrite.MOD_ID,
-                                "item/" + item.getId().getPath()));
+                        itemTexture(item.getId().getPath()));
     }
 
     /**
@@ -372,7 +446,7 @@ public class ModItemModelProvider extends ItemModelProvider {
 
         // 创建基础弓模型并添加拉弓状态的overrides
         return withExistingParent(itemName, mcLoc("item/bow"))
-                .texture("layer0", modLoc("item/" + itemName))
+                .texture("layer0", itemTexture(itemName))
                 .override()
                 .predicate(new ResourceLocation("pulling"), 1.0f)
                 .model(getExistingFile(modLoc("item/" + itemName + "_pulling_0")))
@@ -396,7 +470,7 @@ public class ModItemModelProvider extends ItemModelProvider {
     private ItemModelBuilder parchmentItem(RegistryObject<Item> item, String textureName) {
         return withExistingParent(item.getId().getPath(),
                 new ResourceLocation("item/generated")).texture("layer0",
-                        new ResourceLocation(MillenaireRewrite.MOD_ID, "item/" + textureName));
+                        itemTexture(textureName));
     }
 
     /**
@@ -410,5 +484,24 @@ public class ModItemModelProvider extends ItemModelProvider {
                 .texture("layer0", new ResourceLocation(MillenaireRewrite.MOD_ID, "item/" + itemName))
                 .texture("layer1", new ResourceLocation(MillenaireRewrite.MOD_ID,
                         "item/" + itemName + "_overlay"));
+    }
+
+    /**
+     * 解析物品材质：优先使用同名材质，否则查 TEXTURE_FALLBACKS
+     */
+    private ResourceLocation itemTexture(String name) {
+        ResourceLocation own = modLoc("item/" + name);
+        if (existingFileHelper.exists(own, ModelProvider.TEXTURE)) {
+            return own;
+        }
+        String fallback = TEXTURE_FALLBACKS.get(name);
+        if (fallback == null) {
+            throw new IllegalStateException("No texture for item model '" + name
+                    + "': add item/" + name + ".png or a TEXTURE_FALLBACKS entry");
+        }
+        if (fallback.startsWith("minecraft:")) {
+            return mcLoc("item/" + fallback.substring("minecraft:".length()));
+        }
+        return modLoc("item/" + fallback);
     }
 }

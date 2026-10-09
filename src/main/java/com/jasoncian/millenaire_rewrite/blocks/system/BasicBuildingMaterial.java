@@ -370,7 +370,12 @@ public enum BasicBuildingMaterial {
      * @return 完整的注册名
      */
     public String generateBlockRegistryName(CulturalBlockFamily culture, BlockVariantType variant) {
-        return culture.generateRegistryName(variant.generateRegistryName(this.registryName), "");
+        // 例：BASIC + 圆石 + 楼梯 -> cobblestone_stairs；NORMAN -> norman_cobblestone_stairs
+        String baseName = variant.generateRegistryName(this.registryName);
+        if (culture == CulturalBlockFamily.BASIC) {
+            return baseName;
+        }
+        return culture.getRegistryPrefix() + "_" + baseName;
     }
     
     /**

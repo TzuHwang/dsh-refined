@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "millenaire_rewrite:block/cut_red_sandstone_slab"
+    },
+    "type=double": {
+      "model": "millenaire_rewrite:block/cut_red_sandstone"
+    },
+    "type=top": {
+      "model": "millenaire_rewrite:block/cut_red_sandstone_slab_top"
+    }
+  }
+}

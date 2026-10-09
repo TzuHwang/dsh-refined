@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "millenaire_rewrite:block/byzantine_byzantine_tiles"
+    }
+  }
+}

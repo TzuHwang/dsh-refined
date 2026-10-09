@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/byzantine_mosaic_red",
+    "side": "millenaire_rewrite:block/byzantine_mosaic_red",
+    "top": "millenaire_rewrite:block/byzantine_mosaic_red"
+  }
+}

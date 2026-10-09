@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=north": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=south": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=west": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    }
+  }
+}
