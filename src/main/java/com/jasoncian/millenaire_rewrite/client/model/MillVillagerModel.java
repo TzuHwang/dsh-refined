@@ -22,6 +22,12 @@ import net.minecraft.util.Mth;
  */
 public class MillVillagerModel extends HumanoidModel<MillVillager> {
 
+    /** 村民模型层：原版 Millénaire 皮肤为 64x32 旧式人形布局 */
+    public static final net.minecraft.client.model.geom.ModelLayerLocation LAYER_LOCATION =
+        new net.minecraft.client.model.geom.ModelLayerLocation(
+            new net.minecraft.resources.ResourceLocation(
+                com.jasoncian.millenaire_rewrite.MillenaireRewrite.MOD_ID, "mill_villager"), "main");
+
     public MillVillagerModel(ModelPart root) {
         super(root);
     }
@@ -37,7 +43,7 @@ public class MillVillagerModel extends HumanoidModel<MillVillager> {
         // 使用标准人形模型部件
         // 可以在此处添加额外的装饰部件
 
-        return LayerDefinition.create(meshDefinition, 64, 64);
+        return LayerDefinition.create(meshDefinition, 64, 32);
     }
 
     @Override

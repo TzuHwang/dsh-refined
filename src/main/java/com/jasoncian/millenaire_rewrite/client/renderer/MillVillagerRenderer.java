@@ -41,7 +41,7 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
     // ================ 构造函数 ================
 
     public MillVillagerRenderer(EntityRendererProvider.Context context) {
-        super(context, new MillVillagerModel(context.bakeLayer(ModelLayers.PLAYER)), 0.5F);
+        super(context, new MillVillagerModel(context.bakeLayer(MillVillagerModel.LAYER_LOCATION)), 0.5F);
 
         // 添加护甲层
         this.addLayer(new HumanoidArmorLayer<>(this,

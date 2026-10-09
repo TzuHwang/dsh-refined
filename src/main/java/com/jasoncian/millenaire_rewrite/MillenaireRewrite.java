@@ -183,6 +183,12 @@ public class MillenaireRewrite {
         }
 
         @SubscribeEvent
+        public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
+            event.registerLayerDefinition(com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel.LAYER_LOCATION,
+                com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel::createBodyLayer);
+        }
+
+        @SubscribeEvent
         public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
             // 注册村民渲染器
             event.registerEntityRenderer(ModEntities.MILL_VILLAGER.get(), MillVillagerRenderer::new);
