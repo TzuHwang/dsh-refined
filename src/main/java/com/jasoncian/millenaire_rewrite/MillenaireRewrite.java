@@ -199,6 +199,9 @@ public class MillenaireRewrite {
         public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
             // 注册村民渲染器
             event.registerEntityRenderer(ModEntities.MILL_VILLAGER.get(), MillVillagerRenderer::new);
+            // 上锁箱子（ENTITYBLOCK_ANIMATED，必须有方块实体渲染器才会显示）
+            event.registerBlockEntityRenderer(ModBlockEntities.LOCKED_CHEST.get(),
+                com.jasoncian.millenaire_rewrite.client.renderer.LockedChestRenderer::new);
             LOGGER.info("Millenaire Rewrite entity renderers registered!");
         }
 
