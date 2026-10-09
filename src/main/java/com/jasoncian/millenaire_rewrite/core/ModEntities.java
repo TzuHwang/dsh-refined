@@ -4,9 +4,9 @@ import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import com.jasoncian.millenaire_rewrite.entity.MillVillager;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.RegistryObject;
+import net.minecraftforge.registries.DeferredRegister;
 import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
@@ -17,12 +17,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 public class ModEntities {
 
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
-        DeferredRegister.create(BuiltInRegistries.ENTITY_TYPE, MillenaireRewrite.MOD_ID);
+        DeferredRegister.create(net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES, MillenaireRewrite.MOD_ID);
 
     // ================ 村民实体 ================
 
     /** Millenaire村民 - 主要村民实体 */
-    public static final DeferredHolder<EntityType<?>, EntityType<MillVillager>> MILL_VILLAGER =
+    public static final RegistryObject<EntityType<MillVillager>> MILL_VILLAGER =
         ENTITY_TYPES.register("mill_villager", () -> EntityType.Builder
             .of(MillVillager::new, MobCategory.MISC)
             .sized(0.6F, 1.95F)

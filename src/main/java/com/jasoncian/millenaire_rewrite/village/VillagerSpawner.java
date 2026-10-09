@@ -314,7 +314,7 @@ public class VillagerSpawner {
 
         // 生成名字（在finalizeSpawn中处理）
         villager.finalizeSpawn(level, level.getCurrentDifficultyAt(pos),
-            MobSpawnType.MOB_SUMMONED, null);
+            MobSpawnType.MOB_SUMMONED, null, null);
 
         // 添加到世界
         level.addFreshEntity(villager);

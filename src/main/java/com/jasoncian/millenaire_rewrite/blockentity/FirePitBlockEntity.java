@@ -18,10 +18,9 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -257,11 +256,11 @@ public class FirePitBlockEntity extends BlockEntity implements MenuProvider, Wor
             return Optional.empty();
         }
         RecipeManager recipeManager = level.getRecipeManager();
-        SingleRecipeInput recipeInput = new SingleRecipeInput(input);
-        Optional<RecipeHolder<SmeltingRecipe>> recipe = recipeManager.getRecipeFor(
+        SimpleContainer recipeInput = new SimpleContainer(input);
+        Optional<SmeltingRecipe> recipe = recipeManager.getRecipeFor(
             RecipeType.SMELTING, recipeInput, level);
 
-        return recipe.map(holder -> holder.value().assemble(recipeInput, level.registryAccess()));
+        return recipe.map(r -> r.assemble(recipeInput, level.registryAccess()));
     }
 
     /**
@@ -271,8 +270,8 @@ public class FirePitBlockEntity extends BlockEntity implements MenuProvider, Wor
         if (fuel.isEmpty()) {
             return 0;
         }
-        // 使用NeoForge 1.21.1 API获取燃烧时间
-        return fuel.getBurnTime(RecipeType.SMELTING);
+        // 使用Forge API获取燃烧时间
+        return net.minecraftforge.common.ForgeHooks.getBurnTime(fuel, RecipeType.SMELTING);
     }
 
     /**
@@ -302,18 +301,18 @@ public class FirePitBlockEntity extends BlockEntity implements MenuProvider, Wor
     // ================ 保存/加载 ================
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        ContainerHelper.saveAllItems(tag, items, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        ContainerHelper.saveAllItems(tag, items);
         tag.putIntArray("CookingProgress", cookingProgress);
         tag.putInt("BurnTime", burnTime);
         tag.putInt("BurnTimeTotal", burnTimeTotal);
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        ContainerHelper.loadAllItems(tag, items, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        ContainerHelper.loadAllItems(tag, items);
         if (tag.contains("CookingProgress")) {
             int[] progress = tag.getIntArray("CookingProgress");
             System.arraycopy(progress, 0, cookingProgress, 0, Math.min(progress.length, 3));

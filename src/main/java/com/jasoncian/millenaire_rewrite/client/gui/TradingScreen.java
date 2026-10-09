@@ -27,7 +27,7 @@ public class TradingScreen extends AbstractContainerScreen<TradingMenu> {
 
     // ================ 资源 ================
 
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation BACKGROUND = new ResourceLocation(
         MillenaireRewrite.MOD_ID, "textures/gui/trading.png");
 
     // ================ 尺寸 ================
@@ -94,7 +94,7 @@ public class TradingScreen extends AbstractContainerScreen<TradingMenu> {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int x = (width - imageWidth) / 2;
@@ -321,7 +321,7 @@ public class TradingScreen extends AbstractContainerScreen<TradingMenu> {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         int offerCount = menu.getOfferCount();
         int maxScroll = Math.max(0, offerCount - OFFERS_PER_PAGE);
 
@@ -331,7 +331,7 @@ public class TradingScreen extends AbstractContainerScreen<TradingMenu> {
             scrollOffset = Math.min(maxScroll, scrollOffset + 1);
         }
 
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     @Override

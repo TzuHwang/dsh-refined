@@ -35,7 +35,7 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
 
     /** 默认纹理（诺曼男性农民） */
     private static final ResourceLocation DEFAULT_TEXTURE =
-        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID,
+        new ResourceLocation(MillenaireRewrite.MOD_ID,
             TEXTURE_BASE + "norman/male_farmer.png");
 
     // ================ 构造函数 ================
@@ -67,7 +67,7 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
         String profession = entity.getProfession().getId();
 
         String texturePath = TEXTURE_BASE + culture.getId() + "/" + gender + "_" + profession + ".png";
-        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(
+        ResourceLocation texture = new ResourceLocation(
             MillenaireRewrite.MOD_ID, texturePath);
 
         // TODO: 检查纹理是否存在，否则使用默认纹理

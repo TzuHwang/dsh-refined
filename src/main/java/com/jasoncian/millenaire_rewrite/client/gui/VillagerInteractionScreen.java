@@ -26,7 +26,7 @@ public class VillagerInteractionScreen extends AbstractContainerScreen<VillagerI
     // ================ 资源位置 ================
 
     private static final ResourceLocation BACKGROUND_TEXTURE =
-        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID,
+        new ResourceLocation(MillenaireRewrite.MOD_ID,
             "textures/gui/villager_interaction.png");
 
     // ================ 按钮 ================
@@ -113,7 +113,7 @@ public class VillagerInteractionScreen extends AbstractContainerScreen<VillagerI
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         // 渲染背景暗化
-        this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
+        this.renderBackground(guiGraphics);
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 

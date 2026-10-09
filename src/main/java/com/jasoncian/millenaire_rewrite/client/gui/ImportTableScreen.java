@@ -20,7 +20,7 @@ import net.minecraft.world.entity.player.Inventory;
  */
 public class ImportTableScreen extends AbstractContainerScreen<ImportTableMenu> {
 
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation TEXTURE = new ResourceLocation(
         MillenaireRewrite.MOD_ID, "textures/gui/import_table.png");
 
     public ImportTableScreen(ImportTableMenu menu, Inventory playerInventory, Component title) {

@@ -68,7 +68,7 @@ public class RaidManager extends SavedData {
     /**
      * 从NBT加载
      */
-    public static RaidManager load(CompoundTag tag, HolderLookup.Provider registries) {
+    public static RaidManager load(CompoundTag tag) {
         RaidManager manager = new RaidManager();
 
         // 加载活跃袭击
@@ -95,7 +95,7 @@ public class RaidManager extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         // 保存活跃袭击
         ListTag raidList = new ListTag();
         for (Raid raid : activeRaids.values()) {
@@ -125,7 +125,7 @@ public class RaidManager extends SavedData {
      */
     public static RaidManager get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(RaidManager::new, RaidManager::load),
+            RaidManager::load, RaidManager::new,
             DATA_NAME
         );
     }

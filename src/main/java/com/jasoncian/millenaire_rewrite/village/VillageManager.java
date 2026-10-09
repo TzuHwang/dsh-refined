@@ -53,7 +53,7 @@ public class VillageManager extends SavedData {
     /**
      * 从NBT加载的工厂方法
      */
-    public static VillageManager load(CompoundTag tag, HolderLookup.Provider registries) {
+    public static VillageManager load(CompoundTag tag) {
         VillageManager manager = new VillageManager();
         manager.loadFromTag(tag);
         return manager;
@@ -67,7 +67,7 @@ public class VillageManager extends SavedData {
     public static VillageManager get(ServerLevel level) {
         DimensionDataStorage storage = level.getDataStorage();
         VillageManager manager = storage.computeIfAbsent(
-            new SavedData.Factory<>(VillageManager::new, VillageManager::load),
+            VillageManager::load, VillageManager::new,
             DATA_NAME
         );
         manager.level = level;
@@ -253,7 +253,7 @@ public class VillageManager extends SavedData {
     // ================ NBT序列化 ================
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         ListTag villagesTag = new ListTag();
 
         for (Village village : villages.values()) {

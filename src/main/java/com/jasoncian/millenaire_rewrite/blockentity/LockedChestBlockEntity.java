@@ -191,12 +191,12 @@ public class LockedChestBlockEntity extends BlockEntity implements MenuProvider,
     // ================ 保存/加载 ================
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        ContainerHelper.saveAllItems(tag, items, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        ContainerHelper.saveAllItems(tag, items);
 
         if (customName != null) {
-            tag.putString("CustomName", Component.Serializer.toJson(customName, registries));
+            tag.putString("CustomName", Component.Serializer.toJson(customName));
         }
 
         if (buildingPos != null) {
@@ -209,13 +209,13 @@ public class LockedChestBlockEntity extends BlockEntity implements MenuProvider,
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         items = NonNullList.withSize(SLOT_COUNT, ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(tag, items, registries);
+        ContainerHelper.loadAllItems(tag, items);
 
         if (tag.contains("CustomName", 8)) {
-            customName = Component.Serializer.fromJson(tag.getString("CustomName"), registries);
+            customName = Component.Serializer.fromJson(tag.getString("CustomName"));
         }
 
         if (tag.contains("BuildingX")) {

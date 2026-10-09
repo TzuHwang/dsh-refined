@@ -193,7 +193,7 @@ public class QuestLogScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
 
         int x = (width - GUI_WIDTH) / 2;
         int y = (height - GUI_HEIGHT) / 2;
@@ -442,7 +442,7 @@ public class QuestLogScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         List<Quest> quests = getCurrentQuestList();
         int maxScroll = Math.max(0, quests.size() - MAX_VISIBLE_QUESTS);
 
@@ -452,7 +452,7 @@ public class QuestLogScreen extends Screen {
             scrollOffset = Math.min(maxScroll, scrollOffset + 1);
         }
 
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     @Override

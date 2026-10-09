@@ -16,10 +16,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.RegistryObject;
+import net.minecraftforge.registries.DeferredRegister;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * 方块注册器 - 管理所有Millenaire mod方块的注册
@@ -51,7 +52,7 @@ public class ModBlocks {
     // ================ 核心功能方块 ================
 
     /** 火坑方块 - 多槽位烹饪 */
-    public static final DeferredHolder<Block, FirePitBlock> FIRE_PIT =
+    public static final RegistryObject<FirePitBlock> FIRE_PIT =
         BLOCKS.register("fire_pit", () -> new FirePitBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.WOOD)
@@ -61,7 +62,7 @@ public class ModBlocks {
         ));
 
     /** 锁定箱子方块 - 村庄存储 */
-    public static final DeferredHolder<Block, LockedChestBlock> LOCKED_CHEST =
+    public static final RegistryObject<LockedChestBlock> LOCKED_CHEST =
         BLOCKS.register("locked_chest", () -> new LockedChestBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.WOOD)
@@ -71,7 +72,7 @@ public class ModBlocks {
         ));
 
     /** 导入桌方块 - 建筑模板导入导出 */
-    public static final DeferredHolder<Block, ImportTableBlock> IMPORT_TABLE =
+    public static final RegistryObject<ImportTableBlock> IMPORT_TABLE =
         BLOCKS.register("import_table", () -> new ImportTableBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.WOOD)
@@ -82,7 +83,7 @@ public class ModBlocks {
     // ================ 村庄核心方块 ================
 
     /** 诺曼市政厅 - 诺曼文化村庄中心 */
-    public static final DeferredHolder<Block, TownHallBlock> TOWN_HALL_NORMAN =
+    public static final RegistryObject<TownHallBlock> TOWN_HALL_NORMAN =
         BLOCKS.register("town_hall_norman", () -> new TownHallBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.STONE)
@@ -93,7 +94,7 @@ public class ModBlocks {
         ));
 
     /** 日本市政厅 */
-    public static final DeferredHolder<Block, TownHallBlock> TOWN_HALL_JAPANESE =
+    public static final RegistryObject<TownHallBlock> TOWN_HALL_JAPANESE =
         BLOCKS.register("town_hall_japanese", () -> new TownHallBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.WOOD)
@@ -104,7 +105,7 @@ public class ModBlocks {
         ));
 
     /** 印度市政厅 */
-    public static final DeferredHolder<Block, TownHallBlock> TOWN_HALL_INDIAN =
+    public static final RegistryObject<TownHallBlock> TOWN_HALL_INDIAN =
         BLOCKS.register("town_hall_indian", () -> new TownHallBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.TERRACOTTA_ORANGE)
@@ -115,7 +116,7 @@ public class ModBlocks {
         ));
 
     /** 玛雅市政厅 */
-    public static final DeferredHolder<Block, TownHallBlock> TOWN_HALL_MAYAN =
+    public static final RegistryObject<TownHallBlock> TOWN_HALL_MAYAN =
         BLOCKS.register("town_hall_mayan", () -> new TownHallBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.STONE)
@@ -126,7 +127,7 @@ public class ModBlocks {
         ));
 
     /** 拜占庭市政厅 */
-    public static final DeferredHolder<Block, TownHallBlock> TOWN_HALL_BYZANTINE =
+    public static final RegistryObject<TownHallBlock> TOWN_HALL_BYZANTINE =
         BLOCKS.register("town_hall_byzantine", () -> new TownHallBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.GOLD)
@@ -139,42 +140,42 @@ public class ModBlocks {
     // ================ 农业方块 ================
 
     /** 稻米作物 - 需要灌溉 */
-    public static final DeferredHolder<Block, MillCropBlock> CROP_RICE =
+    public static final RegistryObject<MillCropBlock> CROP_RICE =
         BLOCKS.register("crop_rice", () -> new MillCropBlock(
             cropProperties(),
             () -> ModItems.RICE.get(),
             true, false));
 
     /** 姜黄作物 - 印度文化 */
-    public static final DeferredHolder<Block, MillCropBlock> CROP_TURMERIC =
+    public static final RegistryObject<MillCropBlock> CROP_TURMERIC =
         BLOCKS.register("crop_turmeric", () -> new MillCropBlock(
             cropProperties(),
             () -> ModItems.TURMERIC.get(),
             false, false));
 
     /** 玉米作物 - 玛雅文化，慢速生长 */
-    public static final DeferredHolder<Block, MillCropBlock> CROP_MAIZE =
+    public static final RegistryObject<MillCropBlock> CROP_MAIZE =
         BLOCKS.register("crop_maize", () -> new MillCropBlock(
             cropProperties(),
             () -> ModItems.MAIZE.get(),
             false, true));
 
     /** 棉花作物 - 塞尔柱文化，需要灌溉 */
-    public static final DeferredHolder<Block, MillCropBlock> CROP_COTTON =
+    public static final RegistryObject<MillCropBlock> CROP_COTTON =
         BLOCKS.register("crop_cotton", () -> new MillCropBlock(
             cropProperties(),
             () -> ModItems.COTTON.get(),
             true, false));
 
     /** 葡萄藤 - 拜占庭文化，双层高度 */
-    public static final DeferredHolder<Block, GrapeVineBlock> CROP_VINE =
+    public static final RegistryObject<GrapeVineBlock> CROP_VINE =
         BLOCKS.register("crop_vine", () -> new GrapeVineBlock(
             cropProperties(),
             () -> ModItems.GRAPES.get(),
             () -> ModItems.GRAPES.get()));
 
     /** 蚕室方块 - 日本文化，丝绸生产 */
-    public static final DeferredHolder<Block, SilkWormBlock> SILKWORM =
+    public static final RegistryObject<SilkWormBlock> SILKWORM =
         BLOCKS.register("silkworm", () -> new SilkWormBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.WOOD)
@@ -184,35 +185,35 @@ public class ModBlocks {
             () -> ModItems.SILK.get()));
 
     /** 苹果树叶 - 诺曼文化 */
-    public static final DeferredHolder<Block, FruitLeavesBlock> LEAVES_APPLETREE =
+    public static final RegistryObject<FruitLeavesBlock> LEAVES_APPLETREE =
         BLOCKS.register("leaves_appletree", () -> new FruitLeavesBlock(
             fruitLeavesProperties(),
             () -> ModItems.CIDER_APPLE.get(),
             () -> net.minecraft.world.item.Items.OAK_SAPLING));
 
     /** 橄榄树叶 - 拜占庭文化 */
-    public static final DeferredHolder<Block, FruitLeavesBlock> LEAVES_OLIVETREE =
+    public static final RegistryObject<FruitLeavesBlock> LEAVES_OLIVETREE =
         BLOCKS.register("leaves_olivetree", () -> new FruitLeavesBlock(
             fruitLeavesProperties(),
             () -> ModItems.OLIVES.get(),
             () -> net.minecraft.world.item.Items.OAK_SAPLING));
 
     /** 开心果树叶 - 塞尔柱文化 */
-    public static final DeferredHolder<Block, FruitLeavesBlock> LEAVES_PISTACHIO =
+    public static final RegistryObject<FruitLeavesBlock> LEAVES_PISTACHIO =
         BLOCKS.register("leaves_pistachio", () -> new FruitLeavesBlock(
             fruitLeavesProperties(),
             () -> ModItems.PISTACHIOS.get(),
             () -> net.minecraft.world.item.Items.OAK_SAPLING));
 
     /** 樱桃树叶 - 日本文化 */
-    public static final DeferredHolder<Block, FruitLeavesBlock> CHERRY_LEAVES =
+    public static final RegistryObject<FruitLeavesBlock> CHERRY_LEAVES =
         BLOCKS.register("cherry_leaves", () -> new FruitLeavesBlock(
             fruitLeavesProperties(),
             () -> ModItems.CHERRIES.get(),
             () -> net.minecraft.world.item.Items.CHERRY_SAPLING));
 
     /** 樱花树叶 - 日本文化 */
-    public static final DeferredHolder<Block, FruitLeavesBlock> SAKURA_LEAVES =
+    public static final RegistryObject<FruitLeavesBlock> SAKURA_LEAVES =
         BLOCKS.register("sakura_leaves", () -> new FruitLeavesBlock(
             fruitLeavesProperties(),
             () -> ModItems.CHERRY_BLOSSOM.get(),
@@ -222,7 +223,7 @@ public class ModBlocks {
 
     // Indian Building Blocks
     /** Mud Brick Block - Indian building material */
-    public static final DeferredHolder<Block, Block> MUD_BRICK_BLOCK =
+    public static final RegistryObject<Block> MUD_BRICK_BLOCK =
         BLOCKS.register("mud_brick_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.TERRACOTTA_BROWN)
@@ -232,7 +233,7 @@ public class ModBlocks {
         ));
 
     /** Cooked Brick Block - Fired Indian building material */
-    public static final DeferredHolder<Block, Block> COOKED_BRICK_BLOCK =
+    public static final RegistryObject<Block> COOKED_BRICK_BLOCK =
         BLOCKS.register("cooked_brick_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.TERRACOTTA_RED)
@@ -243,7 +244,7 @@ public class ModBlocks {
 
     // Japanese Building Blocks
     /** Thatch Block - Japanese roofing */
-    public static final DeferredHolder<Block, Block> THATCH_BLOCK =
+    public static final RegistryObject<Block> THATCH_BLOCK =
         BLOCKS.register("thatch_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_YELLOW)
@@ -253,7 +254,7 @@ public class ModBlocks {
         ));
 
     /** Paper Wall Block - Japanese shoji screen */
-    public static final DeferredHolder<Block, Block> PAPER_WALL_BLOCK =
+    public static final RegistryObject<Block> PAPER_WALL_BLOCK =
         BLOCKS.register("paper_wall_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.SNOW)
@@ -265,7 +266,7 @@ public class ModBlocks {
 
     // Norman Building Blocks
     /** Timber Frame Block - Norman half-timbered construction */
-    public static final DeferredHolder<Block, Block> TIMBER_FRAME_BLOCK =
+    public static final RegistryObject<Block> TIMBER_FRAME_BLOCK =
         BLOCKS.register("timber_frame_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.WOOD)
@@ -275,7 +276,7 @@ public class ModBlocks {
         ));
 
     /** Wattle and Daub Block - Norman wall material */
-    public static final DeferredHolder<Block, Block> WATTLE_DAUB_BLOCK =
+    public static final RegistryObject<Block> WATTLE_DAUB_BLOCK =
         BLOCKS.register("wattle_daub_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.TERRACOTTA_WHITE)
@@ -284,7 +285,7 @@ public class ModBlocks {
         ));
 
     /** Plaster Block - Finished wall material */
-    public static final DeferredHolder<Block, Block> PLASTER_BLOCK =
+    public static final RegistryObject<Block> PLASTER_BLOCK =
         BLOCKS.register("plaster_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.SNOW)
@@ -294,7 +295,7 @@ public class ModBlocks {
 
     // Byzantine Building Blocks
     /** Byzantine Tile Block - Decorative Byzantine tile */
-    public static final DeferredHolder<Block, Block> BYZANTINE_TILE_BLOCK =
+    public static final RegistryObject<Block> BYZANTINE_TILE_BLOCK =
         BLOCKS.register("byzantine_tile_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.TERRACOTTA_ORANGE)
@@ -304,7 +305,7 @@ public class ModBlocks {
         ));
 
     /** Marble Block - Byzantine marble */
-    public static final DeferredHolder<Block, Block> MARBLE_BLOCK =
+    public static final RegistryObject<Block> MARBLE_BLOCK =
         BLOCKS.register("marble_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.QUARTZ)
@@ -315,7 +316,7 @@ public class ModBlocks {
 
     // Mayan Building Blocks
     /** Limestone Block - Mayan building stone */
-    public static final DeferredHolder<Block, Block> LIMESTONE_BLOCK =
+    public static final RegistryObject<Block> LIMESTONE_BLOCK =
         BLOCKS.register("limestone_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.SAND)
@@ -326,7 +327,7 @@ public class ModBlocks {
 
     // Seljuk Building Blocks
     /** Glazed Tile Block - Decorative Seljuk tile */
-    public static final DeferredHolder<Block, Block> GLAZED_TILE_BLOCK =
+    public static final RegistryObject<Block> GLAZED_TILE_BLOCK =
         BLOCKS.register("glazed_tile_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLUE)
@@ -336,7 +337,7 @@ public class ModBlocks {
         ));
 
     /** Carved Stone Block - Ornamental Seljuk stonework */
-    public static final DeferredHolder<Block, Block> CARVED_STONE_BLOCK =
+    public static final RegistryObject<Block> CARVED_STONE_BLOCK =
         BLOCKS.register("carved_stone_block", () -> new Block(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.STONE)
@@ -348,27 +349,27 @@ public class ModBlocks {
     // ================ Quest Related Blocks ================
 
     /** Galianite Ore - Rare ore found deep underground, used in Creation Quest */
-    public static final DeferredHolder<Block, Block> GALIANITE_ORE =
+    public static final RegistryObject<Block> GALIANITE_ORE =
         BLOCKS.register("galianite_ore", () -> new net.minecraft.world.level.block.DropExperienceBlock(
-            net.minecraft.util.valueproviders.UniformInt.of(3, 7),
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.STONE)
                 .strength(3.0F, 3.0F)
                 .sound(SoundType.STONE)
                 .requiresCorrectToolForDrops()
-                .lightLevel(state -> 3) // Slight glow
+                .lightLevel(state -> 3), // Slight glow
+            net.minecraft.util.valueproviders.UniformInt.of(3, 7)
         ));
 
     /** Deepslate Galianite Ore - Deepslate variant found in deeper layers */
-    public static final DeferredHolder<Block, Block> DEEPSLATE_GALIANITE_ORE =
+    public static final RegistryObject<Block> DEEPSLATE_GALIANITE_ORE =
         BLOCKS.register("deepslate_galianite_ore", () -> new net.minecraft.world.level.block.DropExperienceBlock(
-            net.minecraft.util.valueproviders.UniformInt.of(3, 7),
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.DEEPSLATE)
                 .strength(4.5F, 3.0F)
                 .sound(SoundType.DEEPSLATE)
                 .requiresCorrectToolForDrops()
-                .lightLevel(state -> 3) // Slight glow
+                .lightLevel(state -> 3), // Slight glow
+            net.minecraft.util.valueproviders.UniformInt.of(3, 7)
         ));
 
     // ================ 方块属性辅助方法 ================

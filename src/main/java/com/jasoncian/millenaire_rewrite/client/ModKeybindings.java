@@ -7,12 +7,12 @@ import com.jasoncian.millenaire_rewrite.client.gui.ReputationScreen;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.settings.KeyConflictContext;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -78,7 +78,8 @@ public class ModKeybindings {
      * 客户端tick时检查快捷键
      */
     @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
 
         // 只在游戏中且没有其他GUI打开时响应

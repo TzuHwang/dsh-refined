@@ -336,8 +336,8 @@ public class ModItemModelProvider extends ItemModelProvider {
      */
     private ItemModelBuilder simpleItem(RegistryObject<Item> item) {
         return withExistingParent(item.getId().getPath(),
-                ResourceLocation.withDefaultNamespace("item/generated")).texture("layer0",
-                        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID,
+                new ResourceLocation("item/generated")).texture("layer0",
+                        new ResourceLocation(MillenaireRewrite.MOD_ID,
                                 "item/" + item.getId().getPath()));
     }
 
@@ -347,8 +347,8 @@ public class ModItemModelProvider extends ItemModelProvider {
      */
     private ItemModelBuilder handheldItem(RegistryObject<Item> item) {
         return withExistingParent(item.getId().getPath(),
-                ResourceLocation.withDefaultNamespace("item/handheld")).texture("layer0",
-                        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID,
+                new ResourceLocation("item/handheld")).texture("layer0",
+                        new ResourceLocation(MillenaireRewrite.MOD_ID,
                                 "item/" + item.getId().getPath()));
     }
 
@@ -374,17 +374,17 @@ public class ModItemModelProvider extends ItemModelProvider {
         return withExistingParent(itemName, mcLoc("item/bow"))
                 .texture("layer0", modLoc("item/" + itemName))
                 .override()
-                .predicate(ResourceLocation.withDefaultNamespace("pulling"), 1.0f)
+                .predicate(new ResourceLocation("pulling"), 1.0f)
                 .model(getExistingFile(modLoc("item/" + itemName + "_pulling_0")))
                 .end()
                 .override()
-                .predicate(ResourceLocation.withDefaultNamespace("pulling"), 1.0f)
-                .predicate(ResourceLocation.withDefaultNamespace("pull"), 0.65f)
+                .predicate(new ResourceLocation("pulling"), 1.0f)
+                .predicate(new ResourceLocation("pull"), 0.65f)
                 .model(getExistingFile(modLoc("item/" + itemName + "_pulling_1")))
                 .end()
                 .override()
-                .predicate(ResourceLocation.withDefaultNamespace("pulling"), 1.0f)
-                .predicate(ResourceLocation.withDefaultNamespace("pull"), 0.9f)
+                .predicate(new ResourceLocation("pulling"), 1.0f)
+                .predicate(new ResourceLocation("pull"), 0.9f)
                 .model(getExistingFile(modLoc("item/" + itemName + "_pulling_2")))
                 .end();
     }
@@ -395,8 +395,8 @@ public class ModItemModelProvider extends ItemModelProvider {
      */
     private ItemModelBuilder parchmentItem(RegistryObject<Item> item, String textureName) {
         return withExistingParent(item.getId().getPath(),
-                ResourceLocation.withDefaultNamespace("item/generated")).texture("layer0",
-                        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "item/" + textureName));
+                new ResourceLocation("item/generated")).texture("layer0",
+                        new ResourceLocation(MillenaireRewrite.MOD_ID, "item/" + textureName));
     }
 
     /**
@@ -406,9 +406,9 @@ public class ModItemModelProvider extends ItemModelProvider {
     private ItemModelBuilder layeredItem(RegistryObject<Item> item) {
         String itemName = item.getId().getPath();
         return withExistingParent(itemName,
-                ResourceLocation.withDefaultNamespace("item/generated"))
-                .texture("layer0", ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "item/" + itemName))
-                .texture("layer1", ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID,
+                new ResourceLocation("item/generated"))
+                .texture("layer0", new ResourceLocation(MillenaireRewrite.MOD_ID, "item/" + itemName))
+                .texture("layer1", new ResourceLocation(MillenaireRewrite.MOD_ID,
                         "item/" + itemName + "_overlay"));
     }
 }

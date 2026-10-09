@@ -88,10 +88,10 @@ public class GoalEat extends MillGoal {
 
         for (InvItem item : inventory.keySet()) {
             Item mcItem = item.getItem();
-            FoodProperties food = mcItem.components().get(net.minecraft.core.component.DataComponents.FOOD);
+            FoodProperties food = mcItem.getFoodProperties();
 
             if (food != null) {
-                int nutrition = food.nutrition();
+                int nutrition = food.getNutrition();
                 if (nutrition > bestNutrition) {
                     bestNutrition = nutrition;
                     bestFood = item;
@@ -132,14 +132,14 @@ public class GoalEat extends MillGoal {
         if (foodToEat == null) return;
 
         Item mcItem = foodToEat.getItem();
-        FoodProperties food = mcItem.components().get(net.minecraft.core.component.DataComponents.FOOD);
+        FoodProperties food = mcItem.getFoodProperties();
 
         if (food != null) {
             // 从库存移除
             villager.takeFromInventory(foodToEat, 1);
 
             // 恢复生命值（基于营养值）
-            float heal = food.nutrition() * 0.5f;
+            float heal = food.getNutrition() * 0.5f;
             villager.heal(heal);
         }
 

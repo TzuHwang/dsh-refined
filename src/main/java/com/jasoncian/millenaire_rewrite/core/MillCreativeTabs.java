@@ -395,7 +395,7 @@ public class MillCreativeTabs {
     // ================ 塞尔柱文化标签页 ================
 
     /** Millenaire 塞尔柱文化标签页 - 塞尔柱土耳其物品 */
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MILLENAIRE_SELJUK =
+    public static final RegistryObject<CreativeModeTab> MILLENAIRE_SELJUK =
         CREATIVE_MODE_TABS.register("seljuk", () -> CreativeModeTab.builder()
             .title(Component.translatable("creativetab.millenaire_rewrite.seljuk"))
             .icon(() -> new ItemStack(ModItems.SELJUK_SCIMITAR.get()))

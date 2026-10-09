@@ -3,9 +3,9 @@ package com.jasoncian.millenaire_rewrite.network;
 import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import com.jasoncian.millenaire_rewrite.network.compat.StreamCodec;
+import com.jasoncian.millenaire_rewrite.network.compat.CustomPacketPayload;
+import com.jasoncian.millenaire_rewrite.network.compat.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;

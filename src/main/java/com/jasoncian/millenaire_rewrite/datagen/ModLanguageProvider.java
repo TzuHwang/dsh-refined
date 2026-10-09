@@ -10,8 +10,8 @@ import com.jasoncian.millenaire_rewrite.core.ModEntities;
 
 import net.minecraft.data.PackOutput;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.common.data.LanguageProvider;
-import net.neoforged.neoforge.registries.DeferredHolder;
+import net.minecraftforge.common.data.LanguageProvider;
+import net.minecraftforge.registries.RegistryObject;
 
 /**
  * 语言文件数据生成器 - 自动生成多语言翻译文件

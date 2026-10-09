@@ -109,7 +109,7 @@ public class DiplomacyManager extends SavedData {
     /**
      * 从NBT加载
      */
-    public static DiplomacyManager load(CompoundTag tag, HolderLookup.Provider registries) {
+    public static DiplomacyManager load(CompoundTag tag) {
         DiplomacyManager manager = new DiplomacyManager();
 
         ListTag relationList = tag.getList("Relations", 10);
@@ -127,7 +127,7 @@ public class DiplomacyManager extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         ListTag relationList = new ListTag();
         for (VillageDiplomacy diplomacy : relations.values()) {
             relationList.add(diplomacy.save());
@@ -145,7 +145,7 @@ public class DiplomacyManager extends SavedData {
      */
     public static DiplomacyManager get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(DiplomacyManager::new, DiplomacyManager::load),
+            DiplomacyManager::load, DiplomacyManager::new,
             DATA_NAME
         );
     }

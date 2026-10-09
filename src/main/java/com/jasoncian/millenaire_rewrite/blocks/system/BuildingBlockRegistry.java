@@ -39,7 +39,7 @@ public class BuildingBlockRegistry {
         DeferredRegister.create(ForgeRegistries.BLOCKS, MillenaireRewrite.MOD_ID);
     
     // 存储所有注册的方块，按文化和材料分类
-    private static final Map<String, DeferredHolder<Block, Block>> REGISTERED_BLOCKS = new HashMap<>();
+    private static final Map<String, RegistryObject<Block>> REGISTERED_BLOCKS = new HashMap<>();
 
     // 路径材料集合（用于判断是否使用PathBlock）
     private static final Set<BasicBuildingMaterial> PATH_MATERIALS = new HashSet<>(
@@ -60,11 +60,11 @@ public class BuildingBlockRegistry {
     public static Map<BlockVariantType, RegistryObject<Block>> registerBlockFamily(
             BasicBuildingMaterial material, CulturalBlockFamily culture) {
 
-        Map<BlockVariantType, DeferredHolder<Block, Block>> family = new HashMap<>();
+        Map<BlockVariantType, RegistryObject<Block>> family = new HashMap<>();
 
         // 路径方块特殊处理 - 只注册基础方块
         if (isPathMaterial(material)) {
-            DeferredHolder<Block, Block> pathBlock = registerPathBlock(material, culture);
+            RegistryObject<Block> pathBlock = registerPathBlock(material, culture);
             family.put(BlockVariantType.BLOCK, pathBlock);
             return family;
         }
@@ -105,12 +105,12 @@ public class BuildingBlockRegistry {
      * @param culture 文化系列
      * @return 注册的路径方块
      */
-    public static DeferredHolder<Block, Block> registerPathBlock(
+    public static RegistryObject<Block> registerPathBlock(
             BasicBuildingMaterial material, CulturalBlockFamily culture) {
 
         String registryName = material.generateBlockRegistryName(culture, BlockVariantType.BLOCK);
 
-        DeferredHolder<Block, Block> block = BLOCKS.register(registryName,
+        RegistryObject<Block> block = BLOCKS.register(registryName,
             () -> new PathBlock(material, culture));
 
         REGISTERED_BLOCKS.put(registryName, block);

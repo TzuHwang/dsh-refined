@@ -58,7 +58,7 @@ public class VillagerClothesLayer extends RenderLayer<MillVillager, MillVillager
 
         // 渲染衣服纹理
         VertexConsumer vertexConsumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(clothTexture));
-        model.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY);
+        model.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
 
         poseStack.popPose();
     }

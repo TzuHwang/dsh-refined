@@ -19,7 +19,7 @@ import net.minecraft.world.entity.player.Inventory;
 public class LockedChestScreen extends AbstractContainerScreen<LockedChestMenu> {
 
     /** 使用原版箱子纹理 */
-    private static final ResourceLocation TEXTURE = ResourceLocation.withDefaultNamespace(
+    private static final ResourceLocation TEXTURE = new ResourceLocation(
         "textures/gui/container/generic_54.png");
 
     public LockedChestScreen(LockedChestMenu menu, Inventory playerInventory, Component title) {

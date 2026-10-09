@@ -19,20 +19,21 @@ import com.jasoncian.millenaire_rewrite.config.MillenaireConfig;
 import com.jasoncian.millenaire_rewrite.entity.MillVillager;
 import com.jasoncian.millenaire_rewrite.menu.FirePitMenu;
 import com.mojang.logging.LogUtils;
-import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraft.client.gui.screens.MenuScreens;
+import com.jasoncian.millenaire_rewrite.network.ModNetworking;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.EntityRenderersEvent;
 import com.jasoncian.millenaire_rewrite.client.renderer.MillVillagerRenderer;
 import org.slf4j.Logger;
 
@@ -101,6 +102,9 @@ public class MillenaireRewrite {
         LOGGER.info("Millenaire Rewrite common setup starting...");
 
         event.enqueueWork(() -> {
+            // 注册网络包
+            ModNetworking.register();
+
             // 初始化工具层级排序
             ModToolMaterials.initializeTierSorting();
 
@@ -157,25 +161,25 @@ public class MillenaireRewrite {
             event.enqueueWork(() -> {
                 // 在这里进行客户端特定的初始化
                 // 例如：注册渲染器、键位绑定等
+                registerScreens();
             });
 
             LOGGER.info("Millenaire Rewrite client setup completed!");
         }
 
-        @SubscribeEvent
-        public static void registerScreens(RegisterMenuScreensEvent event) {
+        private static void registerScreens() {
             // 注册火坑GUI屏幕
-            event.register(ModMenuTypes.FIRE_PIT.get(), FirePitScreen::new);
+            MenuScreens.register(ModMenuTypes.FIRE_PIT.get(), FirePitScreen::new);
             // 注册锁定箱子GUI屏幕
-            event.register(ModMenuTypes.LOCKED_CHEST.get(), LockedChestScreen::new);
+            MenuScreens.register(ModMenuTypes.LOCKED_CHEST.get(), LockedChestScreen::new);
             // 注册导入桌GUI屏幕
-            event.register(ModMenuTypes.IMPORT_TABLE.get(), ImportTableScreen::new);
+            MenuScreens.register(ModMenuTypes.IMPORT_TABLE.get(), ImportTableScreen::new);
             // 注册村民交互GUI屏幕
-            event.register(ModMenuTypes.VILLAGER_INTERACTION.get(), VillagerInteractionScreen::new);
+            MenuScreens.register(ModMenuTypes.VILLAGER_INTERACTION.get(), VillagerInteractionScreen::new);
             // 注册市政厅GUI屏幕
-            event.register(ModMenuTypes.TOWN_HALL.get(), TownHallScreen::new);
+            MenuScreens.register(ModMenuTypes.TOWN_HALL.get(), TownHallScreen::new);
             // 注册交易GUI屏幕
-            event.register(ModMenuTypes.TRADING.get(), TradingScreen::new);
+            MenuScreens.register(ModMenuTypes.TRADING.get(), TradingScreen::new);
         }
 
         @SubscribeEvent

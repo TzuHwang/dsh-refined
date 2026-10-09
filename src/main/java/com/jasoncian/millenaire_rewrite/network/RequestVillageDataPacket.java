@@ -4,13 +4,13 @@ import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import com.jasoncian.millenaire_rewrite.village.Village;
 import com.jasoncian.millenaire_rewrite.village.VillageManager;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import com.jasoncian.millenaire_rewrite.network.compat.ByteBufCodecs;
+import com.jasoncian.millenaire_rewrite.network.compat.StreamCodec;
+import com.jasoncian.millenaire_rewrite.network.compat.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import com.jasoncian.millenaire_rewrite.network.compat.PacketDistributor;
+import com.jasoncian.millenaire_rewrite.network.compat.IPayloadContext;
 
 import java.util.UUID;
 

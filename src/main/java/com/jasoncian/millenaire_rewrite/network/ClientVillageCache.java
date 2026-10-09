@@ -2,8 +2,8 @@ package com.jasoncian.millenaire_rewrite.network;
 
 import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import net.minecraft.core.BlockPos;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

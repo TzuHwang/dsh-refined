@@ -6,9 +6,9 @@ import com.jasoncian.millenaire_rewrite.blockentity.ImportTableBlockEntity;
 import com.jasoncian.millenaire_rewrite.blockentity.LockedChestBlockEntity;
 import com.jasoncian.millenaire_rewrite.blockentity.TownHallBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.DeferredHolder;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.RegistryObject;
 import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
@@ -25,24 +25,24 @@ import net.minecraft.core.registries.BuiltInRegistries;
 public class ModBlockEntities {
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
-        DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MillenaireRewrite.MOD_ID);
+        DeferredRegister.create(net.minecraftforge.registries.ForgeRegistries.BLOCK_ENTITY_TYPES, MillenaireRewrite.MOD_ID);
 
     // ================ 功能方块实体 ================
 
     /** 火坑方块实体 - 多槽位烹饪 */
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FirePitBlockEntity>> FIRE_PIT =
+    public static final RegistryObject<BlockEntityType<FirePitBlockEntity>> FIRE_PIT =
         BLOCK_ENTITIES.register("fire_pit", () -> BlockEntityType.Builder
             .of(FirePitBlockEntity::new, ModBlocks.FIRE_PIT.get())
             .build(null));
 
     /** 锁定箱子方块实体 - 村庄存储 */
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LockedChestBlockEntity>> LOCKED_CHEST =
+    public static final RegistryObject<BlockEntityType<LockedChestBlockEntity>> LOCKED_CHEST =
         BLOCK_ENTITIES.register("locked_chest", () -> BlockEntityType.Builder
             .of(LockedChestBlockEntity::new, ModBlocks.LOCKED_CHEST.get())
             .build(null));
 
     /** 导入桌方块实体 - 建筑模板导入导出 */
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ImportTableBlockEntity>> IMPORT_TABLE =
+    public static final RegistryObject<BlockEntityType<ImportTableBlockEntity>> IMPORT_TABLE =
         BLOCK_ENTITIES.register("import_table", () -> BlockEntityType.Builder
             .of(ImportTableBlockEntity::new, ModBlocks.IMPORT_TABLE.get())
             .build(null));
@@ -50,7 +50,7 @@ public class ModBlockEntities {
     // ================ 村庄核心方块实体 ================
 
     /** 市政厅方块实体 - 村庄管理中心 */
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TownHallBlockEntity>> TOWN_HALL =
+    public static final RegistryObject<BlockEntityType<TownHallBlockEntity>> TOWN_HALL =
         BLOCK_ENTITIES.register("town_hall", () -> BlockEntityType.Builder
             .of(TownHallBlockEntity::new,
                 ModBlocks.TOWN_HALL_NORMAN.get(),

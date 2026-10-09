@@ -69,7 +69,7 @@ public class QuestManager extends SavedData {
     /**
      * 从NBT加载
      */
-    public static QuestManager load(CompoundTag tag, HolderLookup.Provider registries) {
+    public static QuestManager load(CompoundTag tag) {
         QuestManager manager = new QuestManager();
 
         // 加载玩家活跃任务
@@ -126,7 +126,7 @@ public class QuestManager extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         // 保存玩家活跃任务
         ListTag playerQuestsList = new ListTag();
         for (Map.Entry<UUID, List<Quest>> entry : playerActiveQuests.entrySet()) {
@@ -189,7 +189,7 @@ public class QuestManager extends SavedData {
      */
     public static QuestManager get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(QuestManager::new, QuestManager::load),
+            QuestManager::load, QuestManager::new,
             DATA_NAME
         );
     }

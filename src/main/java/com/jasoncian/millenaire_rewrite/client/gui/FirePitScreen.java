@@ -23,7 +23,7 @@ import net.minecraft.world.entity.player.Inventory;
 public class FirePitScreen extends AbstractContainerScreen<FirePitMenu> {
 
     /** GUI纹理路径 */
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation TEXTURE = new ResourceLocation(
         MillenaireRewrite.MOD_ID, "textures/gui/firepit.png");
 
     /** GUI尺寸 */

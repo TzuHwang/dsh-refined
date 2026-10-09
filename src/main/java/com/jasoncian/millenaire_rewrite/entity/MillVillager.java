@@ -219,14 +219,14 @@ public class MillVillager extends PathfinderMob {
     // ================ 数据同步 ================
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        super.defineSynchedData(builder);
-        builder.define(DATA_CULTURE, Culture.NORMAN.getId());
-        builder.define(DATA_PROFESSION, VillagerProfession.FARMER.getId());
-        builder.define(DATA_GENDER, GENDER_MALE);
-        builder.define(DATA_FIRST_NAME, "");
-        builder.define(DATA_FAMILY_NAME, "");
-        builder.define(DATA_IS_CHILD, false);
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(DATA_CULTURE, Culture.NORMAN.getId());
+        this.entityData.define(DATA_PROFESSION, VillagerProfession.FARMER.getId());
+        this.entityData.define(DATA_GENDER, GENDER_MALE);
+        this.entityData.define(DATA_FIRST_NAME, "");
+        this.entityData.define(DATA_FAMILY_NAME, "");
+        this.entityData.define(DATA_IS_CHILD, false);
     }
 
     // ================ AI目标 ================
@@ -320,8 +320,9 @@ public class MillVillager extends PathfinderMob {
     @Nullable
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
-                                         MobSpawnType spawnType, @Nullable SpawnGroupData spawnGroupData) {
-        spawnGroupData = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData);
+                                         MobSpawnType spawnType, @Nullable SpawnGroupData spawnGroupData,
+                                         @Nullable CompoundTag dataTag) {
+        spawnGroupData = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData, dataTag);
 
         // 随机分配性别
         this.setGender(this.random.nextBoolean() ? GENDER_MALE : GENDER_FEMALE);
@@ -355,7 +356,7 @@ public class MillVillager extends PathfinderMob {
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (!this.level().isClientSide()) {
             // 打开村民交互GUI
-            player.openMenu(new SimpleMenuProvider(
+            net.minecraftforge.network.NetworkHooks.openScreen((net.minecraft.server.level.ServerPlayer) player, new SimpleMenuProvider(
                 (containerId, playerInventory, p) -> new VillagerInteractionMenu(containerId, playerInventory, this),
                 Component.translatable("gui.millenaire_rewrite.villager_interaction")
             ), buf -> buf.writeInt(this.getId()));
@@ -413,10 +414,10 @@ public class MillVillager extends PathfinderMob {
 
         // 保存持有物品
         if (!heldItem.isEmpty()) {
-            tag.put("HeldItem", heldItem.save(this.registryAccess()));
+            tag.put("HeldItem", heldItem.save(new CompoundTag()));
         }
         if (!heldItemOffHand.isEmpty()) {
-            tag.put("HeldItemOffHand", heldItemOffHand.save(this.registryAccess()));
+            tag.put("HeldItemOffHand", heldItemOffHand.save(new CompoundTag()));
         }
 
         // 保存交易数据
@@ -487,10 +488,10 @@ public class MillVillager extends PathfinderMob {
 
         // 加载持有物品
         if (tag.contains("HeldItem")) {
-            heldItem = ItemStack.parse(this.registryAccess(), tag.getCompound("HeldItem")).orElse(ItemStack.EMPTY);
+            heldItem = ItemStack.of(tag.getCompound("HeldItem"));
         }
         if (tag.contains("HeldItemOffHand")) {
-            heldItemOffHand = ItemStack.parse(this.registryAccess(), tag.getCompound("HeldItemOffHand")).orElse(ItemStack.EMPTY);
+            heldItemOffHand = ItemStack.of(tag.getCompound("HeldItemOffHand"));
         }
 
         // 加载交易数据
@@ -754,7 +755,7 @@ public class MillVillager extends PathfinderMob {
                          "/clothes/" + clothName + "_" + layer + ".png";
 
             // 创建资源位置（实际纹理存在性检查需要在客户端进行）
-            clothTextures[layer] = ResourceLocation.fromNamespaceAndPath(
+            clothTextures[layer] = new ResourceLocation(
                 MillenaireRewrite.MOD_ID, path);
         }
     }
@@ -1041,7 +1042,7 @@ public class MillVillager extends PathfinderMob {
             int count = entry.getValue();
 
             while (count > 0) {
-                int stackSize = Math.min(count, item.getItem().getDefaultMaxStackSize());
+                int stackSize = Math.min(count, item.getItem().getMaxStackSize());
                 ItemStack stack = item.toItemStack(stackSize);
                 this.spawnAtLocation(stack);
                 count -= stackSize;

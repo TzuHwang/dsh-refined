@@ -13,10 +13,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.WallBlock;
-import net.neoforged.neoforge.client.model.generators.BlockStateProvider;
-import net.neoforged.neoforge.client.model.generators.ModelFile;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
-import net.neoforged.neoforge.registries.DeferredHolder;
+import net.minecraftforge.client.model.generators.BlockStateProvider;
+import net.minecraftforge.client.model.generators.ModelFile;
+import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.registries.RegistryObject;
 
 /**
  * 方块状态数据生成器
@@ -40,7 +40,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
         int blockCount = 0;
         for (var entry : BuildingBlockRegistry.getAllBlocks().entrySet()) {
             String registryName = entry.getKey();
-            DeferredHolder<Block, Block> holder = entry.getValue();
+            RegistryObject<Block> holder = entry.getValue();
             Block block = holder.get();
 
             try {

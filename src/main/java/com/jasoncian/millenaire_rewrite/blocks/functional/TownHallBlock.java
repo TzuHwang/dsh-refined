@@ -6,7 +6,6 @@ import com.jasoncian.millenaire_rewrite.entity.culture.Culture;
 import com.jasoncian.millenaire_rewrite.menu.TownHallMenu;
 import com.jasoncian.millenaire_rewrite.village.Village;
 import com.jasoncian.millenaire_rewrite.village.VillageManager;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -41,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TownHallBlock extends BaseEntityBlock {
 
-    public static final MapCodec<TownHallBlock> CODEC = simpleCodec(TownHallBlock::new);
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     /** 关联的文化（不同文化有不同的市政厅） */
@@ -56,11 +54,6 @@ public class TownHallBlock extends BaseEntityBlock {
         this.culture = culture;
         this.registerDefaultState(this.stateDefinition.any()
             .setValue(FACING, Direction.NORTH));
-    }
-
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
     }
 
     @Override
@@ -130,7 +123,7 @@ public class TownHallBlock extends BaseEntityBlock {
     }
 
     @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
             // 删除村庄
             VillageManager manager = VillageManager.get(serverLevel);
@@ -147,19 +140,19 @@ public class TownHallBlock extends BaseEntityBlock {
             }
         }
 
-        return super.playerWillDestroy(level, pos, state, player);
+        super.playerWillDestroy(level, pos, state, player);
     }
 
     // ================ 交互 ================
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
-                                               Player player, BlockHitResult hitResult) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
+                                 Player player, net.minecraft.world.InteractionHand hand, BlockHitResult hitResult) {
         if (!level.isClientSide()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof TownHallBlockEntity townHallBE) {
                 // 打开村庄管理GUI
-                player.openMenu(townHallBE, buf -> TownHallMenu.writeToBuffer(buf, townHallBE));
+                net.minecraftforge.network.NetworkHooks.openScreen((net.minecraft.server.level.ServerPlayer) player, townHallBE, buf -> TownHallMenu.writeToBuffer(buf, townHallBE));
             }
         }
 

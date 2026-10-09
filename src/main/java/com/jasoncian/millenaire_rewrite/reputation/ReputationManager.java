@@ -77,7 +77,7 @@ public class ReputationManager extends SavedData {
     /**
      * 从NBT加载
      */
-    public static ReputationManager load(CompoundTag tag, HolderLookup.Provider registries) {
+    public static ReputationManager load(CompoundTag tag) {
         ReputationManager manager = new ReputationManager();
 
         ListTag playerList = tag.getList("PlayerReputations", 10);
@@ -92,7 +92,7 @@ public class ReputationManager extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         ListTag playerList = new ListTag();
         for (PlayerReputation reputation : playerReputations.values()) {
             playerList.add(reputation.save());
@@ -109,7 +109,7 @@ public class ReputationManager extends SavedData {
      */
     public static ReputationManager get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(ReputationManager::new, ReputationManager::load),
+            ReputationManager::load, ReputationManager::new,
             DATA_NAME
         );
     }

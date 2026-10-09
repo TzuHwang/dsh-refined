@@ -41,7 +41,7 @@ public class ModToolMaterials {
     //         null,                           // Tag
     //         () -> Ingredient.of(ModItems.BRONZE_INGOT.get())  // 青铜锭修复
     //     ),
-    //     ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "huaxia_bronze"),
+    //     new ResourceLocation(MillenaireRewrite.MOD_ID, "huaxia_bronze"),
     //     List.of(),
     //     List.of()
     // );
@@ -57,7 +57,7 @@ public class ModToolMaterials {
     //         null,                           // Tag
     //         () -> Ingredient.of(ModItems.REFINED_IRON_INGOT.get())  // 精铁锭修复
     //     ),
-    //     ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "huaxia_refined_iron"),
+    //     new ResourceLocation(MillenaireRewrite.MOD_ID, "huaxia_refined_iron"),
     //     List.of(),
     //     List.of()
     // );
@@ -75,7 +75,7 @@ public class ModToolMaterials {
             null,                           // Tag (for harvest blocks)
             () -> Ingredient.of(Items.IRON_INGOT)  // Repair material
         ),
-        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "norman"),
+        new ResourceLocation(MillenaireRewrite.MOD_ID, "norman"),
         List.of(),  // After tiers
         List.of()   // Before tiers
     );
@@ -93,7 +93,7 @@ public class ModToolMaterials {
             null,                           // Tag
             () -> Ingredient.of(Items.OBSIDIAN)  // Repair material
         ),
-        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "mayan_obsidian"),
+        new ResourceLocation(MillenaireRewrite.MOD_ID, "mayan_obsidian"),
         List.of(),
         List.of()
     );
@@ -111,7 +111,7 @@ public class ModToolMaterials {
             null,                           // Tag
             () -> Ingredient.of(Items.GOLD_INGOT)  // Repair material (expensive)
         ),
-        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "byzantine"),
+        new ResourceLocation(MillenaireRewrite.MOD_ID, "byzantine"),
         List.of(),
         List.of()
     );
@@ -129,7 +129,7 @@ public class ModToolMaterials {
             null,                           // Tag
             () -> Ingredient.of(Items.DIAMOND)  // Repair material (expensive)
         ),
-        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "japanese"),
+        new ResourceLocation(MillenaireRewrite.MOD_ID, "japanese"),
         List.of(),
         List.of()
     );
@@ -147,7 +147,7 @@ public class ModToolMaterials {
             null,                           // Tag
             () -> Ingredient.of(Items.BONE)  // Repair material (bone for traditional tools)
         ),
-        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "inuit"),
+        new ResourceLocation(MillenaireRewrite.MOD_ID, "inuit"),
         List.of(),
         List.of()
     );
@@ -165,7 +165,7 @@ public class ModToolMaterials {
             null,                           // Tag
             () -> Ingredient.of(Items.GOLD_INGOT)  // Repair material (gold for luxury)
         ),
-        ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, "seljuk"),
+        new ResourceLocation(MillenaireRewrite.MOD_ID, "seljuk"),
         List.of(),
         List.of()
     );

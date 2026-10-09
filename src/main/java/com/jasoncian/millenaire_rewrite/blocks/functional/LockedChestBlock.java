@@ -2,7 +2,6 @@ package com.jasoncian.millenaire_rewrite.blocks.functional;
 
 import com.jasoncian.millenaire_rewrite.blockentity.LockedChestBlockEntity;
 import com.jasoncian.millenaire_rewrite.core.ModBlockEntities;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -51,16 +50,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class LockedChestBlock extends BaseEntityBlock {
 
-    public static final MapCodec<LockedChestBlock> CODEC = simpleCodec(LockedChestBlock::new);
-
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     protected static final VoxelShape SHAPE = Block.box(1.0, 0.0, 1.0, 15.0, 14.0, 15.0);
-
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
-    }
 
     public LockedChestBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -104,8 +96,8 @@ public class LockedChestBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
-                                                Player player, BlockHitResult hitResult) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
+                                 Player player, net.minecraft.world.InteractionHand hand, BlockHitResult hitResult) {
         if (!level.isClientSide()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof LockedChestBlockEntity lockedChest) {
@@ -118,7 +110,7 @@ public class LockedChestBlock extends BaseEntityBlock {
                     return InteractionResult.CONSUME;
                 }
 
-                ((ServerPlayer) player).openMenu(lockedChest, pos);
+                net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, lockedChest, pos);
                 player.awardStat(Stats.OPEN_CHEST);
             }
         }
@@ -127,7 +119,7 @@ public class LockedChestBlock extends BaseEntityBlock {
 
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-        if (stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)) {
+        if (stack.hasCustomHoverName()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof LockedChestBlockEntity lockedChest) {
                 lockedChest.setCustomName(stack.getHoverName());
@@ -158,7 +150,7 @@ public class LockedChestBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected boolean isPathfindable(BlockState state, PathComputationType pathComputationType) {
+    public boolean isPathfindable(BlockState state, BlockGetter getter, BlockPos pos, PathComputationType pathComputationType) {
         return false;
     }
 

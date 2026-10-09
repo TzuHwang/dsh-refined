@@ -223,7 +223,7 @@ public class DiplomacyMapScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
 
         int x = (width - GUI_WIDTH) / 2;
         int y = (height - GUI_HEIGHT) / 2;
@@ -459,7 +459,7 @@ public class DiplomacyMapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         // 缩放地图
         if (scrollY > 0) {
             mapZoom = Math.min(3.0f, mapZoom * 1.1f);
@@ -467,7 +467,7 @@ public class DiplomacyMapScreen extends Screen {
             mapZoom = Math.max(0.5f, mapZoom / 1.1f);
         }
         calculateMapPositions();
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     @Override

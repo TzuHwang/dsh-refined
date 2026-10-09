@@ -121,7 +121,7 @@ public class FamilyManager extends SavedData {
     /**
      * 从NBT加载
      */
-    public static FamilyManager load(CompoundTag tag, HolderLookup.Provider registries) {
+    public static FamilyManager load(CompoundTag tag) {
         FamilyManager manager = new FamilyManager();
 
         ListTag familyList = tag.getList("Families", 10);
@@ -136,7 +136,7 @@ public class FamilyManager extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         ListTag familyList = new ListTag();
         for (VillagerFamily family : families.values()) {
             familyList.add(family.save());
@@ -153,7 +153,7 @@ public class FamilyManager extends SavedData {
      */
     public static FamilyManager get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(FamilyManager::new, FamilyManager::load),
+            FamilyManager::load, FamilyManager::new,
             DATA_NAME
         );
     }

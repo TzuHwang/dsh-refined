@@ -8,12 +8,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.TickEvent;
 
 /**
  * 任务事件处理器 - 自动跟踪任务进度
@@ -62,13 +61,13 @@ public class QuestEvents {
      * 处理物品拾取事件
      */
     @SubscribeEvent
-    public static void onItemPickup(ItemEntityPickupEvent.Post event) {
-        if (!(event.getPlayer() instanceof ServerPlayer player)) {
+    public static void onItemPickup(PlayerEvent.ItemPickupEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
 
         ServerLevel level = player.serverLevel();
-        ItemStack stack = event.getOriginalStack();
+        ItemStack stack = event.getStack();
 
         if (stack.isEmpty()) {
             return;
@@ -92,8 +91,9 @@ public class QuestEvents {
      * 处理玩家移动（每tick）
      */
     @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        Player player = event.getEntity();
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Player player = event.player;
 
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return;

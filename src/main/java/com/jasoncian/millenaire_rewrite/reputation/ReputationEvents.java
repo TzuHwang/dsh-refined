@@ -7,10 +7,10 @@ import com.jasoncian.millenaire_rewrite.village.VillageManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 
 /**
  * 声望事件处理 - 自动处理影响声望的游戏事件
@@ -30,7 +30,7 @@ public class ReputationEvents {
      * 村民受到伤害时
      */
     @SubscribeEvent
-    public static void onLivingDamage(LivingDamageEvent.Pre event) {
+    public static void onLivingDamage(LivingDamageEvent event) {
         // 检查是否是Millenaire村民
         if (!(event.getEntity() instanceof MillVillager villager)) {
             return;

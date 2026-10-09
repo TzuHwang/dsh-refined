@@ -133,8 +133,8 @@ public class SilkWormBlock extends Block {
     }
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
-                                                Player player, BlockHitResult hitResult) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
+                                 Player player, net.minecraft.world.InteractionHand hand, BlockHitResult hitResult) {
         SilkWormProgress progress = state.getValue(PROGRESS);
 
         if (progress.isHarvestable()) {

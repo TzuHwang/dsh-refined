@@ -1,6 +1,5 @@
 package com.jasoncian.millenaire_rewrite.items.magic;
 
-import com.jasoncian.millenaire_rewrite.util.ItemNBTHelper;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -64,7 +63,7 @@ public class AmuletOfCreationItem extends Item {
         }
 
         // Update cooldown display in NBT
-        CompoundTag nbt = ItemNBTHelper.getOrCreateTag(stack);
+        CompoundTag nbt = stack.getOrCreateTag();
         long lastUse = nbt.getLong("last_use");
         long cooldownRemaining = Math.max(0, COOLDOWN_TICKS - (gameTime - lastUse));
         nbt.putLong("cooldown_remaining", cooldownRemaining);
@@ -75,7 +74,7 @@ public class AmuletOfCreationItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
 
         if (!level.isClientSide()) {
-            CompoundTag nbt = ItemNBTHelper.getOrCreateTag(stack);
+            CompoundTag nbt = stack.getOrCreateTag();
             long lastUse = nbt.getLong("last_use");
             long gameTime = level.getGameTime();
 
@@ -135,7 +134,7 @@ public class AmuletOfCreationItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable Level context, List<Component> tooltip, TooltipFlag flag) {
         // Lore description
         tooltip.add(Component.translatable("item.millenaire_rewrite.amulet_creation.lore1")
             .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
@@ -151,7 +150,7 @@ public class AmuletOfCreationItem extends Item {
             .withStyle(ChatFormatting.GOLD));
 
         // Cooldown status
-        CompoundTag nbt = ItemNBTHelper.getTag(stack);
+        CompoundTag nbt = stack.getTag();
         if (nbt != null) {
             long cooldownRemaining = nbt.getLong("cooldown_remaining");
             if (cooldownRemaining > 0) {

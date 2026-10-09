@@ -6,11 +6,11 @@ import com.jasoncian.millenaire_rewrite.village.Village;
 import com.jasoncian.millenaire_rewrite.village.VillageManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.TickEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -34,7 +34,7 @@ public class DiplomacyEvents {
      * 处理村民被攻击事件（村庄间冲突）
      */
     @SubscribeEvent
-    public static void onVillagerDamage(LivingDamageEvent.Post event) {
+    public static void onVillagerDamage(LivingDamageEvent event) {
         // 检查受害者是否为Millenaire村民
         if (!(event.getEntity() instanceof MillVillager victim)) {
             return;
@@ -123,8 +123,9 @@ public class DiplomacyEvents {
      * 处理世界tick（定期更新外交）
      */
     @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) {
+    public static void onLevelTick(TickEvent.LevelTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.level instanceof ServerLevel level)) {
             return;
         }
 

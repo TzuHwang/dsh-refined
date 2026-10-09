@@ -307,8 +307,8 @@ public class ImportTableBlockEntity extends BlockEntity implements MenuProvider 
     // ================ 保存/加载 ================
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
 
         tag.putString("BuildingKey", buildingKey);
         tag.putInt("Variation", variation);
@@ -331,8 +331,8 @@ public class ImportTableBlockEntity extends BlockEntity implements MenuProvider 
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
 
         buildingKey = tag.getString("BuildingKey");
         variation = tag.getInt("Variation");

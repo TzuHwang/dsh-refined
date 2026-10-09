@@ -136,8 +136,8 @@ public class TownHallBlockEntity extends BlockEntity implements MenuProvider {
     // ================ NBT序列化 ================
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
 
         if (villageId != null) {
             tag.putUUID("VillageId", villageId);
@@ -145,8 +145,8 @@ public class TownHallBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
 
         if (tag.contains("VillageId")) {
             villageId = tag.getUUID("VillageId");

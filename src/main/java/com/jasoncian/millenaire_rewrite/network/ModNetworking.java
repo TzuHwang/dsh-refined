@@ -1,12 +1,17 @@
 package com.jasoncian.millenaire_rewrite.network;
 
 import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import com.jasoncian.millenaire_rewrite.network.compat.CustomPacketPayload;
+import com.jasoncian.millenaire_rewrite.network.compat.IPayloadContext;
+import com.jasoncian.millenaire_rewrite.network.compat.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.minecraftforge.network.NetworkDirection;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
+
+import java.util.Optional;
+import java.util.function.BiConsumer;
 
 /**
  * 网络包注册 - 注册所有客户端-服务端同步包
@@ -21,70 +26,63 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  * @author Based on NeoForge networking patterns
  * @version 1.0.0
  */
-@EventBusSubscriber(modid = MillenaireRewrite.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public class ModNetworking {
 
     /** 网络协议版本 */
     public static final String PROTOCOL_VERSION = "1";
 
+    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
+        id("main"),
+        () -> PROTOCOL_VERSION,
+        PROTOCOL_VERSION::equals,
+        PROTOCOL_VERSION::equals
+    );
+
+    private static int nextId = 0;
+
     // ================ 包注册 ================
 
-    @SubscribeEvent
-    public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar(MillenaireRewrite.MOD_ID)
-            .versioned(PROTOCOL_VERSION);
-
+    /** 在 FMLCommonSetupEvent 中调用 */
+    public static void register() {
         // 服务端 -> 客户端 包
-        registrar.playToClient(
-            VillageSyncPacket.TYPE,
-            VillageSyncPacket.STREAM_CODEC,
-            VillageSyncPacket::handle
-        );
-
-        registrar.playToClient(
-            VillagerSyncPacket.TYPE,
-            VillagerSyncPacket.STREAM_CODEC,
-            VillagerSyncPacket::handle
-        );
-
-        registrar.playToClient(
-            QuestSyncPacket.TYPE,
-            QuestSyncPacket.STREAM_CODEC,
-            QuestSyncPacket::handle
-        );
-
-        registrar.playToClient(
-            EconomySyncPacket.TYPE,
-            EconomySyncPacket.STREAM_CODEC,
-            EconomySyncPacket::handle
-        );
-
-        registrar.playToClient(
-            ReputationSyncPacket.TYPE,
-            ReputationSyncPacket.STREAM_CODEC,
-            ReputationSyncPacket::handle
-        );
-
-        registrar.playToClient(
-            VillageListSyncPacket.TYPE,
-            VillageListSyncPacket.STREAM_CODEC,
-            VillageListSyncPacket::handle
-        );
+        playToClient(VillageSyncPacket.class, VillageSyncPacket.STREAM_CODEC, VillageSyncPacket::handle);
+        playToClient(VillagerSyncPacket.class, VillagerSyncPacket.STREAM_CODEC, VillagerSyncPacket::handle);
+        playToClient(QuestSyncPacket.class, QuestSyncPacket.STREAM_CODEC, QuestSyncPacket::handle);
+        playToClient(EconomySyncPacket.class, EconomySyncPacket.STREAM_CODEC, EconomySyncPacket::handle);
+        playToClient(ReputationSyncPacket.class, ReputationSyncPacket.STREAM_CODEC, ReputationSyncPacket::handle);
+        playToClient(VillageListSyncPacket.class, VillageListSyncPacket.STREAM_CODEC, VillageListSyncPacket::handle);
 
         // 客户端 -> 服务端 包
-        registrar.playToServer(
-            RequestVillageDataPacket.TYPE,
-            RequestVillageDataPacket.STREAM_CODEC,
-            RequestVillageDataPacket::handle
-        );
-
-        registrar.playToServer(
-            QuestActionPacket.TYPE,
-            QuestActionPacket.STREAM_CODEC,
-            QuestActionPacket::handle
-        );
+        playToServer(RequestVillageDataPacket.class, RequestVillageDataPacket.STREAM_CODEC, RequestVillageDataPacket::handle);
+        playToServer(QuestActionPacket.class, QuestActionPacket.STREAM_CODEC, QuestActionPacket::handle);
 
         MillenaireRewrite.LOGGER.info("Millenaire network packets registered");
+    }
+
+    private static <T extends CustomPacketPayload> void playToClient(
+        Class<T> type, StreamCodec<FriendlyByteBuf, T> codec, BiConsumer<T, IPayloadContext> handler) {
+        register(type, codec, handler, NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    private static <T extends CustomPacketPayload> void playToServer(
+        Class<T> type, StreamCodec<FriendlyByteBuf, T> codec, BiConsumer<T, IPayloadContext> handler) {
+        register(type, codec, handler, NetworkDirection.PLAY_TO_SERVER);
+    }
+
+    private static <T extends CustomPacketPayload> void register(
+        Class<T> type, StreamCodec<FriendlyByteBuf, T> codec,
+        BiConsumer<T, IPayloadContext> handler, NetworkDirection direction) {
+        CHANNEL.registerMessage(
+            nextId++,
+            type,
+            (packet, buf) -> codec.encode(buf, packet),
+            codec::decode,
+            (packet, ctx) -> {
+                handler.accept(packet, new IPayloadContext(ctx));
+                ctx.get().setPacketHandled(true);
+            },
+            Optional.of(direction)
+        );
     }
 
     // ================ 工具方法 ================
@@ -93,6 +91,6 @@ public class ModNetworking {
      * 创建资源位置
      */
     public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MillenaireRewrite.MOD_ID, path);
+        return new ResourceLocation(MillenaireRewrite.MOD_ID, path);
     }
 }

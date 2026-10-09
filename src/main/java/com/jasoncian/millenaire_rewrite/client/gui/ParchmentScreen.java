@@ -16,7 +16,7 @@ import net.minecraft.client.gui.components.Button;
 public class ParchmentScreen extends Screen {
     
     /** GUI材质文件 */
-    private static final ResourceLocation PARCHMENT_GUI = ResourceLocation.fromNamespaceAndPath("millenaire_rewrite", "textures/gui/parchment_gui.png");
+    private static final ResourceLocation PARCHMENT_GUI = new ResourceLocation("millenaire_rewrite", "textures/gui/parchment_gui.png");
     
     /** GUI尺寸 */
     private static final int GUI_WIDTH = 176;

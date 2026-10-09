@@ -2,7 +2,6 @@ package com.jasoncian.millenaire_rewrite.blocks.functional;
 
 import com.jasoncian.millenaire_rewrite.blockentity.FirePitBlockEntity;
 import com.jasoncian.millenaire_rewrite.core.ModBlockEntities;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -13,7 +12,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -35,6 +33,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,9 +54,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FirePitBlock extends BaseEntityBlock {
 
-    /** Block codec for serialization */
-    public static final MapCodec<FirePitBlock> CODEC = simpleCodec(FirePitBlock::new);
-
     /** 朝向属性 */
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
@@ -66,11 +62,6 @@ public class FirePitBlock extends BaseEntityBlock {
 
     /** 碰撞形状 - 无碰撞 */
     protected static final VoxelShape SHAPE = Block.box(3.0, 0.0, 3.0, 13.0, 8.0, 13.0);
-
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
-    }
 
     public FirePitBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -128,24 +119,12 @@ public class FirePitBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
-                                               BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
+                                 Player player, InteractionHand hand, BlockHitResult hitResult) {
         if (!level.isClientSide()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof FirePitBlockEntity firePitBlockEntity) {
-                ((ServerPlayer) player).openMenu(firePitBlockEntity, pos);
-            }
-        }
-        return ItemInteractionResult.sidedSuccess(level.isClientSide());
-    }
-
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
-                                                Player player, BlockHitResult hitResult) {
-        if (!level.isClientSide()) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof FirePitBlockEntity firePitBlockEntity) {
-                ((ServerPlayer) player).openMenu(firePitBlockEntity, pos);
+                NetworkHooks.openScreen((ServerPlayer) player, firePitBlockEntity, pos);
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide());

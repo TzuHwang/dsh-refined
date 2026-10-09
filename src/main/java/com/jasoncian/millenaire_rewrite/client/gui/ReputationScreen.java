@@ -194,7 +194,7 @@ public class ReputationScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
 
         int x = (width - GUI_WIDTH) / 2;
         int y = (height - GUI_HEIGHT) / 2;
@@ -352,7 +352,7 @@ public class ReputationScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         int maxScroll = Math.max(0, villageReputations.size() - MAX_VISIBLE_ENTRIES);
 
         if (scrollY > 0) {
@@ -361,7 +361,7 @@ public class ReputationScreen extends Screen {
             scrollOffset = Math.min(maxScroll, scrollOffset + 1);
         }
 
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     @Override

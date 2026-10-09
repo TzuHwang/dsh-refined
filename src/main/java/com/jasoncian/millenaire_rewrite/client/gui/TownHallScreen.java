@@ -32,7 +32,7 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
 
     // ================ 资源 ================
 
-    private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation BACKGROUND = new ResourceLocation(
         MillenaireRewrite.MOD_ID, "textures/gui/town_hall.png");
 
     // ================ 尺寸 ================
@@ -103,7 +103,7 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int x = (width - imageWidth) / 2;
@@ -270,7 +270,7 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
     // ================ 输入处理 ================
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         List<VillagerInfo> villagers = getVillagerList();
         int maxScroll = Math.max(0, villagers.size() - VILLAGERS_PER_PAGE);
 
@@ -280,7 +280,7 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
             villagerScrollOffset = Math.min(maxScroll, villagerScrollOffset + 1);
         }
 
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     @Override

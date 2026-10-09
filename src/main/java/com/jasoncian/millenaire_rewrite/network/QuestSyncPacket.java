@@ -4,10 +4,10 @@ import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import com.jasoncian.millenaire_rewrite.quest.Quest;
 import com.jasoncian.millenaire_rewrite.quest.QuestObjective;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import com.jasoncian.millenaire_rewrite.network.compat.ByteBufCodecs;
+import com.jasoncian.millenaire_rewrite.network.compat.StreamCodec;
+import com.jasoncian.millenaire_rewrite.network.compat.CustomPacketPayload;
+import com.jasoncian.millenaire_rewrite.network.compat.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;

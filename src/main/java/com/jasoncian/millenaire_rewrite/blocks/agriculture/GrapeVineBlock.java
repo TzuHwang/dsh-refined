@@ -144,7 +144,7 @@ public class GrapeVineBlock extends Block {
     }
 
     @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide()) {
             DoubleBlockHalf half = state.getValue(HALF);
             BlockPos otherPos = half == DoubleBlockHalf.LOWER ? pos.above() : pos.below();
@@ -154,7 +154,7 @@ public class GrapeVineBlock extends Block {
                 level.levelEvent(player, 2001, otherPos, Block.getId(otherState));
             }
         }
-        return super.playerWillDestroy(level, pos, state, player);
+        super.playerWillDestroy(level, pos, state, player);
     }
 
     @Override

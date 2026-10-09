@@ -2,7 +2,6 @@ package com.jasoncian.millenaire_rewrite.blocks.functional;
 
 import com.jasoncian.millenaire_rewrite.blockentity.ImportTableBlockEntity;
 import com.jasoncian.millenaire_rewrite.core.ModBlockEntities;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -41,16 +40,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ImportTableBlock extends BaseEntityBlock {
 
-    public static final MapCodec<ImportTableBlock> CODEC = simpleCodec(ImportTableBlock::new);
-
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     protected static final VoxelShape SHAPE = Block.box(0.0, 0.0, 0.0, 16.0, 12.0, 16.0);
-
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
-    }
 
     public ImportTableBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -86,15 +78,15 @@ public class ImportTableBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
-                                                Player player, BlockHitResult hitResult) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
+                                 Player player, net.minecraft.world.InteractionHand hand, BlockHitResult hitResult) {
         if (!level.isClientSide()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ImportTableBlockEntity importTable) {
                 // 检查是否使用法杖
                 // TODO: 与法杖系统集成实现导入/导出功能
                 // 现在直接打开GUI
-                ((ServerPlayer) player).openMenu(importTable, pos);
+                net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, importTable, pos);
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide());

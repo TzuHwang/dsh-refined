@@ -4,7 +4,7 @@ import com.jasoncian.millenaire_rewrite.reputation.ReputationManager;
 import com.jasoncian.millenaire_rewrite.village.Village;
 import com.jasoncian.millenaire_rewrite.village.VillageManager;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.jasoncian.millenaire_rewrite.network.compat.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.Collection;

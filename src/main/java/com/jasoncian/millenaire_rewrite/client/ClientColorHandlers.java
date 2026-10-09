@@ -46,7 +46,7 @@ public class ClientColorHandlers {
     private static void registerBowProperties(Item bowItem) {
         // pull属性：拉弓的程度（0.0到1.0）
         ItemProperties.register(bowItem, 
-            ResourceLocation.withDefaultNamespace("pull"), 
+            new ResourceLocation("pull"), 
             (itemStack, clientWorld, livingEntity, seed) -> {
                 if (livingEntity == null) {
                     return 0.0F;
@@ -58,7 +58,7 @@ public class ClientColorHandlers {
 
         // pulling属性：是否正在拉弓（0.0或1.0）
         ItemProperties.register(bowItem, 
-            ResourceLocation.withDefaultNamespace("pulling"), 
+            new ResourceLocation("pulling"), 
             (itemStack, clientWorld, livingEntity, seed) -> 
                 livingEntity != null && livingEntity.isUsingItem() && livingEntity.getUseItem() == itemStack ? 1.0F : 0.0F);
     }
