@@ -129,9 +129,9 @@ public final class BuildingPlacer {
     // ================ 门 ================
 
     /**
-     * 图纸只记录门的下半部（1.12 的门方块），这里补上上半部并决定铰链方向：
-     * 并排同朝向的两扇门组成双开门，左边一扇铰链在左、右边一扇铰链在右。
-     * 若图纸在相邻两层都画了门，则把上面那格视为上半部。
+     * 1.12 的门把朝向存在下半部、铰链存在上半部（图纸中的 DoorUpper / DoorUpperInv），
+     * 而 1.20 要求上下两格属性一致。这里以下半部的朝向和上半部的铰链为准同步两格；
+     * 图纸没有上半部时补上，并按相邻的门推断双开门铰链。
      */
     private static void completeDoors(ServerLevel level, Result result) {
         Set<BlockPos> doorSet = new HashSet<>(result.doors);
@@ -141,12 +141,16 @@ public final class BuildingPlacer {
             if (!(state.getBlock() instanceof DoorBlock)) {
                 continue;
             }
-            BlockPos below = pos.below();
-            if (doorSet.contains(below) && level.getBlockState(below).getBlock() == state.getBlock()) {
+            if (state.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
                 continue;
             }
             Direction facing = state.getValue(DoorBlock.FACING);
-            DoorHingeSide hinge = isDoor(level, pos.relative(facing.getClockWise()), facing)
+            BlockState above = level.getBlockState(pos.above());
+            boolean planUpper = doorSet.contains(pos.above()) && above.getBlock() == state.getBlock()
+                && above.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER;
+            DoorHingeSide hinge = planUpper
+                ? above.getValue(DoorBlock.HINGE)
+                : isDoor(level, pos.relative(facing.getClockWise()), facing)
                 ? DoorHingeSide.LEFT
                 : isDoor(level, pos.relative(facing.getCounterClockWise()), facing)
                     ? DoorHingeSide.RIGHT
