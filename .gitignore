@@ -31,6 +31,7 @@ Thumbs.db
 # Minecraft development
 run/
 run-data/
+run-gametest/
 logs/
 crash-reports/
 

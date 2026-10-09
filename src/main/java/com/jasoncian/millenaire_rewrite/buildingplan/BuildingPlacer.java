@@ -21,12 +21,9 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 按图纸在世界中立即放置一栋建筑（村庄生成时使用）。
@@ -39,6 +36,8 @@ public final class BuildingPlacer {
 
     /** 只通知客户端，不触发邻近方块的物理更新（避免沙子掉落、火把在施工中掉落） */
     private static final int FLAGS = Block.UPDATE_CLIENTS;
+    /** 门：另外跳过形状更新，避免上下两格放置时互相覆盖属性 */
+    private static final int DOOR_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
 
     private BuildingPlacer() {
     }
@@ -51,7 +50,8 @@ public final class BuildingPlacer {
         @Nullable
         public BlockPos mainChest;
         public int blocksPlaced;
-        final List<BlockPos> doors = new ArrayList<>();
+        /** 图纸中门的预定状态，延后到最后统一放置 */
+        final Map<BlockPos, BlockState> plannedDoors = new HashMap<>();
 
         void addPoint(String type, BlockPos pos) {
             specialPoints.computeIfAbsent(type, k -> new ArrayList<>()).add(pos.immutable());
@@ -118,7 +118,9 @@ public final class BuildingPlacer {
 
     private static void set(ServerLevel level, BlockPos pos, BlockState state, Result result) {
         if (state.getBlock() instanceof DoorBlock) {
-            result.doors.add(pos.immutable());
+            // 门的上下两格放置时会互相同步属性，污染图纸数据，所以先记录、最后统一放置
+            result.plannedDoors.put(pos.immutable(), state);
+            return;
         }
         if (level.getBlockState(pos) != state) {
             level.setBlock(pos, state, FLAGS);
@@ -134,36 +136,37 @@ public final class BuildingPlacer {
      * 图纸没有上半部时补上，并按相邻的门推断双开门铰链。
      */
     private static void completeDoors(ServerLevel level, Result result) {
-        Set<BlockPos> doorSet = new HashSet<>(result.doors);
-        result.doors.sort(Comparator.comparingInt(BlockPos::getY));
-        for (BlockPos pos : result.doors) {
-            BlockState state = level.getBlockState(pos);
-            if (!(state.getBlock() instanceof DoorBlock)) {
-                continue;
-            }
+        Map<BlockPos, BlockState> planned = result.plannedDoors;
+        for (Map.Entry<BlockPos, BlockState> entry : planned.entrySet()) {
+            BlockPos pos = entry.getKey();
+            BlockState state = entry.getValue();
             if (state.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
                 continue;
             }
             Direction facing = state.getValue(DoorBlock.FACING);
-            BlockState above = level.getBlockState(pos.above());
-            boolean planUpper = doorSet.contains(pos.above()) && above.getBlock() == state.getBlock()
-                && above.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER;
-            DoorHingeSide hinge = planUpper
-                ? above.getValue(DoorBlock.HINGE)
-                : isDoor(level, pos.relative(facing.getClockWise()), facing)
-                ? DoorHingeSide.LEFT
-                : isDoor(level, pos.relative(facing.getCounterClockWise()), facing)
-                    ? DoorHingeSide.RIGHT
-                    : DoorHingeSide.LEFT;
-            BlockState lower = state.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER).setValue(DoorBlock.HINGE, hinge);
-            level.setBlock(pos, lower, FLAGS);
-            level.setBlock(pos.above(), lower.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), FLAGS);
+            BlockState upper = planned.get(pos.above());
+            DoorHingeSide hinge;
+            if (upper != null && upper.getBlock() == state.getBlock()
+                && upper.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
+                hinge = upper.getValue(DoorBlock.HINGE);
+            } else if (isLowerDoor(planned, pos.relative(facing.getClockWise()), facing)) {
+                hinge = DoorHingeSide.LEFT;
+            } else if (isLowerDoor(planned, pos.relative(facing.getCounterClockWise()), facing)) {
+                hinge = DoorHingeSide.RIGHT;
+            } else {
+                hinge = DoorHingeSide.LEFT;
+            }
+            BlockState lower = state.setValue(DoorBlock.HINGE, hinge);
+            level.setBlock(pos, lower, DOOR_FLAGS);
+            level.setBlock(pos.above(), lower.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), DOOR_FLAGS);
+            result.blocksPlaced += 2;
         }
     }
 
-    private static boolean isDoor(ServerLevel level, BlockPos pos, Direction facing) {
-        BlockState state = level.getBlockState(pos);
-        return state.getBlock() instanceof DoorBlock && state.getValue(DoorBlock.FACING) == facing;
+    private static boolean isLowerDoor(Map<BlockPos, BlockState> planned, BlockPos pos, Direction facing) {
+        BlockState state = planned.get(pos);
+        return state != null && state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER
+            && state.getValue(DoorBlock.FACING) == facing;
     }
 
     // ================ 特殊标记 ================
