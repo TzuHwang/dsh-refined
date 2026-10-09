@@ -61,18 +61,8 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
 
     @Override
     public ResourceLocation getTextureLocation(MillVillager entity) {
-        // 构建纹理路径：culture/gender_profession.png
-        Culture culture = entity.getCulture();
-        String gender = entity.isMale() ? "male" : "female";
-        String profession = entity.getProfession().getId();
-
-        String texturePath = TEXTURE_BASE + culture.getId() + "/" + gender + "_" + profession + ".png";
-        ResourceLocation texture = new ResourceLocation(
-            MillenaireRewrite.MOD_ID, texturePath);
-
-        // TODO: 检查纹理是否存在，否则使用默认纹理
-        // 目前返回默认纹理直到纹理文件创建
-        return DEFAULT_TEXTURE;
+        ResourceLocation skin = entity.getSkinTexture();
+        return skin != null ? skin : DEFAULT_TEXTURE;
     }
 
     // ================ 缩放处理 ================

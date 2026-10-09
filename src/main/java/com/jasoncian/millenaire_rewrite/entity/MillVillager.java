@@ -73,6 +73,16 @@ public class MillVillager extends PathfinderMob {
         SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DATA_IS_CHILD =
         SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.BOOLEAN);
+    /** 原版村民类型键名（如 seneschal），决定外观和行为 */
+    private static final EntityDataAccessor<String> DATA_VILLAGER_TYPE =
+        SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
+    /** 皮肤材质路径（相对于 assets/millenaire_rewrite/），空字符串表示使用默认 */
+    private static final EntityDataAccessor<String> DATA_SKIN =
+        SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> DATA_CLOTHES_0 =
+        SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> DATA_CLOTHES_1 =
+        SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
 
     // ================ 常量 ================
 
@@ -227,6 +237,10 @@ public class MillVillager extends PathfinderMob {
         this.entityData.define(DATA_FIRST_NAME, "");
         this.entityData.define(DATA_FAMILY_NAME, "");
         this.entityData.define(DATA_IS_CHILD, false);
+        this.entityData.define(DATA_VILLAGER_TYPE, "");
+        this.entityData.define(DATA_SKIN, "");
+        this.entityData.define(DATA_CLOTHES_0, "");
+        this.entityData.define(DATA_CLOTHES_1, "");
     }
 
     // ================ AI目标 ================
@@ -377,6 +391,11 @@ public class MillVillager extends PathfinderMob {
         tag.putString("FirstName", getFirstName());
         tag.putString("FamilyName", getFamilyName());
         tag.putBoolean("IsChild", isChild());
+        tag.putString("VillagerType", getVillagerType());
+        tag.putString("Skin", this.entityData.get(DATA_SKIN));
+        tag.putString("Clothes0", this.entityData.get(DATA_CLOTHES_0));
+        tag.putString("Clothes1", this.entityData.get(DATA_CLOTHES_1));
+        tag.putFloat("Scale", getVillagerScale());
 
         if (housePos != null) {
             tag.putInt("HouseX", housePos.getX());
@@ -437,6 +456,13 @@ public class MillVillager extends PathfinderMob {
         setFirstName(tag.getString("FirstName"));
         setFamilyName(tag.getString("FamilyName"));
         setChild(tag.getBoolean("IsChild"));
+        this.entityData.set(DATA_VILLAGER_TYPE, tag.getString("VillagerType"));
+        this.entityData.set(DATA_SKIN, tag.getString("Skin"));
+        this.entityData.set(DATA_CLOTHES_0, tag.getString("Clothes0"));
+        this.entityData.set(DATA_CLOTHES_1, tag.getString("Clothes1"));
+        if (tag.contains("Scale")) {
+            setVillagerScale(tag.getFloat("Scale"));
+        }
 
         if (tag.contains("HouseX")) {
             housePos = new BlockPos(
@@ -718,6 +744,11 @@ public class MillVillager extends PathfinderMob {
      */
     @Nullable
     public ResourceLocation getClothTexture(int layer) {
+        String synced = layer == 0 ? this.entityData.get(DATA_CLOTHES_0)
+            : layer == 1 ? this.entityData.get(DATA_CLOTHES_1) : "";
+        if (!synced.isEmpty()) {
+            return new ResourceLocation(MillenaireRewrite.MOD_ID, synced);
+        }
         if (layer < 0 || layer >= clothTextures.length) {
             return null;
         }
@@ -758,6 +789,34 @@ public class MillVillager extends PathfinderMob {
             clothTextures[layer] = new ResourceLocation(
                 MillenaireRewrite.MOD_ID, path);
         }
+    }
+
+    // ================ 原版村民类型外观 ================
+
+    public String getVillagerType() {
+        return this.entityData.get(DATA_VILLAGER_TYPE);
+    }
+
+    public void setVillagerType(String type) {
+        this.entityData.set(DATA_VILLAGER_TYPE, type);
+    }
+
+    /**
+     * 皮肤材质；未设置时返回 null，由渲染器使用默认材质
+     */
+    @Nullable
+    public ResourceLocation getSkinTexture() {
+        String skin = this.entityData.get(DATA_SKIN);
+        return skin.isEmpty() ? null : new ResourceLocation(MillenaireRewrite.MOD_ID, skin);
+    }
+
+    /**
+     * 设置外观（路径相对于 assets/millenaire_rewrite/，空字符串表示不使用）
+     */
+    public void setAppearance(String skin, String clothes0, String clothes1) {
+        this.entityData.set(DATA_SKIN, skin);
+        this.entityData.set(DATA_CLOTHES_0, clothes0);
+        this.entityData.set(DATA_CLOTHES_1, clothes1);
     }
 
     /**

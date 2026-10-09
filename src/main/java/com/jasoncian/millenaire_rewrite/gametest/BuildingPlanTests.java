@@ -65,6 +65,82 @@ public class BuildingPlanTests {
     }
 
     /**
+     * 所有市政厅的初始居民类型都能读取，皮肤和衣服材质文件都存在
+     */
+    @GameTest(template = "empty")
+    public static void townHallResidentsValid(GameTestHelper helper) {
+        java.nio.file.Path assets = net.minecraftforge.fml.ModList.get()
+            .getModFileById(MillenaireRewrite.MOD_ID).getFile().findResource("assets", MillenaireRewrite.MOD_ID);
+        List<String> problems = new ArrayList<>();
+        int residents = 0;
+        for (Culture culture : Culture.values()) {
+            try {
+                for (VillageTypes.VillageType vt : VillageTypes.list(culture)) {
+                    BuildingPlan plan = BuildingPlan.load(VillageTypes.cultureFolder(culture), vt.centre(), 'A', 0);
+                    List<String> keys = new ArrayList<>(plan.maleResidents);
+                    keys.addAll(plan.femaleResidents);
+                    for (String key : keys) {
+                        residents++;
+                        try {
+                            var type = com.jasoncian.millenaire_rewrite.content.VillagerTypes.get(plan.culture, key);
+                            if (type.textures().isEmpty()) {
+                                problems.add(plan.key + "/" + key + ": no skin textures");
+                            }
+                            List<String> files = new ArrayList<>(type.textures());
+                            type.clothes().values().forEach(files::addAll);
+                            for (String tex : files) {
+                                if (!java.nio.file.Files.exists(assets.resolve(tex))) {
+                                    problems.add(plan.key + "/" + key + ": missing " + tex);
+                                }
+                            }
+                        } catch (Exception e) {
+                            problems.add(plan.key + "/" + key + ": " + e.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                problems.add(culture.getId() + ": " + e);
+            }
+        }
+        MillenaireRewrite.LOGGER.info("[gametest] town hall residents: {} checked, {} problems", residents, problems.size());
+        problems.stream().limit(30).forEach(pr -> MillenaireRewrite.LOGGER.error("[gametest] {}", pr));
+        if (!problems.isEmpty()) {
+            helper.fail(problems.size() + " resident problems, first: " + problems.get(0));
+        }
+        helper.succeed();
+    }
+
+    /**
+     * 生成诺曼庄园的居民：人数与图纸一致，并且都有名字和皮肤
+     */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void manorResidentsSpawn(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        try {
+            BuildingPlan plan = BuildingPlan.load("norman", "manor", 'A', 0);
+            BlockPos origin = helper.absolutePos(new BlockPos(0, BUILD_HEIGHT + 120, SPACING * 5));
+            BuildingPlacer.Result result = BuildingPlacer.place(level, plan, origin, 0);
+            var village = new com.jasoncian.millenaire_rewrite.village.Village(origin, Culture.NORMAN);
+            var spawned = com.jasoncian.millenaire_rewrite.content.ResidentSpawner.spawnResidents(level, village, plan, result);
+            int expected = plan.maleResidents.size() + plan.femaleResidents.size();
+            for (var v : spawned) {
+                MillenaireRewrite.LOGGER.info("[gametest] resident {} type={} skin={} clothes0={}",
+                    v.getFullName(), v.getVillagerType(), v.getSkinTexture(), v.getClothTexture(0));
+                if (v.getFirstName().isEmpty() || v.getSkinTexture() == null) {
+                    helper.fail("resident without name or skin: " + v.getVillagerType());
+                }
+            }
+            if (spawned.size() != expected) {
+                helper.fail("expected " + expected + " residents, spawned " + spawned.size());
+            }
+            spawned.forEach(v -> v.discard());
+        } catch (Exception e) {
+            helper.fail(e.toString());
+        }
+        helper.succeed();
+    }
+
+    /**
      * 随机选择村庄类型时，每种可生成的类型都有机会被选中
      */
     @GameTest(template = "empty")

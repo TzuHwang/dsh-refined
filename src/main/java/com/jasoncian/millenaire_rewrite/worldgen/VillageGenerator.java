@@ -4,6 +4,7 @@ import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
 import com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer;
 import com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan;
 import com.jasoncian.millenaire_rewrite.buildingplan.VillageTypes;
+import com.jasoncian.millenaire_rewrite.content.ResidentSpawner;
 import com.jasoncian.millenaire_rewrite.entity.culture.Culture;
 import com.jasoncian.millenaire_rewrite.village.Village;
 import com.jasoncian.millenaire_rewrite.village.VillageManager;
@@ -156,7 +157,7 @@ public class VillageGenerator {
         villageManager.registerVillage(village);
 
         // 生成初始建筑（市政厅标记）
-        buildTownHall(level, centerPos, culture, random);
+        buildTownHall(level, village, centerPos, culture, random);
 
         MillenaireRewrite.LOGGER.info("Generated {} village '{}' at {}",
             culture.getDisplayName(), village.getName(), centerPos);
@@ -247,7 +248,8 @@ public class VillageGenerator {
      * 按文化随机选择村庄类型，并用原版图纸建造其中心建筑（市政厅）。
      * 图纸读取失败时退回到简单标记。
      */
-    private static void buildTownHall(ServerLevel level, BlockPos pos, Culture culture, RandomSource random) {
+    private static void buildTownHall(ServerLevel level, Village village, BlockPos pos, Culture culture,
+                                      RandomSource random) {
         try {
             VillageTypes.VillageType type = VillageTypes.pick(culture, random);
             if (type == null) {
@@ -256,8 +258,9 @@ public class VillageGenerator {
             BuildingPlan plan = BuildingPlan.load(VillageTypes.cultureFolder(culture), type.centre(), 'A', 0);
             BuildingPlacer.Result result = BuildingPlacer.place(level, plan, pos, random.nextInt(4));
             BuildingPlacer.spawnAnimals(level, result);
-            MillenaireRewrite.LOGGER.info("Built town hall {} for village type '{}': {} blocks, special points {}",
-                plan, type.name(), result.blocksPlaced, result.specialPoints.keySet());
+            int residents = ResidentSpawner.spawnResidents(level, village, plan, result).size();
+            MillenaireRewrite.LOGGER.info("Built town hall {} for village type '{}': {} blocks, {} residents",
+                plan, type.name(), result.blocksPlaced, residents);
         } catch (Exception e) {
             MillenaireRewrite.LOGGER.error("Failed to build town hall for {} at {}, placing marker instead",
                 culture.getId(), pos, e);
@@ -364,7 +367,7 @@ public class VillageGenerator {
 
         // 放置标记
         // 指令生成不需要和世界种子绑定；level.random 在两次指令之间可能被重置为相同状态
-        buildTownHall(level, groundPos, culture, RandomSource.create());
+        buildTownHall(level, village, groundPos, culture, RandomSource.create());
 
         MillenaireRewrite.LOGGER.info("Force generated {} village '{}' at {}",
             culture.getDisplayName(), village.getName(), groundPos);
