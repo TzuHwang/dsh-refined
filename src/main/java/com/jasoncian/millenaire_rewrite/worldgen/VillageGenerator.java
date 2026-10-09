@@ -256,7 +256,46 @@ public class VillageGenerator {
                 throw new java.io.IOException("No village types for culture " + culture.getId());
             }
             BuildingPlan plan = BuildingPlan.get(VillageTypes.cultureFolder(culture), type.centre(), 'A', 0);
-            int orientation = random.nextInt(4);
+            buildTownHall(level, village, pos, type, plan, random.nextInt(4), random);
+        } catch (Exception e) {
+            MillenaireRewrite.LOGGER.error("Failed to build town hall for {} at {}, placing marker instead",
+                culture.getId(), pos, e);
+            placeVillageMarker(level, pos, culture);
+        }
+    }
+
+    /**
+     * 在 pos 附近（由近到远，最远 64 格）为市政厅找一块平坦、无水、区块已加载的地方
+     *
+     * @return 地面上第一格空气的位置，找不到时返回 null
+     */
+    @Nullable
+    private static BlockPos findTownHallSite(ServerLevel level, BuildingPlan plan, BlockPos pos, int orientation) {
+        for (int radius = 0; radius <= 64; radius += 4) {
+            int samples = radius == 0 ? 1 : 16;
+            for (int i = 0; i < samples; i++) {
+                double angle = Math.PI * 2 * i / samples;
+                int x = pos.getX() + (int) Math.round(Math.cos(angle) * radius);
+                int z = pos.getZ() + (int) Math.round(Math.sin(angle) * radius);
+                var box = BuildingPlacer.footprint(plan, new BlockPos(x, 0, z), orientation);
+                if (!level.hasChunkAt(new BlockPos(box.minX(), 0, box.minZ()))
+                    || !level.hasChunkAt(new BlockPos(box.maxX(), 0, box.maxZ()))) {
+                    continue;
+                }
+                Integer ground = com.jasoncian.millenaire_rewrite.village.VillageGrowth.averageGround(level, box);
+                if (ground != null) {
+                    return new BlockPos(x, ground, z);
+                }
+            }
+        }
+        return null;
+    }
+
+    private static void buildTownHall(ServerLevel level, Village village, BlockPos pos,
+                                      VillageTypes.VillageType type, BuildingPlan plan, int orientation,
+                                      RandomSource random) {
+        Culture culture = village.getCulture();
+        try {
             BuildingPlacer.Result result = BuildingPlacer.place(level, plan, pos, orientation);
             BuildingPlacer.spawnAnimals(level, result);
             int residents = ResidentSpawner.spawnResidents(level, village, plan, result).size();
@@ -357,9 +396,29 @@ public class VillageGenerator {
             }
         }
 
-        // 调整到地面高度
-        int groundY = level.getHeight(Heightmap.Types.WORLD_SURFACE, pos.getX(), pos.getZ());
-        BlockPos groundPos = new BlockPos(pos.getX(), groundY, pos.getZ());
+        // 指令生成不需要和世界种子绑定；level.random 在两次指令之间可能被重置为相同状态
+        RandomSource random = RandomSource.create();
+        VillageTypes.VillageType type;
+        BuildingPlan plan;
+        try {
+            type = VillageTypes.pick(culture, random);
+            if (type == null) {
+                MillenaireRewrite.LOGGER.error("No village types for culture {}", culture.getId());
+                return null;
+            }
+            plan = BuildingPlan.get(VillageTypes.cultureFolder(culture), type.centre(), 'A', 0);
+        } catch (java.io.IOException e) {
+            MillenaireRewrite.LOGGER.error("Cannot load town hall for {}", culture.getId(), e);
+            return null;
+        }
+        int orientation = random.nextInt(4);
+
+        // 市政厅也需要选址：从指定位置开始向外找平坦、无水的地方
+        BlockPos groundPos = findTownHallSite(level, plan, pos, orientation);
+        if (groundPos == null) {
+            MillenaireRewrite.LOGGER.info("No dry flat site for {} near {}", plan, pos);
+            return null;
+        }
 
         VillageManager villageManager = VillageManager.get(level);
 
@@ -368,9 +427,7 @@ public class VillageGenerator {
         village.setDimension(level.dimension().location().toString());
         villageManager.registerVillage(village);
 
-        // 放置标记
-        // 指令生成不需要和世界种子绑定；level.random 在两次指令之间可能被重置为相同状态
-        buildTownHall(level, village, groundPos, culture, RandomSource.create());
+        buildTownHall(level, village, groundPos, type, plan, orientation, random);
 
         MillenaireRewrite.LOGGER.info("Force generated {} village '{}' at {}",
             culture.getDisplayName(), village.getName(), groundPos);

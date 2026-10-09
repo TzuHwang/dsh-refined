@@ -41,8 +41,8 @@ public class VillageGrowth {
     private static final int MIN_SITE_DISTANCE = 12;
     private static final int MAX_SITE_DISTANCE = 72;
     private static final int SITE_ATTEMPTS = 160;
-    /** 选址时允许的地面高度差 */
-    private static final int MAX_HEIGHT_DIFFERENCE = 5;
+    /** 选址时允许的地面高度差（建造时会清除上方、填实下方） */
+    private static final int MAX_HEIGHT_DIFFERENCE = 8;
     /** 完工消息的通知范围 */
     private static final double NOTIFY_RANGE = 96.0;
 
@@ -439,6 +439,8 @@ public class VillageGrowth {
             for (int z = box.minZ(); z <= box.maxZ(); z += 2) {
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 if (isWaterSurface(level, new BlockPos(x, y - 1, z))) {
+                    MillenaireRewrite.LOGGER.debug("site {}: water/ice at {} {} {} ({})", box, x, y - 1, z,
+                        level.getBlockState(new BlockPos(x, y - 1, z)));
                     return null;
                 }
                 min = Math.min(min, y);
@@ -448,6 +450,7 @@ public class VillageGrowth {
             }
         }
         if (count == 0 || max - min > MAX_HEIGHT_DIFFERENCE) {
+            MillenaireRewrite.LOGGER.debug("site {}: height range {}-{}", box, min, max);
             return null;
         }
         return (int) Math.round(sum / (double) count);

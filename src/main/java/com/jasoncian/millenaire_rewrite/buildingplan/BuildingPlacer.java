@@ -62,10 +62,21 @@ public final class BuildingPlacer {
         }
     }
 
+    /** 地基最多向下填充的深度 */
+    private static final int MAX_FOUNDATION_DEPTH = 24;
+    /** 建筑上方最多向上清除的高度 */
+    private static final int MAX_CLEAR_HEIGHT = 32;
+
     /**
-     * 一个放置步骤。onlyIfNotSolid 用于"保留地面"：只填补空洞，不覆盖原有地面。
+     * 一个放置步骤。onlyIfNotSolid 用于"保留地面"：只填补空洞，不覆盖原有地面；
+     * foundation 为地基柱：从 pos 向下把空洞和水填实，直到碰到实心地面；
+     * clearAbove 为清除柱：从 pos 向上把地形和树木清空，直到碰到空气。
      */
-    private record Op(BlockPos pos, BlockState state, int flags, boolean onlyIfNotSolid) {
+    private record Op(BlockPos pos, BlockState state, int flags, boolean onlyIfNotSolid, boolean foundation,
+                      boolean clearAbove) {
+        Op(BlockPos pos, BlockState state, int flags, boolean onlyIfNotSolid) {
+            this(pos, state, flags, onlyIfNotSolid, false, false);
+        }
     }
 
     /**
@@ -129,6 +140,31 @@ public final class BuildingPlacer {
         }
 
         private void apply(ServerLevel level, Op op, boolean sound) {
+            if (op.foundation()) {
+                BlockPos.MutableBlockPos p = op.pos().mutable();
+                for (int i = 0; i < MAX_FOUNDATION_DEPTH && p.getY() > level.getMinBuildHeight(); i++) {
+                    BlockState below = level.getBlockState(p);
+                    if (below.isSolid() && below.getFluidState().isEmpty()) {
+                        break;
+                    }
+                    level.setBlock(p, op.state(), op.flags());
+                    result.blocksPlaced++;
+                    p.move(Direction.DOWN);
+                }
+                return;
+            }
+            if (op.clearAbove()) {
+                BlockPos.MutableBlockPos p = op.pos().mutable();
+                for (int i = 0; i < MAX_CLEAR_HEIGHT && p.getY() < level.getMaxBuildHeight(); i++) {
+                    if (level.getBlockState(p).isAir()) {
+                        break;
+                    }
+                    level.setBlock(p, Blocks.AIR.defaultBlockState(), op.flags());
+                    result.blocksPlaced++;
+                    p.move(Direction.UP);
+                }
+                return;
+            }
             BlockState current = level.getBlockState(op.pos());
             if (current == op.state() || op.onlyIfNotSolid() && current.isSolid()) {
                 return;
@@ -197,6 +233,21 @@ public final class BuildingPlacer {
         Construction c = new Construction(plan, origin.immutable(), orientation);
         int finalOrientation = finalOrientation(plan, orientation);
         Rotation rotation = rotationFor(finalOrientation);
+
+        // 整地（原版 prepareGround）：清除建筑上方的地形和树木，
+        // 并把最底层下方向下填实到实心地面，避免嵌进山坡、悬空或建在水上
+        if (plan.level == 0) {
+            for (int l = 0; l < plan.length; l++) {
+                for (int w = 0; w < plan.width; w++) {
+                    int dx = l - plan.lengthOffset();
+                    int dz = w - plan.widthOffset();
+                    BlockPos above = worldPos(origin, plan.startLevel + plan.nbFloors, dx, dz, finalOrientation);
+                    c.ops.add(new Op(above, Blocks.AIR.defaultBlockState(), FLAGS, false, false, true));
+                    BlockPos below = worldPos(origin, plan.startLevel - 1, dx, dz, finalOrientation);
+                    c.ops.add(new Op(below, Blocks.DIRT.defaultBlockState(), FLAGS, false, true, false));
+                }
+            }
+        }
 
         // 第一轮：结构方块、空气、地面；第二轮：需要依附的方块（火把、门、告示牌等）
         for (int pass = 0; pass < 2; pass++) {

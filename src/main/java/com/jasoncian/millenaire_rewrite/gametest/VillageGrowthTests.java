@@ -28,10 +28,34 @@ public class VillageGrowthTests {
     /** 村庄选址半径约 72 格，强制加载周围 6 个区块 */
     private static final int CHUNK_RADIUS = 6;
 
+    /** 测试世界是正常地形（山地、河流），在高空搭平台让村庄测试结果不受地形影响 */
+    private static final int PLATFORM_TOP = 200;
+    private static final int PLATFORM_HALF_SIZE = 85;
+    private static final int PLATFORM_DEPTH = 12;
+
+    private static void buildPlatform(ServerLevel level, BlockPos centre) {
+        var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+        var grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
+        int flags = net.minecraft.world.level.block.Block.UPDATE_CLIENTS
+            | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE;
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        for (int x = -PLATFORM_HALF_SIZE; x <= PLATFORM_HALF_SIZE; x++) {
+            for (int z = -PLATFORM_HALF_SIZE; z <= PLATFORM_HALF_SIZE; z++) {
+                for (int y = PLATFORM_TOP - PLATFORM_DEPTH; y < PLATFORM_TOP; y++) {
+                    p.set(centre.getX() + x, y, centre.getZ() + z);
+                    level.setBlock(p, stone, flags);
+                }
+                p.set(centre.getX() + x, PLATFORM_TOP, centre.getZ() + z);
+                level.setBlock(p, grass, flags);
+            }
+        }
+    }
+
     private static Village createVillage(GameTestHelper helper, int relativeZ, Culture culture) {
         ServerLevel level = helper.getLevel();
         BlockPos pos = helper.absolutePos(new BlockPos(0, 0, relativeZ));
         setForced(level, pos, true);
+        buildPlatform(level, pos);
         Village village = VillageGenerator.forceGenerateVillage(level, pos, culture);
         if (village == null) {
             throw new GameTestAssertException("village generation failed");
@@ -50,6 +74,10 @@ public class VillageGrowthTests {
         for (int cx = -CHUNK_RADIUS; cx <= CHUNK_RADIUS; cx++) {
             for (int cz = -CHUNK_RADIUS; cz <= CHUNK_RADIUS; cz++) {
                 level.setChunkForced(centre.x + cx, centre.z + cz, forced);
+                if (forced) {
+                    // 强制加载是异步的，这里同步加载，确保选址时区块已就绪
+                    level.getChunk(centre.x + cx, centre.z + cz);
+                }
             }
         }
     }
@@ -64,6 +92,52 @@ public class VillageGrowthTests {
                 }
             }
         }
+    }
+
+    /**
+     * 地基：建在深水上的建筑，最底层下方一路填实到水底，不会悬空
+     */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void foundationFillsDeepWater(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos corner = helper.absolutePos(new BlockPos(0, 0, 3200));
+        setForced(level, corner, true);
+        // 高空中的 40x40 水池：石头池底 y=160，水深 30 格（161-190）
+        int floorY = 160;
+        int surfaceY = 191;
+        for (int x = 0; x < 40; x++) {
+            for (int z = 0; z < 40; z++) {
+                level.setBlock(new BlockPos(corner.getX() + x, floorY, corner.getZ() + z),
+                    net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 2);
+                for (int y = floorY + 1; y < surfaceY; y++) {
+                    level.setBlock(new BlockPos(corner.getX() + x, y, corner.getZ() + z),
+                        net.minecraft.world.level.block.Blocks.WATER.defaultBlockState(), 2);
+                }
+            }
+        }
+        try {
+            com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan plan =
+                com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("norman", "manor", 'A', 0);
+            BlockPos origin = new BlockPos(corner.getX() + 20, surfaceY, corner.getZ() + 20);
+            com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, plan, origin, 0);
+            int bottom = surfaceY + plan.startLevel - 1;
+            int water = 0;
+            for (int y = floorY + 1; y <= bottom; y++) {
+                if (!level.getFluidState(new BlockPos(origin.getX(), y, origin.getZ())).isEmpty()) {
+                    water++;
+                }
+            }
+            MillenaireRewrite.LOGGER.info("[gametest] foundation: {} water blocks left under the manor centre (y {}-{})",
+                water, floorY + 1, bottom);
+            if (water > 0) {
+                helper.fail(water + " water blocks left under the building");
+            }
+        } catch (java.io.IOException e) {
+            helper.fail(e.toString());
+        } finally {
+            setForced(level, corner, false);
+        }
+        helper.succeed();
     }
 
     /**

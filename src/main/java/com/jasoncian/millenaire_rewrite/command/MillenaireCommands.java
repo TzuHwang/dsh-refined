@@ -165,7 +165,7 @@ public class MillenaireCommands {
             ), true);
             return 1;
         } else {
-            source.sendFailure(Component.literal("Failed to generate village"));
+            source.sendFailure(Component.literal("Failed to generate village: no flat dry land within 64 blocks"));
             return 0;
         }
     }
