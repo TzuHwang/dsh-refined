@@ -65,6 +65,29 @@ public class BuildingPlanTests {
     }
 
     /**
+     * 随机选择村庄类型时，每种可生成的类型都有机会被选中
+     */
+    @GameTest(template = "empty")
+    public static void villageTypePickIsRandom(GameTestHelper helper) {
+        java.util.Map<String, Integer> counts = new java.util.TreeMap<>();
+        try {
+            MillenaireRewrite.LOGGER.info("[gametest] norman village types: {}", VillageTypes.list(Culture.NORMAN));
+            net.minecraft.util.RandomSource random = helper.getLevel().random;
+            for (int i = 0; i < 200; i++) {
+                counts.merge(VillageTypes.pick(Culture.NORMAN, random).fileName(), 1, Integer::sum);
+            }
+        } catch (Exception e) {
+            helper.fail(e.toString());
+            return;
+        }
+        MillenaireRewrite.LOGGER.info("[gametest] norman village type picks: {}", counts);
+        if (counts.size() < 4) {
+            helper.fail("only picked " + counts);
+        }
+        helper.succeed();
+    }
+
+    /**
      * 建造完成后，栅栏、墙、玻璃板、楼梯的连接形状都已和邻居一致
      */
     @GameTest(template = "empty", timeoutTicks = 200)
@@ -81,7 +104,8 @@ public class BuildingPlanTests {
                 helper.fail("cannot load " + buildings[i][1] + ": " + e);
                 return;
             }
-            BlockPos origin = helper.absolutePos(new BlockPos(i * SPACING, BUILD_HEIGHT, SPACING * 2));
+            // 与其他测试的建筑错开，避免重叠
+            BlockPos origin = helper.absolutePos(new BlockPos(i * SPACING, BUILD_HEIGHT + 60, SPACING * 3));
             BuildingPlacer.place(level, plan, origin, i % 4);
             int radius = Math.max(plan.length, plan.width);
             for (BlockPos p : BlockPos.betweenClosed(origin.offset(-radius, plan.startLevel, -radius),

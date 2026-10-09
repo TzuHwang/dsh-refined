@@ -50,7 +50,7 @@ public final class BuildingPlacer {
         @Nullable
         public BlockPos mainChest;
         public int blocksPlaced;
-        /** 本次放置过的位置，用于最后统一刷新形状 */
+        /** 建筑覆盖的所有位置（含未改变的），用于最后统一刷新形状 */
         final List<BlockPos> placed = new ArrayList<>();
         /** 图纸中门的预定状态，延后到最后统一放置 */
         final Map<BlockPos, BlockState> plannedDoors = new HashMap<>();
@@ -125,10 +125,10 @@ public final class BuildingPlacer {
             result.plannedDoors.put(pos.immutable(), state);
             return;
         }
+        result.placed.add(pos.immutable());
         if (level.getBlockState(pos) != state) {
             level.setBlock(pos, state, FLAGS);
             result.blocksPlaced++;
-            result.placed.add(pos.immutable());
         }
     }
 

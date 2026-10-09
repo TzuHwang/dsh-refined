@@ -363,7 +363,8 @@ public class VillageGenerator {
         villageManager.registerVillage(village);
 
         // 放置标记
-        buildTownHall(level, groundPos, culture, level.random);
+        // 指令生成不需要和世界种子绑定；level.random 在两次指令之间可能被重置为相同状态
+        buildTownHall(level, groundPos, culture, RandomSource.create());
 
         MillenaireRewrite.LOGGER.info("Force generated {} village '{}' at {}",
             culture.getDisplayName(), village.getName(), groundPos);
