@@ -4,6 +4,7 @@ import com.jasoncian.millenaire_rewrite.core.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
@@ -13,11 +14,13 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.WallBannerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -26,7 +29,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 按图纸在世界中立即放置一栋建筑（村庄生成时使用）。
+ * 按图纸在世界中放置一栋建筑。
+ *
+ * {@link #prepare} 先把图纸换算成按顺序执行的放置步骤（{@link Construction}），
+ * 村庄生成时一次执行完（{@link #place}），村庄成长时每 tick 执行几步，形成逐格建造。
  *
  * 坐标和朝向换算沿用原版 BuildingPlan.adjustForOrientation / attemptAutoRotation：
  * 图纸第 floor 层位于 origin.y + floor + startLevel；
@@ -50,10 +56,6 @@ public final class BuildingPlacer {
         @Nullable
         public BlockPos mainChest;
         public int blocksPlaced;
-        /** 建筑覆盖的所有位置（含未改变的），用于最后统一刷新形状 */
-        final List<BlockPos> placed = new ArrayList<>();
-        /** 图纸中门的预定状态，延后到最后统一放置 */
-        final Map<BlockPos, BlockState> plannedDoors = new HashMap<>();
 
         void addPoint(String type, BlockPos pos) {
             specialPoints.computeIfAbsent(type, k -> new ArrayList<>()).add(pos.immutable());
@@ -61,13 +63,140 @@ public final class BuildingPlacer {
     }
 
     /**
+     * 一个放置步骤。onlyIfNotSolid 用于"保留地面"：只填补空洞，不覆盖原有地面。
+     */
+    private record Op(BlockPos pos, BlockState state, int flags, boolean onlyIfNotSolid) {
+    }
+
+    /**
+     * 一栋建筑的施工计划：按顺序执行的放置步骤和施工进度
+     */
+    public static final class Construction {
+        public final BuildingPlan plan;
+        public final BlockPos origin;
+        public final int orientation;
+        public final Result result = new Result();
+
+        private final List<Op> ops = new ArrayList<>();
+        /** 建筑覆盖的所有非门位置，完工时统一刷新形状 */
+        private final List<BlockPos> shaped = new ArrayList<>();
+        /** 图纸中门的预定状态，最后统一换算成步骤 */
+        private final Map<BlockPos, BlockState> plannedDoors = new HashMap<>();
+        private int next;
+
+        private Construction(BuildingPlan plan, BlockPos origin, int orientation) {
+            this.plan = plan;
+            this.origin = origin;
+            this.orientation = orientation;
+        }
+
+        public int size() {
+            return ops.size();
+        }
+
+        public int progress() {
+            return next;
+        }
+
+        /** 从存档恢复施工进度 */
+        public void skipTo(int index) {
+            next = Math.min(index, ops.size());
+        }
+
+        public boolean isDone() {
+            return next >= ops.size();
+        }
+
+        /**
+         * 执行最多 max 个步骤。
+         *
+         * @param onlyLoaded 为 true 时遇到未加载的区块就暂停（村庄成长时不主动加载区块）
+         * @param sound      是否播放放置方块的音效
+         * @return 实际执行的步骤数
+         */
+        public int step(ServerLevel level, int max, boolean onlyLoaded, boolean sound) {
+            int done = 0;
+            while (done < max && next < ops.size()) {
+                Op op = ops.get(next);
+                if (onlyLoaded && !level.isLoaded(op.pos())) {
+                    break;
+                }
+                apply(level, op, sound);
+                next++;
+                done++;
+            }
+            return done;
+        }
+
+        private void apply(ServerLevel level, Op op, boolean sound) {
+            BlockState current = level.getBlockState(op.pos());
+            if (current == op.state() || op.onlyIfNotSolid() && current.isSolid()) {
+                return;
+            }
+            level.setBlock(op.pos(), op.state(), op.flags());
+            result.blocksPlaced++;
+            if (sound && !op.state().isAir()) {
+                SoundType type = op.state().getSoundType();
+                level.playSound(null, op.pos(), type.getPlaceSound(), SoundSource.BLOCKS,
+                    (type.getVolume() + 1.0F) / 4.0F, type.getPitch() * 0.8F);
+            }
+        }
+
+        /**
+         * 完工：栅栏、墙、玻璃板、楼梯转角等的连接形状只在邻居变化时重新计算；
+         * 先放的方块不会因为后放的邻居而刷新（反之亦然），所以完工后统一按邻居重算一次。
+         */
+        public void finish(ServerLevel level) {
+            for (BlockPos pos : shaped) {
+                BlockState state = level.getBlockState(pos);
+                if (state.isAir() || state.getBlock() instanceof DoorBlock) {
+                    continue;
+                }
+                BlockState updated = Block.updateFromNeighbourShapes(state, level, pos);
+                if (updated != state) {
+                    level.setBlock(pos, updated, FLAGS | Block.UPDATE_KNOWN_SHAPE);
+                }
+            }
+        }
+
+        private void set(BlockPos pos, BlockState state) {
+            add(pos, state, false);
+        }
+
+        private void add(BlockPos pos, BlockState state, boolean onlyIfNotSolid) {
+            if (state.getBlock() instanceof DoorBlock) {
+                // 门的上下两格放置时会互相同步属性，污染图纸数据，所以先记录、最后统一换算
+                plannedDoors.put(pos.immutable(), state);
+                return;
+            }
+            BlockPos p = pos.immutable();
+            ops.add(new Op(p, state, FLAGS, onlyIfNotSolid));
+            shaped.add(p);
+        }
+    }
+
+    // ================ 入口 ================
+
+    /**
+     * 立即放置整栋建筑（村庄生成时使用）
+     *
      * @param origin      建筑中心，y 为地面上第一格空气的高度
      * @param orientation 放置方向 0-3（会再加上图纸自身的 buildingOrientation）
      */
     public static Result place(ServerLevel level, BuildingPlan plan, BlockPos origin, int orientation) {
-        int finalOrientation = (orientation + plan.buildingOrientation) % 4;
+        Construction construction = prepare(plan, origin, orientation);
+        construction.step(level, Integer.MAX_VALUE, false, false);
+        construction.finish(level);
+        return construction.result;
+    }
+
+    /**
+     * 把图纸换算为施工步骤（不读取世界，可在任何时候调用并从存档恢复进度）
+     */
+    public static Construction prepare(BuildingPlan plan, BlockPos origin, int orientation) {
+        Construction c = new Construction(plan, origin.immutable(), orientation);
+        int finalOrientation = finalOrientation(plan, orientation);
         Rotation rotation = rotationFor(finalOrientation);
-        Result result = new Result();
 
         // 第一轮：结构方块、空气、地面；第二轮：需要依附的方块（火把、门、告示牌等）
         for (int pass = 0; pass < 2; pass++) {
@@ -80,20 +209,34 @@ public final class BuildingPlacer {
                         boolean underground = floor + plan.startLevel < 0;
                         if (pt.state() != null) {
                             if (pt.secondStep() == (pass == 1)) {
-                                set(level, pos, pt.state().rotate(rotation), result);
+                                c.set(pos, pt.state().rotate(rotation));
                             }
                         } else if (pass == 0) {
-                            placeSpecialFirstPass(level, plan, pt, pos, underground, rotation, result);
+                            specialFirstPass(c, pt, pos, underground, rotation);
                         } else {
-                            placeSpecialSecondPass(level, pt, pos, rotation, result);
+                            specialSecondPass(c, pt, pos, rotation);
                         }
                     }
                 }
             }
         }
-        completeDoors(level, result);
-        settleShapes(level, result);
-        return result;
+        addDoorOps(c);
+        return c;
+    }
+
+    /**
+     * 建筑在地面上的占地范围（含 y 范围）
+     */
+    public static BoundingBox footprint(BuildingPlan plan, BlockPos origin, int orientation) {
+        int o = finalOrientation(plan, orientation);
+        BlockPos a = worldPos(origin, plan.startLevel, -plan.lengthOffset(), -plan.widthOffset(), o);
+        BlockPos b = worldPos(origin, plan.startLevel + plan.nbFloors - 1,
+            plan.length - 1 - plan.lengthOffset(), plan.width - 1 - plan.widthOffset(), o);
+        return BoundingBox.fromCorners(a, b);
+    }
+
+    static int finalOrientation(BuildingPlan plan, int orientation) {
+        return (orientation + plan.buildingOrientation) % 4;
     }
 
     /**
@@ -119,36 +262,6 @@ public final class BuildingPlacer {
         };
     }
 
-    private static void set(ServerLevel level, BlockPos pos, BlockState state, Result result) {
-        if (state.getBlock() instanceof DoorBlock) {
-            // 门的上下两格放置时会互相同步属性，污染图纸数据，所以先记录、最后统一放置
-            result.plannedDoors.put(pos.immutable(), state);
-            return;
-        }
-        result.placed.add(pos.immutable());
-        if (level.getBlockState(pos) != state) {
-            level.setBlock(pos, state, FLAGS);
-            result.blocksPlaced++;
-        }
-    }
-
-    /**
-     * 栅栏、墙、玻璃板、楼梯转角等的连接形状只在邻居变化时重新计算；
-     * 先放的方块不会因为后放的邻居而刷新（反之亦然），所以建造完成后统一按邻居重算一次。
-     */
-    private static void settleShapes(ServerLevel level, Result result) {
-        for (BlockPos pos : result.placed) {
-            BlockState state = level.getBlockState(pos);
-            if (state.isAir() || state.getBlock() instanceof DoorBlock) {
-                continue;
-            }
-            BlockState updated = Block.updateFromNeighbourShapes(state, level, pos);
-            if (updated != state) {
-                level.setBlock(pos, updated, FLAGS | Block.UPDATE_KNOWN_SHAPE);
-            }
-        }
-    }
-
     // ================ 门 ================
 
     /**
@@ -156,8 +269,8 @@ public final class BuildingPlacer {
      * 而 1.20 要求上下两格属性一致。这里以下半部的朝向和上半部的铰链为准同步两格；
      * 图纸没有上半部时补上，并按相邻的门推断双开门铰链。
      */
-    private static void completeDoors(ServerLevel level, Result result) {
-        Map<BlockPos, BlockState> planned = result.plannedDoors;
+    private static void addDoorOps(Construction c) {
+        Map<BlockPos, BlockState> planned = c.plannedDoors;
         for (Map.Entry<BlockPos, BlockState> entry : planned.entrySet()) {
             BlockPos pos = entry.getKey();
             BlockState state = entry.getValue();
@@ -178,9 +291,8 @@ public final class BuildingPlacer {
                 hinge = DoorHingeSide.LEFT;
             }
             BlockState lower = state.setValue(DoorBlock.HINGE, hinge);
-            level.setBlock(pos, lower, DOOR_FLAGS);
-            level.setBlock(pos.above(), lower.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), DOOR_FLAGS);
-            result.blocksPlaced += 2;
+            c.ops.add(new Op(pos, lower, DOOR_FLAGS, false));
+            c.ops.add(new Op(pos.above(), lower.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), DOOR_FLAGS, false));
         }
     }
 
@@ -192,80 +304,73 @@ public final class BuildingPlacer {
 
     // ================ 特殊标记 ================
 
-    private static void placeSpecialFirstPass(ServerLevel level, BuildingPlan plan, PointType pt, BlockPos pos,
-                                              boolean underground, Rotation rotation, Result result) {
+    private static void specialFirstPass(Construction c, PointType pt, BlockPos pos,
+                                         boolean underground, Rotation rotation) {
         String type = pt.special();
         if (type == null) {
             return;
         }
         switch (type) {
             case "empty" -> {
-                if (plan.level == 0) {
-                    set(level, pos, Blocks.AIR.defaultBlockState(), result);
+                if (c.plan.level == 0) {
+                    c.set(pos, Blocks.AIR.defaultBlockState());
                 }
             }
-            case "preserveground" -> {
-                if (!level.getBlockState(pos).isSolid()) {
-                    set(level, pos, (underground ? Blocks.DIRT : Blocks.GRASS_BLOCK).defaultBlockState(), result);
-                }
-            }
+            case "preserveground" ->
+                c.add(pos, (underground ? Blocks.DIRT : Blocks.GRASS_BLOCK).defaultBlockState(), true);
             case "allbuttrees", "stall", "brickspot", "healingspot", "fishingspot",
                  "plainSignGuess", "signwallGuess", "ladderGuess" -> {
                 // 暂不处理
             }
             case "grass", "soil", "ricesoil", "turmericsoil", "sugarcanesoil", "potatosoil", "vinesoil",
                  "maizesoil", "cacaospot", "carrotsoil", "flowersoil", "cottonsoil", "freegrass_block" ->
-                set(level, pos, Blocks.GRASS_BLOCK.defaultBlockState(), result);
-            case "netherwartsoil" -> set(level, pos, Blocks.SOUL_SAND.defaultBlockState(), result);
-            case "snailsoilblock" -> set(level, pos, Blocks.DIRT.defaultBlockState(), result);
-            case "furnaceGuess" -> set(level, pos, Blocks.FURNACE.defaultBlockState(), result);
-            case "silkwormblock" -> set(level, pos, ModBlocks.SILKWORM.get().defaultBlockState(), result);
-            case "dispenserunknownpowder" -> set(level, pos, Blocks.DISPENSER.defaultBlockState(), result);
-            case "brewingstand" -> set(level, pos, Blocks.BREWING_STAND.defaultBlockState(), result);
+                c.set(pos, Blocks.GRASS_BLOCK.defaultBlockState());
+            case "netherwartsoil" -> c.set(pos, Blocks.SOUL_SAND.defaultBlockState());
+            case "snailsoilblock" -> c.set(pos, Blocks.DIRT.defaultBlockState());
+            case "furnaceGuess" -> c.set(pos, Blocks.FURNACE.defaultBlockState());
+            case "silkwormblock" -> c.set(pos, ModBlocks.SILKWORM.get().defaultBlockState());
+            case "dispenserunknownpowder" -> c.set(pos, Blocks.DISPENSER.defaultBlockState());
+            case "brewingstand" -> c.set(pos, Blocks.BREWING_STAND.defaultBlockState());
             default -> {
                 BlockState resource = resourceBlock(type);
                 if (resource != null) {
-                    set(level, pos, resource, result);
+                    c.set(pos, resource);
                 } else if (type.startsWith("mainchest") || type.startsWith("lockedchest")) {
-                    placeChest(level, type, pos, rotation, result);
-                } else if (type.endsWith("spawn") && !type.endsWith("treespawn")) {
-                    result.addPoint(type, pos);
+                    placeChest(c, type, pos, rotation);
                 } else {
-                    // sleepingPos、sellingPos 等功能点位，以及暂未实现的装饰实体
-                    result.addPoint(type, pos);
+                    // sleepingPos、sellingPos、动物生成点等功能点位，以及暂未实现的装饰实体
+                    c.result.addPoint(type, pos);
                 }
             }
         }
     }
 
-    private static void placeSpecialSecondPass(ServerLevel level, PointType pt, BlockPos pos, Rotation rotation,
-                                               Result result) {
+    private static void specialSecondPass(Construction c, PointType pt, BlockPos pos, Rotation rotation) {
         String type = pt.special();
         if (type == null) {
             return;
         }
         if (type.equals("torchGuess")) {
-            set(level, pos, Blocks.TORCH.defaultBlockState(), result);
-        } else if (type.endsWith("treespawn") || type.endsWith("spawn") && saplingFor(type) != null) {
+            c.set(pos, Blocks.TORCH.defaultBlockState());
+        } else if (type.endsWith("spawn")) {
             BlockState sapling = saplingFor(type);
             if (sapling != null) {
-                set(level, pos, sapling, result);
+                c.set(pos, sapling);
             }
         } else if (type.contains("BannerWall")) {
             Direction facing = Direction.byName(type.substring(type.indexOf("Wall") + 4).toLowerCase());
             if (facing != null) {
                 Block banner = type.startsWith("village") ? Blocks.WHITE_WALL_BANNER : Blocks.BLUE_WALL_BANNER;
-                set(level, pos, banner.defaultBlockState()
-                    .setValue(WallBannerBlock.FACING, facing).rotate(rotation), result);
+                c.set(pos, banner.defaultBlockState().setValue(WallBannerBlock.FACING, facing).rotate(rotation));
             }
         } else if (type.contains("BannerStanding")) {
             int rot = Integer.parseInt(type.substring(type.indexOf("Standing") + 8));
             Block banner = type.startsWith("village") ? Blocks.WHITE_BANNER : Blocks.BLUE_BANNER;
-            set(level, pos, banner.defaultBlockState().setValue(BannerBlock.ROTATION, rot).rotate(rotation), result);
+            c.set(pos, banner.defaultBlockState().setValue(BannerBlock.ROTATION, rot).rotate(rotation));
         }
     }
 
-    private static void placeChest(ServerLevel level, String type, BlockPos pos, Rotation rotation, Result result) {
+    private static void placeChest(Construction c, String type, BlockPos pos, Rotation rotation) {
         Direction facing;
         if (type.endsWith("Top")) {
             facing = Direction.EAST;
@@ -282,11 +387,11 @@ public final class BuildingPlacer {
         BlockState chest = main
             ? Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, facing)
             : ModBlocks.LOCKED_CHEST.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
-        set(level, pos, chest.rotate(rotation), result);
+        c.set(pos, chest.rotate(rotation));
         if (main) {
-            result.mainChest = pos.immutable();
+            c.result.mainChest = pos.immutable();
         }
-        result.addPoint(main ? "mainchest" : "lockedchest", pos);
+        c.result.addPoint(main ? "mainchest" : "lockedchest", pos);
     }
 
     /**
