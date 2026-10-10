@@ -24,9 +24,11 @@ public final class VillageTypes {
      * @param start      村庄生成时一起建好的建筑
      * @param core       优先建造的建筑
      * @param secondary  核心建筑之后建造的建筑
+     * @param pathMaterials 道路材料（原版名称，如 pathdirt），第一个为当前使用的材料
      */
     public record VillageType(String fileName, String name, String centre, int weight,
-                              List<String> start, List<String> core, List<String> secondary) {
+                              List<String> start, List<String> core, List<String> secondary,
+                              List<String> pathMaterials) {
     }
 
     /**
@@ -98,6 +100,7 @@ public final class VillageTypes {
         List<String> start = new ArrayList<>();
         List<String> core = new ArrayList<>();
         List<String> secondary = new ArrayList<>();
+        List<String> pathMaterials = new ArrayList<>();
         for (String raw : MillContent.readLines(file)) {
             String line = raw.trim();
             if (line.startsWith("//") || !line.contains("=")) {
@@ -111,11 +114,13 @@ public final class VillageTypes {
                 case "start" -> start.add(kv[1].trim());
                 case "core" -> core.add(kv[1].trim());
                 case "secondary" -> secondary.add(kv[1].trim());
+                case "pathmaterial" -> pathMaterials.add(kv[1].trim());
                 default -> {
                 }
             }
         }
         return centre == null ? null
-            : new VillageType(fileName, name, centre, weight, List.copyOf(start), List.copyOf(core), List.copyOf(secondary));
+            : new VillageType(fileName, name, centre, weight, List.copyOf(start), List.copyOf(core),
+                List.copyOf(secondary), List.copyOf(pathMaterials));
     }
 }

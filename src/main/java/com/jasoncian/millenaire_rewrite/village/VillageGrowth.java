@@ -57,9 +57,11 @@ public class VillageGrowth {
         public final int orientation;
         public final BoundingBox footprint;
         public final boolean townHall;
+        /** 图纸中的道路起点（通常在门口），用于连接道路网 */
+        public final List<BlockPos> pathStarts;
 
         PlacedBuilding(String key, char variation, int level, BlockPos origin, int orientation,
-                       BoundingBox footprint, boolean townHall) {
+                       BoundingBox footprint, boolean townHall, List<BlockPos> pathStarts) {
             this.key = key;
             this.variation = variation;
             this.level = level;
@@ -67,6 +69,7 @@ public class VillageGrowth {
             this.orientation = orientation;
             this.footprint = footprint;
             this.townHall = townHall;
+            this.pathStarts = List.copyOf(pathStarts);
         }
 
         CompoundTag save() {
@@ -79,14 +82,22 @@ public class VillageGrowth {
             tag.putIntArray("Footprint", new int[] {footprint.minX(), footprint.minY(), footprint.minZ(),
                 footprint.maxX(), footprint.maxY(), footprint.maxZ()});
             tag.putBoolean("TownHall", townHall);
+            ListTag starts = new ListTag();
+            pathStarts.forEach(p -> starts.add(NbtUtils.writeBlockPos(p)));
+            tag.put("PathStarts", starts);
             return tag;
         }
 
         static PlacedBuilding load(CompoundTag tag) {
             int[] f = tag.getIntArray("Footprint");
+            List<BlockPos> starts = new ArrayList<>();
+            ListTag list = tag.getList("PathStarts", 10);
+            for (int i = 0; i < list.size(); i++) {
+                starts.add(NbtUtils.readBlockPos(list.getCompound(i)));
+            }
             return new PlacedBuilding(tag.getString("Key"), tag.getString("Variation").charAt(0), tag.getInt("Level"),
                 NbtUtils.readBlockPos(tag.getCompound("Origin")), tag.getInt("Orientation"),
-                new BoundingBox(f[0], f[1], f[2], f[3], f[4], f[5]), tag.getBoolean("TownHall"));
+                new BoundingBox(f[0], f[1], f[2], f[3], f[4], f[5]), tag.getBoolean("TownHall"), starts);
         }
     }
 
@@ -118,6 +129,8 @@ public class VillageGrowth {
     private final Village village;
     private String villageTypeFile = "";
     private final List<PlacedBuilding> buildings = new ArrayList<>();
+    /** 已连到市政厅的道路格子（x/z 打包为 long），新道路遇到即并入 */
+    private final Set<Long> pathNetwork = new HashSet<>();
     @Nullable
     private Project project;
     @Nullable
@@ -132,6 +145,10 @@ public class VillageGrowth {
 
     public List<PlacedBuilding> getBuildings() {
         return buildings;
+    }
+
+    public Set<Long> getPathNetwork() {
+        return pathNetwork;
     }
 
     public boolean isConstructing() {
@@ -153,10 +170,11 @@ public class VillageGrowth {
      * 村庄生成时调用：记录市政厅，并立即建好村庄类型的 start 建筑
      */
     public void initialise(ServerLevel level, VillageTypes.VillageType type, BuildingPlan townHall,
-                           BlockPos origin, int orientation, RandomSource random) {
+                           BlockPos origin, int orientation, BuildingPlacer.Result townHallResult,
+                           RandomSource random) {
         villageTypeFile = type.fileName();
         buildings.add(new PlacedBuilding(townHall.key, townHall.variation, townHall.level, origin, orientation,
-            BuildingPlacer.footprint(townHall, origin, orientation), true));
+            BuildingPlacer.footprint(townHall, origin, orientation), true, pathStarts(townHallResult)));
 
         for (String key : type.start()) {
             try {
@@ -171,7 +189,10 @@ public class VillageGrowth {
                 c.finish(level);
                 BuildingPlacer.spawnAnimals(level, c.result);
                 ResidentSpawner.spawnResidents(level, village, plan, c.result);
-                buildings.add(new PlacedBuilding(key, 'A', 0, site.origin(), site.orientation(), site.footprint(), false));
+                PlacedBuilding placed = new PlacedBuilding(key, 'A', 0, site.origin(), site.orientation(),
+                    site.footprint(), false, pathStarts(c.result));
+                buildings.add(placed);
+                VillagePaths.connect(level, this, placed, pathMaterial(type));
             } catch (IOException e) {
                 MillenaireRewrite.LOGGER.error("Village {}: cannot load start building {}", village.getName(), key, e);
             }
@@ -310,8 +331,14 @@ public class VillageGrowth {
             buildings.get(p.upgradeOf).level = p.level;
         } else {
             ResidentSpawner.spawnResidents(level, village, c.plan, c.result);
-            buildings.add(new PlacedBuilding(p.key, p.variation, p.level, p.origin, p.orientation,
-                BuildingPlacer.footprint(c.plan, p.origin, p.orientation), false));
+            PlacedBuilding placed = new PlacedBuilding(p.key, p.variation, p.level, p.origin, p.orientation,
+                BuildingPlacer.footprint(c.plan, p.origin, p.orientation), false, pathStarts(c.result));
+            buildings.add(placed);
+            try {
+                VillagePaths.connect(level, this, placed, pathMaterial(VillageTypes.get(village.getCulture(), villageTypeFile)));
+            } catch (IOException e) {
+                MillenaireRewrite.LOGGER.warn("Village {}: cannot read village type for paths", village.getName());
+            }
         }
         project = null;
         construction = null;
@@ -357,6 +384,27 @@ public class VillageGrowth {
                 variation, level, e.getMessage());
             return null;
         }
+    }
+
+    private static List<BlockPos> pathStarts(BuildingPlacer.Result result) {
+        return result.specialPoints.getOrDefault("pathStartPos", List.of());
+    }
+
+    /**
+     * 村庄类型的道路材料 -> 1.20.1 方块（与 blocklist 转换器中的映射一致）
+     */
+    static net.minecraft.world.level.block.state.BlockState pathMaterial(@Nullable VillageTypes.VillageType type) {
+        String name = type == null || type.pathMaterials().isEmpty() ? "pathdirt" : type.pathMaterials().get(0);
+        return switch (name) {
+            case "pathgravel", "pathgravelslabs" -> com.jasoncian.millenaire_rewrite.blocks.system.BuildingBlockRegistry
+                .getBlock("gravel_path").get().defaultBlockState();
+            case "pathslabs" -> com.jasoncian.millenaire_rewrite.blocks.system.BuildingBlockRegistry
+                .getBlock("stone_path").get().defaultBlockState();
+            case "pathsandstone", "pathochretiles" -> com.jasoncian.millenaire_rewrite.blocks.system.BuildingBlockRegistry
+                .getBlock("sandstone_path").get().defaultBlockState();
+            case "pathsnow" -> net.minecraft.world.level.block.Blocks.SNOW_BLOCK.defaultBlockState();
+            default -> net.minecraft.world.level.block.Blocks.DIRT_PATH.defaultBlockState();
+        };
     }
 
     // ================ 选址 ================
@@ -475,6 +523,7 @@ public class VillageGrowth {
         ListTag list = new ListTag();
         buildings.forEach(b -> list.add(b.save()));
         tag.put("Buildings", list);
+        tag.putLongArray("PathNetwork", pathNetwork.stream().mapToLong(Long::longValue).toArray());
         if (project != null) {
             CompoundTag p = new CompoundTag();
             p.putString("Key", project.key);
@@ -496,6 +545,10 @@ public class VillageGrowth {
         ListTag list = tag.getList("Buildings", 10);
         for (int i = 0; i < list.size(); i++) {
             buildings.add(PlacedBuilding.load(list.getCompound(i)));
+        }
+        pathNetwork.clear();
+        for (long cell : tag.getLongArray("PathNetwork")) {
+            pathNetwork.add(cell);
         }
         project = null;
         construction = null;

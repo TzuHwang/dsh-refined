@@ -95,6 +95,52 @@ public class VillageGrowthTests {
     }
 
     /**
+     * 记录的占地范围必须包住实际放置的所有方块（选址防重叠、道路避让都依赖它）
+     */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void footprintContainsBuilding(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 3800));
+        setForced(level, centre, true);
+        buildPlatform(level, centre);
+        List<String> problems = new java.util.ArrayList<>();
+        try {
+            com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan plan =
+                com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("norman", "manor", 'A', 0);
+            for (int orientation = 0; orientation < 4; orientation++) {
+                BlockPos origin = new BlockPos(centre.getX() - 60 + orientation * 40, PLATFORM_TOP + 1, centre.getZ());
+                com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, plan, origin, orientation);
+                BoundingBox f = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.footprint(plan, origin, orientation);
+                int outside = 0;
+                for (int x = f.minX() - 6; x <= f.maxX() + 6; x++) {
+                    for (int z = f.minZ() - 6; z <= f.maxZ() + 6; z++) {
+                        if (x >= f.minX() && x <= f.maxX() && z >= f.minZ() && z <= f.maxZ()) {
+                            continue;
+                        }
+                        for (int y = PLATFORM_TOP + 1; y <= PLATFORM_TOP + 20; y++) {
+                            if (!level.getBlockState(new BlockPos(x, y, z)).isAir()) {
+                                outside++;
+                            }
+                        }
+                    }
+                }
+                MillenaireRewrite.LOGGER.info("[gametest] footprint o{}: {} blocks outside {}", orientation, outside, f);
+                if (outside > 0) {
+                    problems.add("orientation " + orientation + ": " + outside + " blocks outside the footprint");
+                }
+            }
+        } catch (java.io.IOException e) {
+            helper.fail(e.toString());
+        } finally {
+            setForced(level, centre, false);
+        }
+        if (!problems.isEmpty()) {
+            helper.fail(String.join("; ", problems));
+        }
+        helper.succeed();
+    }
+
+    /**
      * 地基：建在深水上的建筑，最底层下方一路填实到水底，不会悬空
      */
     @GameTest(template = "empty", timeoutTicks = 100)
@@ -203,6 +249,7 @@ public class VillageGrowthTests {
                 helper.fail("only " + projects + " projects could be built");
             }
             assertNoOverlap(buildings);
+            assertPathsConnected(level, village);
             if (village.getActiveVillagerCount() <= initialResidents) {
                 helper.fail("no new residents moved in");
             }
@@ -210,6 +257,87 @@ public class VillageGrowthTests {
             cleanup(level, village);
         }
         helper.succeed();
+    }
+
+    /**
+     * 从市政厅道路起点沿路面方块（高差 1 格内）能走到每栋建筑的道路起点附近
+     */
+    private static void assertPathsConnected(ServerLevel level, Village village) {
+        List<VillageGrowth.PlacedBuilding> buildings = village.getGrowth().getBuildings();
+        VillageGrowth.PlacedBuilding hall = buildings.stream().filter(b -> b.townHall).findFirst().orElseThrow();
+        BlockPos centre = village.getTownHallPos();
+        int radius = PLATFORM_HALF_SIZE;
+        java.util.Map<Long, Integer> pathCells = new java.util.HashMap<>();
+        for (int x = centre.getX() - radius; x <= centre.getX() + radius; x++) {
+            for (int z = centre.getZ() - radius; z <= centre.getZ() + radius; z++) {
+                int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                if (com.jasoncian.millenaire_rewrite.village.VillagePaths.isPath(level.getBlockState(new BlockPos(x, y, z)))) {
+                    pathCells.put(ChunkPos.asLong(x, z), y);
+                }
+            }
+        }
+        if (pathCells.isEmpty()) {
+            throw new GameTestAssertException("no path blocks were placed");
+        }
+        // 从市政厅道路起点附近的路面开始广度优先搜索
+        java.util.Set<Long> reached = new java.util.HashSet<>();
+        java.util.ArrayDeque<Long> queue = new java.util.ArrayDeque<>();
+        BoundingBox hf = hall.footprint;
+        for (long cell : pathCells.keySet()) {
+            int cx = ChunkPos.getX(cell);
+            int cz = ChunkPos.getZ(cell);
+            if (cx >= hf.minX() - 2 && cx <= hf.maxX() + 2 && cz >= hf.minZ() - 2 && cz <= hf.maxZ() + 2) {
+                reached.add(cell);
+                queue.add(cell);
+            }
+        }
+        while (!queue.isEmpty()) {
+            long cell = queue.poll();
+            int x = ChunkPos.getX(cell);
+            int z = ChunkPos.getZ(cell);
+            int y = pathCells.get(cell);
+            for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                long n = ChunkPos.asLong(x + d[0], z + d[1]);
+                Integer ny = pathCells.get(n);
+                if (ny != null && Math.abs(ny - y) <= 1 && reached.add(n)) {
+                    queue.add(n);
+                }
+            }
+        }
+        int connected = 0;
+        List<String> unconnected = new java.util.ArrayList<>();
+        for (VillageGrowth.PlacedBuilding b : buildings) {
+            if (b.townHall) {
+                continue;
+            }
+            // 建筑占地外扩 2 格内有连通的路面即视为已连接
+            BoundingBox f = b.footprint;
+            if (reached.stream().anyMatch(cell -> {
+                int x = ChunkPos.getX(cell);
+                int z = ChunkPos.getZ(cell);
+                return x >= f.minX() - 2 && x <= f.maxX() + 2 && z >= f.minZ() - 2 && z <= f.maxZ() + 2;
+            })) {
+                connected++;
+            } else {
+                unconnected.add(b.key);
+            }
+        }
+        MillenaireRewrite.LOGGER.info("[gametest] paths: {} path blocks, {} buildings connected, unconnected {}",
+            pathCells.size(), connected, unconnected);
+        if (!unconnected.isEmpty()) {
+            throw new GameTestAssertException("buildings not connected to the town hall: " + unconnected);
+        }
+    }
+
+    private static boolean nearAny(long cell, List<BlockPos> points, int radius) {
+        int x = ChunkPos.getX(cell);
+        int z = ChunkPos.getZ(cell);
+        for (BlockPos p : points) {
+            if (Math.abs(p.getX() - x) <= radius && Math.abs(p.getZ() - z) <= radius) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @GameTest(template = "empty", timeoutTicks = 3000)

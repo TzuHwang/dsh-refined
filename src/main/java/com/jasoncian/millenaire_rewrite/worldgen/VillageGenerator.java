@@ -302,7 +302,7 @@ public class VillageGenerator {
             MillenaireRewrite.LOGGER.info("Built town hall {} for village type '{}': {} blocks, {} residents",
                 plan, type.name(), result.blocksPlaced, residents);
             // 记录市政厅并建好 start 建筑，之后由 VillageGrowth 按时间继续成长
-            village.getGrowth().initialise(level, type, plan, pos, orientation, random);
+            village.getGrowth().initialise(level, type, plan, pos, orientation, result, random);
         } catch (Exception e) {
             MillenaireRewrite.LOGGER.error("Failed to build town hall for {} at {}, placing marker instead",
                 culture.getId(), pos, e);
