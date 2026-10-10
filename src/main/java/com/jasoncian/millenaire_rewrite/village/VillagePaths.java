@@ -60,13 +60,28 @@ public final class VillagePaths {
                               BlockState material) {
         VillageGrowth.PlacedBuilding hall = growth.getBuildings().stream()
             .filter(b -> b.townHall).findFirst().orElse(null);
-        if (hall == null || hall == building || building.subBuilding) {
+        if (hall == null || building.subBuilding) {
             return 0;
         }
-        BlockPos hallStart = closest(endpoints(hall, building.origin), building.origin);
-        BlockPos start = closest(endpoints(building, hallStart), hallStart);
-
-        List<BlockPos> route = findRoute(level, growth, building, start, hall, hallStart);
+        BlockPos start;
+        BlockPos hallStart;
+        List<BlockPos> route;
+        if (building == hall) {
+            // 市政厅：门口接到最近的已有道路（佈局的广场、主街）
+            if (growth.getPathNetwork().isEmpty() || hall.pathStarts.isEmpty()) {
+                return 0;
+            }
+            start = hall.pathStarts.get(0);
+            long nearest = nearestCell(growth.getPathNetwork(), start);
+            int gx = ChunkPos.getX(nearest);
+            int gz = ChunkPos.getZ(nearest);
+            hallStart = new BlockPos(gx, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, gx, gz), gz);
+            route = findRoute(level, growth, hall, start, hall, hallStart);
+        } else {
+            hallStart = closest(endpoints(hall, building.origin), building.origin);
+            start = closest(endpoints(building, hallStart), hallStart);
+            route = findRoute(level, growth, building, start, hall, hallStart);
+        }
         if (route == null) {
             MillenaireRewrite.LOGGER.info("No path route from {} to the town hall", building.key);
             return -1;
@@ -105,6 +120,7 @@ public final class VillagePaths {
      */
     public static boolean rebuildNetwork(ServerLevel level, VillageGrowth growth, BlockState material) {
         growth.getPathNetwork().clear();
+        growth.seedNetwork(level);
         VillageGrowth.PlacedBuilding hall = growth.getBuildings().stream()
             .filter(b -> b.townHall).findFirst().orElse(null);
         if (hall == null) {
@@ -323,6 +339,20 @@ public final class VillagePaths {
 
     private static boolean isDoorCell(int x, int z, BlockPos start, BlockPos goal) {
         return near(x, z, start, 1) || near(x, z, goal, 1);
+    }
+
+    private static long nearestCell(java.util.Set<Long> cells, BlockPos target) {
+        long best = 0;
+        long bestDistance = Long.MAX_VALUE;
+        for (long cell : cells) {
+            long dx = ChunkPos.getX(cell) - target.getX();
+            long dz = ChunkPos.getZ(cell) - target.getZ();
+            if (dx * dx + dz * dz < bestDistance) {
+                bestDistance = dx * dx + dz * dz;
+                best = cell;
+            }
+        }
+        return best;
     }
 
     private static BlockPos closest(List<BlockPos> candidates, BlockPos target) {

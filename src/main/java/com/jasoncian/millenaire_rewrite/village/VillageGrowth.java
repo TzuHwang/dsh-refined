@@ -188,6 +188,9 @@ public class VillageGrowth {
     private boolean pathsIncomplete = true;
     /** 本次运行中找不到建筑位置的建筑，暂不再尝试（不存档，重启后会重试） */
     private final Set<String> unplaceable = new HashSet<>();
+    /** 村庄佈局（有模板的文化）；null 时用旧的随机选址 */
+    @Nullable
+    private com.jasoncian.millenaire_rewrite.village.layout.VillageLayout layout;
 
     public VillageGrowth(Village village) {
         this.village = village;
@@ -199,6 +202,25 @@ public class VillageGrowth {
 
     public Set<Long> getPathNetwork() {
         return pathNetwork;
+    }
+
+    @Nullable
+    public com.jasoncian.millenaire_rewrite.village.layout.VillageLayout getLayout() {
+        return layout;
+    }
+
+    public void setLayout(@Nullable com.jasoncian.millenaire_rewrite.village.layout.VillageLayout layout) {
+        this.layout = layout;
+        village.markDirty();
+    }
+
+    /**
+     * 重建路网时先放入佈局中已铺好的道路
+     */
+    void seedNetwork(ServerLevel level) {
+        if (layout != null) {
+            pathNetwork.addAll(layout.existingRoadCells(level));
+        }
     }
 
     /**
@@ -261,6 +283,11 @@ public class VillageGrowth {
             townHallResult.specialPoints);
         buildings.add(hall);
         buildSubBuildings(level, townHall, hall);
+        if (layout != null) {
+            // 先铺好佈局的道路和广场，之后的建筑沿道路排列
+            pathNetwork.addAll(layout.paveRoads(level, pathMaterial(type),
+                column -> VillagePaths.insideAnyFootprint(buildings, column.getX(), column.getZ())));
+        }
 
         for (String key : type.start()) {
             try {
@@ -552,6 +579,17 @@ public class VillageGrowth {
      */
     @Nullable
     private Site findSite(ServerLevel level, BuildingPlan plan, RandomSource random) {
+        if (layout != null) {
+            // 佈局的临街带上找空位；放不下时退回随机选址
+            var placement = layout.allocate(level, plan,
+                com.jasoncian.millenaire_rewrite.village.layout.LayoutTemplate.category(cultureFolder(), plan.key),
+                box -> overlapsExisting(box, 1));
+            if (placement != null) {
+                return new Site(placement.origin(), placement.orientation(), placement.footprint());
+            }
+            MillenaireRewrite.LOGGER.info("Village {}: no room on the layout for {}, placing it freely",
+                village.getName(), plan.key);
+        }
         // 先找不压到道路的位置，找不到再允许压过道路（之后会重建路网）
         Site site = findSite(level, plan, random, true);
         return site != null ? site : findSite(level, plan, random, false);
@@ -602,14 +640,18 @@ public class VillageGrowth {
     }
 
     private boolean overlapsExisting(BoundingBox box) {
+        return overlapsExisting(box, SITE_MARGIN);
+    }
+
+    private boolean overlapsExisting(BoundingBox box, int margin) {
         for (PlacedBuilding b : buildings) {
-            if (overlapsXZ(box, b.footprint, SITE_MARGIN)) {
+            if (overlapsXZ(box, b.footprint, margin)) {
                 return true;
             }
         }
         if (project != null && construction != null) {
             return overlapsXZ(box, BuildingPlacer.footprint(construction.plan, project.origin, project.orientation),
-                SITE_MARGIN);
+                margin);
         }
         return false;
     }
@@ -669,6 +711,9 @@ public class VillageGrowth {
         buildings.forEach(b -> list.add(b.save()));
         tag.put("Buildings", list);
         tag.putLongArray("PathNetwork", pathNetwork.stream().mapToLong(Long::longValue).toArray());
+        if (layout != null) {
+            tag.put("Layout", layout.save());
+        }
         if (project != null) {
             CompoundTag p = new CompoundTag();
             p.putString("Key", project.key);
@@ -695,6 +740,8 @@ public class VillageGrowth {
         for (long cell : tag.getLongArray("PathNetwork")) {
             pathNetwork.add(cell);
         }
+        layout = tag.contains("Layout")
+            ? com.jasoncian.millenaire_rewrite.village.layout.VillageLayout.load(tag.getCompound("Layout")) : null;
         project = null;
         construction = null;
         if (tag.contains("Project")) {

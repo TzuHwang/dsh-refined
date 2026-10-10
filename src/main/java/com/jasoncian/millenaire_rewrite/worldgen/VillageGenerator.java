@@ -296,6 +296,15 @@ public class VillageGenerator {
                                       RandomSource random) {
         Culture culture = village.getCulture();
         try {
+            // 有佈局模板的文化：由佈局决定市政厅的位置和朝向（广场北侧、正面朝广场）
+            var layout = com.jasoncian.millenaire_rewrite.village.layout.VillageLayout.create(level,
+                VillageTypes.cultureFolder(culture), plan, pos, random);
+            if (layout != null) {
+                var hall = layout.townHall(level, plan);
+                pos = hall.origin();
+                orientation = hall.orientation();
+            }
+            village.getGrowth().setLayout(layout);
             BuildingPlacer.Result result = BuildingPlacer.place(level, plan, pos, orientation);
             BuildingPlacer.spawnAnimals(level, result);
             int residents = ResidentSpawner.spawnResidents(level, village, plan, result).size();

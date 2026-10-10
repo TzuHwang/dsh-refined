@@ -527,6 +527,41 @@ public class VillageGrowthTests {
     }
 
     /**
+     * 诺曼村庄套用佈局模板：建筑沿道路排列、不重叠，道路全部连到市政厅
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void normanLayoutVillageGrows(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Village village = createVillage(helper, 9200, Culture.NORMAN, "manor");
+        VillageGrowth growth = village.getGrowth();
+        try {
+            if (growth.getLayout() == null) {
+                helper.fail("norman village has no layout");
+                return;
+            }
+            int projects = 0;
+            for (int i = 0; i < 30; i++) {
+                if (growth.forceNext(level) == null) {
+                    break;
+                }
+                projects++;
+            }
+            List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
+            MillenaireRewrite.LOGGER.info("[gametest] layout {}: {} projects, buildings {}", growth.getLayout().template,
+                projects, buildings.stream().map(b -> b.key + " " + b.level).toList());
+            dumpMap(level, growth, 40);
+            assertNoOverlap(buildings);
+            assertPathsConnected(level, village);
+            if (buildings.size() < 10) {
+                helper.fail("only " + buildings.size() + " buildings were placed");
+            }
+        } finally {
+            cleanup(level, village);
+        }
+        helper.succeed();
+    }
+
+    /**
      * 印度宫殿村庄：道路连到市政厅门口
      */
     @GameTest(template = "empty", timeoutTicks = 200)
@@ -551,11 +586,15 @@ public class VillageGrowthTests {
 
     /** 调试：市政厅周围的俯视图 P=路面 #=有碰撞 .=草地 S=道路起点 小写=市政厅占地内 */
     private static void dumpMap(ServerLevel level, VillageGrowth growth) {
+        dumpMap(level, growth, 12);
+    }
+
+    private static void dumpMap(ServerLevel level, VillageGrowth growth, int margin) {
         VillageGrowth.PlacedBuilding hall = growth.getBuildings().stream().filter(b -> b.townHall).findFirst().orElseThrow();
         BoundingBox f = hall.footprint;
         StringBuilder sb = new StringBuilder("\n");
-        for (int z = f.minZ() - 12; z <= f.maxZ() + 12; z++) {
-            for (int x = f.minX() - 12; x <= f.maxX() + 12; x++) {
+        for (int z = f.minZ() - margin; z <= f.maxZ() + margin; z++) {
+            for (int x = f.minX() - margin; x <= f.maxX() + margin; x++) {
                 int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
                 BlockPos pos = new BlockPos(x, y, z);
                 final int fx = x, fz = z;
