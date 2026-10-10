@@ -388,6 +388,15 @@ public class VillageGenerator {
      */
     @Nullable
     public static Village forceGenerateVillage(ServerLevel level, BlockPos pos, @Nullable Culture culture) {
+        return forceGenerateVillage(level, pos, culture, null);
+    }
+
+    /**
+     * @param townHallKey 指定村庄类型的市政厅（如 fortress）；null 时按权重随机
+     */
+    @Nullable
+    public static Village forceGenerateVillage(ServerLevel level, BlockPos pos, @Nullable Culture culture,
+                                               @Nullable String townHallKey) {
         if (culture == null) {
             Holder<Biome> biome = level.getBiome(pos);
             culture = BiomeCultureMapping.getCultureForBiome(biome, new Random());
@@ -401,7 +410,8 @@ public class VillageGenerator {
         VillageTypes.VillageType type;
         BuildingPlan plan;
         try {
-            type = VillageTypes.pick(culture, random);
+            type = townHallKey == null ? VillageTypes.pick(culture, random)
+                : VillageTypes.list(culture).stream().filter(t -> t.centre().equals(townHallKey)).findFirst().orElse(null);
             if (type == null) {
                 MillenaireRewrite.LOGGER.error("No village types for culture {}", culture.getId());
                 return null;

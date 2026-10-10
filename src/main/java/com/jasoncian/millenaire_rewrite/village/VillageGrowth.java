@@ -63,6 +63,8 @@ public class VillageGrowth {
         public final List<BlockPos> pathStarts;
         /** 图纸中的功能点位（耕作点、资源点、种树点、箱子、睡觉位置等），升级时合并新点位 */
         public final Map<String, List<BlockPos>> points = new HashMap<>();
+        /** 子建筑：与母建筑重叠，道路由母建筑负责 */
+        public boolean subBuilding;
 
         PlacedBuilding(String key, char variation, int level, BlockPos origin, int orientation,
                        BoundingBox footprint, boolean townHall, List<BlockPos> pathStarts,
@@ -118,6 +120,7 @@ public class VillageGrowth {
                 pointsTag.put(type, l);
             });
             tag.put("Points", pointsTag);
+            tag.putBoolean("Sub", subBuilding);
             return tag;
         }
 
@@ -138,9 +141,11 @@ public class VillageGrowth {
                 }
                 points.put(type, typePoints);
             }
-            return new PlacedBuilding(tag.getString("Key"), tag.getString("Variation").charAt(0), tag.getInt("Level"),
-                NbtUtils.readBlockPos(tag.getCompound("Origin")), tag.getInt("Orientation"),
+            PlacedBuilding building = new PlacedBuilding(tag.getString("Key"), tag.getString("Variation").charAt(0),
+                tag.getInt("Level"), NbtUtils.readBlockPos(tag.getCompound("Origin")), tag.getInt("Orientation"),
                 new BoundingBox(f[0], f[1], f[2], f[3], f[4], f[5]), tag.getBoolean("TownHall"), starts, points);
+            building.subBuilding = tag.getBoolean("Sub");
+            return building;
         }
     }
 
@@ -179,6 +184,8 @@ public class VillageGrowth {
     @Nullable
     private BuildingPlacer.Construction construction;
     private long nextProjectTime;
+    /** 有建筑没连上路网（如市政厅还是地基坑时）：下次完工后重建路网再试（不存档，载入后会重试一次） */
+    private boolean pathsIncomplete = true;
     /** 本次运行中找不到建筑位置的建筑，暂不再尝试（不存档，重启后会重试） */
     private final Set<String> unplaceable = new HashSet<>();
 
@@ -249,9 +256,11 @@ public class VillageGrowth {
                            BlockPos origin, int orientation, BuildingPlacer.Result townHallResult,
                            RandomSource random) {
         villageTypeFile = type.fileName();
-        buildings.add(new PlacedBuilding(townHall.key, townHall.variation, townHall.level, origin, orientation,
+        PlacedBuilding hall = new PlacedBuilding(townHall.key, townHall.variation, townHall.level, origin, orientation,
             BuildingPlacer.footprint(townHall, origin, orientation), true, pathStarts(townHallResult),
-            townHallResult.specialPoints));
+            townHallResult.specialPoints);
+        buildings.add(hall);
+        buildSubBuildings(level, townHall, hall);
 
         for (String key : type.start()) {
             try {
@@ -270,12 +279,13 @@ public class VillageGrowth {
                 PlacedBuilding placed = new PlacedBuilding(key, 'A', 0, site.origin(), site.orientation(),
                     site.footprint(), false, pathStarts(c.result), c.result.specialPoints);
                 buildings.add(placed);
+                buildSubBuildings(level, plan, placed);
             } catch (IOException e) {
                 MillenaireRewrite.LOGGER.error("Village {}: cannot load start building {}", village.getName(), key, e);
             }
         }
         // 所有 start 建筑建好后再一次铺好路网（后建的建筑可能压到先铺的路）
-        VillagePaths.rebuildNetwork(level, this, pathMaterial(type));
+        pathsIncomplete = !VillagePaths.rebuildNetwork(level, this, pathMaterial(type));
         nextProjectTime = level.getGameTime() + PROJECT_INTERVAL;
         village.markDirty();
     }
@@ -410,10 +420,12 @@ public class VillageGrowth {
             PlacedBuilding upgraded = buildings.get(p.upgradeOf);
             upgraded.level = p.level;
             upgraded.addPoints(c.result.specialPoints);
+            buildSubBuildings(level, c.plan, upgraded);
             // 升级可能在庭院里加了栅栏等，把穿过庭院的道路截断：重建路网绕开它们
-            if (VillagePaths.coversNetwork(this, upgraded.footprint)) {
+            if (pathsIncomplete || VillagePaths.coversNetwork(this, upgraded.footprint)) {
                 try {
-                    VillagePaths.rebuildNetwork(level, this, pathMaterial(VillageTypes.get(village.getCulture(), villageTypeFile)));
+                    pathsIncomplete = !VillagePaths.rebuildNetwork(level, this,
+                        pathMaterial(VillageTypes.get(village.getCulture(), villageTypeFile)));
                 } catch (IOException e) {
                     MillenaireRewrite.LOGGER.warn("Village {}: cannot read village type for paths", village.getName());
                 }
@@ -425,13 +437,14 @@ public class VillageGrowth {
                 c.result.specialPoints);
             boolean coveredPaths = VillagePaths.coversNetwork(this, placed.footprint);
             buildings.add(placed);
+            buildSubBuildings(level, c.plan, placed);
             try {
                 var material = pathMaterial(VillageTypes.get(village.getCulture(), villageTypeFile));
-                if (coveredPaths) {
-                    // 新建筑压断了旧道路：重建整个路网，确保每段路都通到市政厅
-                    VillagePaths.rebuildNetwork(level, this, material);
-                } else {
-                    VillagePaths.connect(level, this, placed, material);
+                if (coveredPaths || pathsIncomplete) {
+                    // 新建筑压断了旧道路，或之前有建筑没连上：重建整个路网，确保每段路都通到市政厅
+                    pathsIncomplete = !VillagePaths.rebuildNetwork(level, this, material);
+                } else if (VillagePaths.connect(level, this, placed, material) < 0) {
+                    pathsIncomplete = true;
                 }
             } catch (IOException e) {
                 MillenaireRewrite.LOGGER.warn("Village {}: cannot read village type for paths", village.getName());
@@ -453,6 +466,33 @@ public class VillageGrowth {
             if (player.distanceToSqr(p.origin.getX(), p.origin.getY(), p.origin.getZ()) < NOTIFY_RANGE * NOTIFY_RANGE) {
                 player.sendSystemMessage(message);
             }
+        }
+    }
+
+    /**
+     * 这一级图纸带的子建筑（如卡斯特隆的左右市集）：立即叠加建在母建筑的位置，之后作为独立建筑升级
+     */
+    private void buildSubBuildings(ServerLevel level, BuildingPlan plan, PlacedBuilding parent) {
+        for (String key : plan.subBuildings) {
+            if (buildings.stream().anyMatch(b -> b.key.equals(key) && b.origin.equals(parent.origin))) {
+                continue;
+            }
+            BuildingPlan sub = plan(key, 'A', 0);
+            if (sub == null) {
+                continue;
+            }
+            BuildingPlacer.Construction c = BuildingPlacer.prepare(sub, parent.origin, parent.orientation);
+            c.step(level, Integer.MAX_VALUE, false, false);
+            c.finish(level);
+            BuildingPlacer.spawnAnimals(level, c.result);
+            ResidentSpawner.spawnResidents(level, village, sub, c.result);
+            PlacedBuilding placed = new PlacedBuilding(key, 'A', 0, parent.origin, parent.orientation,
+                BuildingPlacer.footprint(sub, parent.origin, parent.orientation), false, pathStarts(c.result),
+                c.result.specialPoints);
+            placed.subBuilding = true;
+            buildings.add(placed);
+            MillenaireRewrite.LOGGER.info("Village {} built sub-building {} of {}", village.getName(), key, parent.key);
+            buildSubBuildings(level, sub, placed);
         }
     }
 

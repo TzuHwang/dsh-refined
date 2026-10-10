@@ -33,11 +33,15 @@ public class VillageGrowthTests {
     }
 
     private static Village createVillage(GameTestHelper helper, int relativeZ, Culture culture) {
+        return createVillage(helper, relativeZ, culture, null);
+    }
+
+    private static Village createVillage(GameTestHelper helper, int relativeZ, Culture culture, String townHallKey) {
         ServerLevel level = helper.getLevel();
         BlockPos pos = helper.absolutePos(new BlockPos(0, 0, relativeZ));
         setForced(level, pos, true);
         buildPlatform(level, pos);
-        Village village = VillageGenerator.forceGenerateVillage(level, pos, culture);
+        Village village = VillageGenerator.forceGenerateVillage(level, pos, culture, townHallKey);
         if (village == null) {
             throw new GameTestAssertException("village generation failed");
         }
@@ -54,7 +58,9 @@ public class VillageGrowthTests {
         TestTerrain.setForced(level, pos, forced);
     }
 
-    private static void assertNoOverlap(List<VillageGrowth.PlacedBuilding> buildings) {
+    private static void assertNoOverlap(List<VillageGrowth.PlacedBuilding> all) {
+        // 子建筑本来就叠在母建筑上
+        List<VillageGrowth.PlacedBuilding> buildings = all.stream().filter(b -> !b.subBuilding).toList();
         for (int i = 0; i < buildings.size(); i++) {
             for (int j = i + 1; j < buildings.size(); j++) {
                 BoundingBox a = buildings.get(i).footprint;
@@ -433,6 +439,87 @@ public class VillageGrowthTests {
             if (village.getActiveVillagerCount() <= initialResidents) {
                 helper.fail("no new residents moved in");
             }
+        } finally {
+            cleanup(level, village);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * 拜占庭 fortress 村庄长时间成长（大量升级、子建筑）后，道路仍然全部连到市政厅
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void byzantineFortressKeepsPathsThroughUpgrades(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Village village = createVillage(helper, 6200, Culture.BYZANTINE, "fortress");
+        VillageGrowth growth = village.getGrowth();
+        int projects = 0;
+        for (int i = 0; i < 40; i++) {
+            if (growth.forceNext(level) == null) {
+                break;
+            }
+            projects++;
+        }
+        List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
+        MillenaireRewrite.LOGGER.info("[gametest] byzantine fortress: {} projects, buildings {}", projects,
+            buildings.stream().map(b -> b.key + (b.subBuilding ? "(sub)" : "") + " " + b.level).toList());
+        try {
+            assertNoOverlap(buildings);
+            assertPathsConnected(level, village);
+        } finally {
+            cleanup(level, village);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * 拜占庭 kastron 村庄长时间成长（大量升级、子建筑）后，道路仍然全部连到市政厅
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void byzantineKastronKeepsPathsThroughUpgrades(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Village village = createVillage(helper, 6800, Culture.BYZANTINE, "kastron");
+        VillageGrowth growth = village.getGrowth();
+        int projects = 0;
+        for (int i = 0; i < 40; i++) {
+            if (growth.forceNext(level) == null) {
+                break;
+            }
+            projects++;
+        }
+        List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
+        MillenaireRewrite.LOGGER.info("[gametest] byzantine kastron: {} projects, buildings {}", projects,
+            buildings.stream().map(b -> b.key + (b.subBuilding ? "(sub)" : "") + " " + b.level).toList());
+        try {
+            assertNoOverlap(buildings);
+            assertPathsConnected(level, village);
+        } finally {
+            cleanup(level, village);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * 拜占庭 church 村庄长时间成长（大量升级、子建筑）后，道路仍然全部连到市政厅
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void byzantineChurchKeepsPathsThroughUpgrades(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Village village = createVillage(helper, 7400, Culture.BYZANTINE, "church");
+        VillageGrowth growth = village.getGrowth();
+        int projects = 0;
+        for (int i = 0; i < 40; i++) {
+            if (growth.forceNext(level) == null) {
+                break;
+            }
+            projects++;
+        }
+        List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
+        MillenaireRewrite.LOGGER.info("[gametest] byzantine church: {} projects, buildings {}", projects,
+            buildings.stream().map(b -> b.key + (b.subBuilding ? "(sub)" : "") + " " + b.level).toList());
+        try {
+            assertNoOverlap(buildings);
+            assertPathsConnected(level, village);
         } finally {
             cleanup(level, village);
         }

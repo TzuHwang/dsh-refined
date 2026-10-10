@@ -54,13 +54,13 @@ public final class VillagePaths {
     /**
      * 把建筑连接到村庄路网
      *
-     * @return 铺设的路面方块数
+     * @return 铺设的路面方块数，找不到路线时为 -1
      */
     public static int connect(ServerLevel level, VillageGrowth growth, VillageGrowth.PlacedBuilding building,
                               BlockState material) {
         VillageGrowth.PlacedBuilding hall = growth.getBuildings().stream()
             .filter(b -> b.townHall).findFirst().orElse(null);
-        if (hall == null || hall == building) {
+        if (hall == null || hall == building || building.subBuilding) {
             return 0;
         }
         BlockPos hallStart = closest(endpoints(hall, building.origin), building.origin);
@@ -69,7 +69,7 @@ public final class VillagePaths {
         List<BlockPos> route = findRoute(level, growth, building, start, hall, hallStart);
         if (route == null) {
             MillenaireRewrite.LOGGER.info("No path route from {} to the town hall", building.key);
-            return 0;
+            return -1;
         }
         int placed = 0;
         for (BlockPos surface : route) {
@@ -100,19 +100,23 @@ public final class VillagePaths {
     /**
      * 重建路网：清空路网记录，由近到远把所有建筑重新连到市政厅。
      * 新建筑可能盖在旧道路上把它截断，重建后路网中的每一格都确实通到市政厅。
+     *
+     * @return 是否所有建筑都连上了
      */
-    public static void rebuildNetwork(ServerLevel level, VillageGrowth growth, BlockState material) {
+    public static boolean rebuildNetwork(ServerLevel level, VillageGrowth growth, BlockState material) {
         growth.getPathNetwork().clear();
         VillageGrowth.PlacedBuilding hall = growth.getBuildings().stream()
             .filter(b -> b.townHall).findFirst().orElse(null);
         if (hall == null) {
-            return;
+            return true;
         }
         List<VillageGrowth.PlacedBuilding> ordered = new ArrayList<>(growth.getBuildings());
         ordered.sort(java.util.Comparator.comparingDouble(b -> b.origin.distSqr(hall.origin)));
+        boolean all = true;
         for (VillageGrowth.PlacedBuilding b : ordered) {
-            connect(level, growth, b, material);
+            all &= connect(level, growth, b, material) >= 0;
         }
+        return all;
     }
 
     /**
@@ -211,7 +215,7 @@ public final class VillagePaths {
                 }
             }
         }
-        MillenaireRewrite.LOGGER.debug("Path search {} -> {} failed after {} expansions, closest {} blocks, rejected {}",
+        MillenaireRewrite.LOGGER.info("Path search {} -> {} failed after {} expansions, closest {} blocks, rejected {}",
             start.toShortString(), goal.toShortString(), expansions, closest, REJECTED);
         return null;
     }
@@ -236,11 +240,18 @@ public final class VillagePaths {
         // 其他建筑内部不可通行；自己的建筑内部按露天地面判断
         for (VillageGrowth.PlacedBuilding b : buildings) {
             BoundingBox f = b.footprint;
-            if (b != startBuilding && b != goalBuilding
+            // 子建筑与母建筑占地相同，由母建筑决定能否通行
+            if (b != startBuilding && b != goalBuilding && !b.subBuilding
                 && x >= f.minX() && x <= f.maxX() && z >= f.minZ() && z <= f.maxZ()) {
                 REJECTED.merge("footprint", 1, Integer::sum);
                 return null;
             }
+        }
+        // 自己建筑（起点/终点所在建筑）内部：沿门口那一层的地板走（城堡庭院、回廊等有屋顶或围墙的地方）
+        Integer floor = startBuilding.contains(new BlockPos(x, 0, z)) ? floorNear(level, x, z, start.getY() - 1)
+            : goalBuilding.contains(new BlockPos(x, 0, z)) ? floorNear(level, x, z, goal.getY() - 1) : null;
+        if (floor != null) {
+            return floor;
         }
         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
         BlockState surface = level.getBlockState(new BlockPos(x, y, z));
@@ -253,6 +264,22 @@ public final class VillagePaths {
         }
         REJECTED.merge(net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(surface.getBlock()).getPath(),
             1, Integer::sum);
+        return null;
+    }
+
+    /**
+     * 参考高度上下 1 格内可以站立的地板高度：地板有碰撞、不是液体，上方两格可以通过
+     */
+    @Nullable
+    private static Integer floorNear(ServerLevel level, int x, int z, int referenceY) {
+        for (int dy : new int[] {0, 1, -1}) {
+            BlockPos floor = new BlockPos(x, referenceY + dy, z);
+            BlockState state = level.getBlockState(floor);
+            if (!state.getCollisionShape(level, floor).isEmpty() && state.getFluidState().isEmpty()
+                && !feetBlocked(level, floor.above()) && !feetBlocked(level, floor.above(2))) {
+                return floor.getY();
+            }
+        }
         return null;
     }
 

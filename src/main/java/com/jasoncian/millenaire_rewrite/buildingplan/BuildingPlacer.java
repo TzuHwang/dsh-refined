@@ -332,7 +332,7 @@ public final class BuildingPlacer {
 
         // 整地（原版 prepareGround）：清除建筑上方的地形和树木，
         // 并把最底层下方向下填实到实心地面，避免嵌进山坡、悬空或建在水上
-        if (plan.level == 0) {
+        if (plan.level == 0 && !plan.subBuilding) {
             for (int l = 0; l < plan.length; l++) {
                 for (int w = 0; w < plan.width; w++) {
                     int dx = l - plan.lengthOffset();
