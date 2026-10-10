@@ -333,9 +333,16 @@ public class VillageGrowth {
             ResidentSpawner.spawnResidents(level, village, c.plan, c.result);
             PlacedBuilding placed = new PlacedBuilding(p.key, p.variation, p.level, p.origin, p.orientation,
                 BuildingPlacer.footprint(c.plan, p.origin, p.orientation), false, pathStarts(c.result));
+            boolean coveredPaths = VillagePaths.coversNetwork(this, placed.footprint);
             buildings.add(placed);
             try {
-                VillagePaths.connect(level, this, placed, pathMaterial(VillageTypes.get(village.getCulture(), villageTypeFile)));
+                var material = pathMaterial(VillageTypes.get(village.getCulture(), villageTypeFile));
+                if (coveredPaths) {
+                    // 新建筑压断了旧道路：重建整个路网，确保每段路都通到市政厅
+                    VillagePaths.rebuildNetwork(level, this, material);
+                } else {
+                    VillagePaths.connect(level, this, placed, material);
+                }
             } catch (IOException e) {
                 MillenaireRewrite.LOGGER.warn("Village {}: cannot read village type for paths", village.getName());
             }
@@ -415,6 +422,13 @@ public class VillageGrowth {
      */
     @Nullable
     private Site findSite(ServerLevel level, BuildingPlan plan, RandomSource random) {
+        // 先找不压到道路的位置，找不到再允许压过道路（之后会重建路网）
+        Site site = findSite(level, plan, random, true);
+        return site != null ? site : findSite(level, plan, random, false);
+    }
+
+    @Nullable
+    private Site findSite(ServerLevel level, BuildingPlan plan, RandomSource random, boolean avoidPaths) {
         BlockPos centre = village.getTownHallPos();
         for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
             double distance = MIN_SITE_DISTANCE + (MAX_SITE_DISTANCE - MIN_SITE_DISTANCE) * attempt / (double) SITE_ATTEMPTS;
@@ -424,7 +438,8 @@ public class VillageGrowth {
             int orientation = orientationTowards(x, z, centre);
 
             BoundingBox rough = BuildingPlacer.footprint(plan, new BlockPos(x, 0, z), orientation);
-            if (!isLoaded(level, rough) || overlapsExisting(rough)) {
+            if (!isLoaded(level, rough) || overlapsExisting(rough)
+                || avoidPaths && VillagePaths.coversNetwork(this, rough)) {
                 continue;
             }
             Integer ground = averageGround(level, rough);

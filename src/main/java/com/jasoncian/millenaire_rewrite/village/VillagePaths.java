@@ -38,6 +38,8 @@ public final class VillagePaths {
     private static final double COST_STEP = 1.0;
     private static final double COST_EXISTING_PATH = 0.4;
     private static final double COST_PER_HEIGHT = 1.0;
+    /** 转弯成本：让路线偏好直线，避免锯齿状的斜线 */
+    private static final double COST_TURN = 0.6;
     private static final int[][] DIRECTIONS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
     /** 调试：本次搜索中格子被拒绝的原因统计 */
@@ -86,9 +88,41 @@ public final class VillagePaths {
         return placed;
     }
 
+    /**
+     * 重建路网：清空路网记录，由近到远把所有建筑重新连到市政厅。
+     * 新建筑可能盖在旧道路上把它截断，重建后路网中的每一格都确实通到市政厅。
+     */
+    public static void rebuildNetwork(ServerLevel level, VillageGrowth growth, BlockState material) {
+        growth.getPathNetwork().clear();
+        VillageGrowth.PlacedBuilding hall = growth.getBuildings().stream()
+            .filter(b -> b.townHall).findFirst().orElse(null);
+        if (hall == null) {
+            return;
+        }
+        List<VillageGrowth.PlacedBuilding> ordered = new ArrayList<>(growth.getBuildings());
+        ordered.sort(java.util.Comparator.comparingDouble(b -> b.origin.distSqr(hall.origin)));
+        for (VillageGrowth.PlacedBuilding b : ordered) {
+            connect(level, growth, b, material);
+        }
+    }
+
+    /**
+     * 占地范围是否压到路网
+     */
+    public static boolean coversNetwork(VillageGrowth growth, BoundingBox box) {
+        for (long cell : growth.getPathNetwork()) {
+            int x = ChunkPos.getX(cell);
+            int z = ChunkPos.getZ(cell);
+            if (x >= box.minX() && x <= box.maxX() && z >= box.minZ() && z <= box.maxZ()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ================ 寻路 ================
 
-    private record Node(int x, int z, double cost, double estimate) {
+    private record Node(int x, int z, double cost, double estimate, int direction) {
     }
 
     /**
@@ -111,7 +145,7 @@ public final class VillagePaths {
         long startKey = key(start.getX(), start.getZ());
         heights.put(startKey, start.getY() - 1);
         best.put(startKey, 0.0);
-        open.add(new Node(start.getX(), start.getZ(), 0, heuristic(start.getX(), start.getZ(), goal)));
+        open.add(new Node(start.getX(), start.getZ(), 0, heuristic(start.getX(), start.getZ(), goal), -1));
 
         int expansions = 0;
         int closest = Integer.MAX_VALUE;
@@ -127,7 +161,8 @@ public final class VillagePaths {
             if (near(node.x(), node.z(), goal, 1) || !nearStart && growth.getPathNetwork().contains(nodeKey)) {
                 return reconstruct(cameFrom, heights, nodeKey);
             }
-            for (int[] d : DIRECTIONS) {
+            for (int dir = 0; dir < DIRECTIONS.length; dir++) {
+                int[] d = DIRECTIONS[dir];
                 int nx = node.x() + d[0];
                 int nz = node.z() + d[1];
                 if (nx < minX || nx > maxX || nz < minZ || nz > maxZ) {
@@ -146,14 +181,15 @@ public final class VillagePaths {
                 }
                 BlockState surface = level.getBlockState(new BlockPos(nx, ny, nz));
                 double step = (isPath(surface) ? COST_EXISTING_PATH : COST_STEP)
-                    + (crossesBuilding ? 0 : Math.abs(ny - y) * COST_PER_HEIGHT);
+                    + (crossesBuilding ? 0 : Math.abs(ny - y) * COST_PER_HEIGHT)
+                    + (node.direction() >= 0 && node.direction() != dir ? COST_TURN : 0);
                 double cost = node.cost() + step;
                 long nk = key(nx, nz);
                 if (cost < best.getOrDefault(nk, Double.MAX_VALUE)) {
                     best.put(nk, cost);
                     cameFrom.put(nk, nodeKey);
                     heights.put(nk, ny);
-                    open.add(new Node(nx, nz, cost, cost + heuristic(nx, nz, goal)));
+                    open.add(new Node(nx, nz, cost, cost + heuristic(nx, nz, goal), dir));
                 }
             }
         }

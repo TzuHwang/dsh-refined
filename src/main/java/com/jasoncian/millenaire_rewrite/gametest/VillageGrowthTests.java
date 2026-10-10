@@ -304,6 +304,13 @@ public class VillageGrowthTests {
                 }
             }
         }
+        // 路网中的每一格都必须能从市政厅沿路走到（不能有被截断的路段）
+        long orphaned = village.getGrowth().getPathNetwork().stream().filter(cell -> !reached.contains(cell)).count();
+        MillenaireRewrite.LOGGER.info("[gametest] paths: {} network cells, {} not reachable from the town hall",
+            village.getGrowth().getPathNetwork().size(), orphaned);
+        if (orphaned > 0) {
+            throw new GameTestAssertException(orphaned + " path network cells are cut off from the town hall");
+        }
         int connected = 0;
         List<String> unconnected = new java.util.ArrayList<>();
         for (VillageGrowth.PlacedBuilding b : buildings) {

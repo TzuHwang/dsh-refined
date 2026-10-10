@@ -31,9 +31,15 @@ import java.util.List;
 @PrefixGameTestTemplate(false)
 public class BuildingPlanTests {
 
-    /** 测试建筑放在测试结构上方，避开超平坦世界的基岩 */
-    private static final int BUILD_HEIGHT = 30;
+    /**
+     * 测试建筑放在高空：测试世界是正常地形，放在地下会受洞穴、岩浆、流水影响
+     */
+    private static final int SKY_Y = 220;
     private static final int SPACING = 80;
+
+    private static BlockPos skyPos(GameTestHelper helper, int x, int z) {
+        return helper.absolutePos(new BlockPos(x, 0, z)).atY(SKY_Y);
+    }
 
     /**
      * 所有文化的所有村庄中心建筑都能读取
@@ -118,7 +124,7 @@ public class BuildingPlanTests {
         ServerLevel level = helper.getLevel();
         try {
             BuildingPlan plan = BuildingPlan.load("norman", "manor", 'A', 0);
-            BlockPos origin = helper.absolutePos(new BlockPos(0, BUILD_HEIGHT + 120, SPACING * 5));
+            BlockPos origin = skyPos(helper, 0, SPACING * 5);
             BuildingPlacer.Result result = BuildingPlacer.place(level, plan, origin, 0);
             var village = new com.jasoncian.millenaire_rewrite.village.Village(origin, Culture.NORMAN);
             var spawned = com.jasoncian.millenaire_rewrite.content.ResidentSpawner.spawnResidents(level, village, plan, result);
@@ -185,7 +191,7 @@ public class BuildingPlanTests {
                 return;
             }
             // 与其他测试的建筑错开，避免重叠
-            BlockPos origin = helper.absolutePos(new BlockPos(i * SPACING, BUILD_HEIGHT + 60, SPACING * 3));
+            BlockPos origin = skyPos(helper, i * SPACING, SPACING * 3);
             BuildingPlacer.place(level, plan, origin, i % 4);
             int radius = Math.max(plan.length, plan.width);
             for (BlockPos p : BlockPos.betweenClosed(origin.offset(-radius, plan.startLevel, -radius),
@@ -229,7 +235,7 @@ public class BuildingPlanTests {
         List<String> problems = new ArrayList<>();
         int doublePairs = 0;
         for (int orientation = 0; orientation < 4; orientation++) {
-            BlockPos origin = helper.absolutePos(new BlockPos(orientation * SPACING, BUILD_HEIGHT, 0));
+            BlockPos origin = skyPos(helper, orientation * SPACING, 0);
             BuildingPlacer.place(level, plan, origin, orientation);
             int radius = Math.max(plan.length, plan.width);
             for (BlockPos p : BlockPos.betweenClosed(origin.offset(-radius, -2, -radius), origin.offset(radius, 4, radius))) {
