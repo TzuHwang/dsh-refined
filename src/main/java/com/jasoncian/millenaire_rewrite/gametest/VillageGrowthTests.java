@@ -270,9 +270,15 @@ public class VillageGrowthTests {
         java.util.Map<Long, Integer> pathCells = new java.util.HashMap<>();
         for (int x = centre.getX() - radius; x <= centre.getX() + radius; x++) {
             for (int z = centre.getZ() - radius; z <= centre.getZ() + radius; z++) {
-                int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
-                if (com.jasoncian.millenaire_rewrite.village.VillagePaths.isPath(level.getBlockState(new BlockPos(x, y, z)))) {
-                    pathCells.put(ChunkPos.asLong(x, z), y);
+                // 从地表往下找路面：门廊、屋檐下的路从上方看不到
+                int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                for (int y = top; y >= top - 10; y--) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    if (com.jasoncian.millenaire_rewrite.village.VillagePaths.isPath(level.getBlockState(pos))
+                        && !level.getBlockState(pos.above()).isSolid()) {
+                        pathCells.put(ChunkPos.asLong(x, z), y);
+                        break;
+                    }
                 }
             }
         }
@@ -304,11 +310,33 @@ public class VillageGrowthTests {
                 }
             }
         }
+        // 道路必须通到市政厅的门口（道路起点），不能只停在市政厅占地边缘
+        boolean reachesHallDoor = hall.pathStarts.isEmpty()
+            || reached.stream().anyMatch(cell -> nearAny(cell, hall.pathStarts, 2));
+        MillenaireRewrite.LOGGER.info("[gametest] paths: reach town hall door: {}", reachesHallDoor);
+        if (!reachesHallDoor) {
+            throw new GameTestAssertException("paths stop at the town hall's edge instead of reaching its door");
+        }
         // 路网中的每一格都必须能从市政厅沿路走到（不能有被截断的路段）
         long orphaned = village.getGrowth().getPathNetwork().stream().filter(cell -> !reached.contains(cell)).count();
         MillenaireRewrite.LOGGER.info("[gametest] paths: {} network cells, {} not reachable from the town hall",
             village.getGrowth().getPathNetwork().size(), orphaned);
         if (orphaned > 0) {
+            village.getGrowth().getPathNetwork().stream().filter(cell -> !reached.contains(cell)).limit(6).forEach(cell -> {
+                int x = ChunkPos.getX(cell);
+                int z = ChunkPos.getZ(cell);
+                StringBuilder sb = new StringBuilder();
+                for (int[] d : new int[][] {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                    int nx = x + d[0];
+                    int nz = z + d[1];
+                    int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, nx, nz) - 1;
+                    sb.append(" [").append(d[0]).append(",").append(d[1]).append("] y=").append(y).append(" ")
+                        .append(net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(
+                            level.getBlockState(new BlockPos(nx, y, nz)).getBlock()).getPath())
+                        .append(pathCells.containsKey(ChunkPos.asLong(nx, nz)) ? "*" : "");
+                }
+                MillenaireRewrite.LOGGER.info("[gametest] orphan {} {}:{}", x, z, sb);
+            });
             throw new GameTestAssertException(orphaned + " path network cells are cut off from the town hall");
         }
         int connected = 0;

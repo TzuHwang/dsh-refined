@@ -192,11 +192,12 @@ public class VillageGrowth {
                 PlacedBuilding placed = new PlacedBuilding(key, 'A', 0, site.origin(), site.orientation(),
                     site.footprint(), false, pathStarts(c.result));
                 buildings.add(placed);
-                VillagePaths.connect(level, this, placed, pathMaterial(type));
             } catch (IOException e) {
                 MillenaireRewrite.LOGGER.error("Village {}: cannot load start building {}", village.getName(), key, e);
             }
         }
+        // 所有 start 建筑建好后再一次铺好路网（后建的建筑可能压到先铺的路）
+        VillagePaths.rebuildNetwork(level, this, pathMaterial(type));
         nextProjectTime = level.getGameTime() + PROJECT_INTERVAL;
         village.markDirty();
     }
@@ -328,7 +329,16 @@ public class VillageGrowth {
         c.finish(level);
         BuildingPlacer.spawnAnimals(level, c.result);
         if (p.upgradeOf >= 0 && p.upgradeOf < buildings.size()) {
-            buildings.get(p.upgradeOf).level = p.level;
+            PlacedBuilding upgraded = buildings.get(p.upgradeOf);
+            upgraded.level = p.level;
+            // 升级可能在庭院里加了栅栏等，把穿过庭院的道路截断：重建路网绕开它们
+            if (VillagePaths.coversNetwork(this, upgraded.footprint)) {
+                try {
+                    VillagePaths.rebuildNetwork(level, this, pathMaterial(VillageTypes.get(village.getCulture(), villageTypeFile)));
+                } catch (IOException e) {
+                    MillenaireRewrite.LOGGER.warn("Village {}: cannot read village type for paths", village.getName());
+                }
+            }
         } else {
             ResidentSpawner.spawnResidents(level, village, c.plan, c.result);
             PlacedBuilding placed = new PlacedBuilding(p.key, p.variation, p.level, p.origin, p.orientation,

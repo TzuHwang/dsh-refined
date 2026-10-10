@@ -25,7 +25,8 @@ import java.util.PriorityQueue;
  * 遇到已连到市政厅的道路（路网）即并入。建筑图纸自带的装饰路面只当作好走的地面，
  * 不算并入路网，否则道路会在建筑旁边就提前结束。
  *
- * 只走东西南北四个方向，避开其他建筑、水面和非自然地面，每步高差最多 1 格；
+ * 只走东西南北四个方向，每步高差最多 1 格，避开水面、非自然地面和其他建筑；
+ * 起点和终点所属的建筑内部可以走露天地面（庭院、空地），这样道路能一直通到门口。
  * 只把自然地面替换为路面，并清掉路上的草和花。
  */
 public final class VillagePaths {
@@ -33,8 +34,10 @@ public final class VillagePaths {
     /** 搜索范围：起点和终点外扩的格数 */
     private static final int SEARCH_MARGIN = 24;
     private static final int MAX_EXPANSIONS = 40000;
-    /** 起点/终点附近允许穿过建筑占地（道路起点常在门口、占地边缘内） */
+    /** 起点附近不并入路网的范围，避免一出门就接上自己门口的路 */
     private static final int ENDPOINT_RADIUS = 3;
+    /** 在建筑自己的占地内行走的成本倍数，让道路尽快离开庭院 */
+    private static final double COST_INSIDE_FACTOR = 2.0;
     private static final double COST_STEP = 1.0;
     private static final double COST_EXISTING_PATH = 0.4;
     private static final double COST_PER_HEIGHT = 1.0;
@@ -63,21 +66,27 @@ public final class VillagePaths {
         BlockPos hallStart = closest(endpoints(hall, building.origin), building.origin);
         BlockPos start = closest(endpoints(building, hallStart), hallStart);
 
-        List<BlockPos> route = findRoute(level, growth, start, hallStart);
+        List<BlockPos> route = findRoute(level, growth, building, start, hall, hallStart);
         if (route == null) {
             MillenaireRewrite.LOGGER.info("No path route from {} to the town hall", building.key);
             return 0;
         }
         int placed = 0;
         for (BlockPos surface : route) {
-            if (insideAnyFootprint(growth.getBuildings(), surface.getX(), surface.getZ())) {
+            // 门口（道路起点 1 格内）是建筑自己的门槛、台阶或栅栏门，不铺路面也不记入路网
+            if (isDoorCell(surface.getX(), surface.getZ(), start, hallStart)) {
+                continue;
+            }
+            BlockState current = level.getBlockState(surface);
+            if (isPath(current)) {
+                growth.getPathNetwork().add(key(surface.getX(), surface.getZ()));
+                continue;
+            }
+            // 门口的地板、台阶等不是自然地面，保留原样，也不记入路网
+            if (!isNaturalGround(current)) {
                 continue;
             }
             growth.getPathNetwork().add(key(surface.getX(), surface.getZ()));
-            BlockState current = level.getBlockState(surface);
-            if (isPath(current)) {
-                continue;
-            }
             level.setBlock(surface, material, Block.UPDATE_CLIENTS);
             clearPlants(level, surface.above());
             clearPlants(level, surface.above(2));
@@ -129,7 +138,9 @@ public final class VillagePaths {
      * A*：返回路线上每一格的地表方块位置；找不到时返回 null
      */
     @Nullable
-    private static List<BlockPos> findRoute(ServerLevel level, VillageGrowth growth, BlockPos start, BlockPos goal) {
+    private static List<BlockPos> findRoute(ServerLevel level, VillageGrowth growth,
+                                            VillageGrowth.PlacedBuilding startBuilding, BlockPos start,
+                                            VillageGrowth.PlacedBuilding goalBuilding, BlockPos goal) {
         List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
         int minX = Math.min(start.getX(), goal.getX()) - SEARCH_MARGIN;
         int maxX = Math.max(start.getX(), goal.getX()) + SEARCH_MARGIN;
@@ -168,21 +179,23 @@ public final class VillagePaths {
                 if (nx < minX || nx > maxX || nz < minZ || nz > maxZ) {
                     continue;
                 }
-                Integer ny = walkableHeight(level, buildings, nx, nz, start, goal);
+                Integer ny = walkableHeight(level, buildings, nx, nz, startBuilding, start, goalBuilding, goal);
                 if (ny == null) {
                     continue;
                 }
-                // 门口可能在台阶上：进出建筑占地的那一步不限高差（图纸本身画了台阶）
-                boolean crossesBuilding = insideAnyFootprint(buildings, node.x(), node.z())
-                    || insideAnyFootprint(buildings, nx, nz);
-                if (!crossesBuilding && Math.abs(ny - y) > 1) {
+                // 门口可能在台阶上：进出门口的那一步不限高差（图纸本身画了台阶）
+                boolean doorStep = isDoorCell(node.x(), node.z(), start, goal) || isDoorCell(nx, nz, start, goal);
+                if (!doorStep && Math.abs(ny - y) > 1) {
                     REJECTED.merge("height", 1, Integer::sum);
                     continue;
                 }
                 BlockState surface = level.getBlockState(new BlockPos(nx, ny, nz));
                 double step = (isPath(surface) ? COST_EXISTING_PATH : COST_STEP)
-                    + (crossesBuilding ? 0 : Math.abs(ny - y) * COST_PER_HEIGHT)
+                    + (doorStep ? 0 : Math.abs(ny - y) * COST_PER_HEIGHT)
                     + (node.direction() >= 0 && node.direction() != dir ? COST_TURN : 0);
+                if (insideAnyFootprint(buildings, nx, nz)) {
+                    step *= COST_INSIDE_FACTOR;
+                }
                 double cost = node.cost() + step;
                 long nk = key(nx, nz);
                 if (cost < best.getOrDefault(nk, Double.MAX_VALUE)) {
@@ -203,18 +216,26 @@ public final class VillagePaths {
      */
     @Nullable
     private static Integer walkableHeight(ServerLevel level, List<VillageGrowth.PlacedBuilding> buildings,
-                                         int x, int z, BlockPos start, BlockPos goal) {
+                                         int x, int z, VillageGrowth.PlacedBuilding startBuilding, BlockPos start,
+                                         VillageGrowth.PlacedBuilding goalBuilding, BlockPos goal) {
         if (!level.hasChunk(x >> 4, z >> 4)) {
             return null;
         }
-        boolean endpoint = near(x, z, start) || near(x, z, goal);
-        if (insideAnyFootprint(buildings, x, z)) {
-            // 建筑内部只允许在道路起点附近穿行，高度取起点所在楼层
-            if (!endpoint) {
+        // 门口格子：高度取道路起点所在楼层
+        if (near(x, z, start, 1)) {
+            return start.getY() - 1;
+        }
+        if (near(x, z, goal, 1)) {
+            return goal.getY() - 1;
+        }
+        // 其他建筑内部不可通行；自己的建筑内部按露天地面判断
+        for (VillageGrowth.PlacedBuilding b : buildings) {
+            BoundingBox f = b.footprint;
+            if (b != startBuilding && b != goalBuilding
+                && x >= f.minX() && x <= f.maxX() && z >= f.minZ() && z <= f.maxZ()) {
                 REJECTED.merge("footprint", 1, Integer::sum);
                 return null;
             }
-            return (near(x, z, start) ? start : goal).getY() - 1;
         }
         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
         BlockState surface = level.getBlockState(new BlockPos(x, y, z));
@@ -244,29 +265,20 @@ public final class VillagePaths {
     // ================ 工具 ================
 
     /**
-     * 道路端点：靠近占地边缘的图纸道路起点（建筑内部深处的起点走不出来）；
-     * 没有时取占地边界上离目标最近的一点
+     * 道路端点：图纸的道路起点（门口）；没有时取占地边界上离目标最近的一点
      */
     private static List<BlockPos> endpoints(VillageGrowth.PlacedBuilding building, BlockPos towards) {
         BoundingBox f = building.footprint;
-        List<BlockPos> nearEdge = building.pathStarts.stream()
-            .filter(p -> edgeDistance(f, p) < ENDPOINT_RADIUS)
-            .toList();
-        if (!nearEdge.isEmpty()) {
-            return nearEdge;
+        if (!building.pathStarts.isEmpty()) {
+            return building.pathStarts;
         }
         int x = Math.max(f.minX(), Math.min(f.maxX(), towards.getX()));
         int z = Math.max(f.minZ(), Math.min(f.maxZ(), towards.getZ()));
         return List.of(new BlockPos(x, building.origin.getY(), z));
     }
 
-    /**
-     * 点到占地边界的距离（在占地外为 0）
-     */
-    private static int edgeDistance(BoundingBox f, BlockPos p) {
-        int d = Math.min(Math.min(p.getX() - f.minX(), f.maxX() - p.getX()),
-            Math.min(p.getZ() - f.minZ(), f.maxZ() - p.getZ()));
-        return Math.max(0, d);
+    private static boolean isDoorCell(int x, int z, BlockPos start, BlockPos goal) {
+        return near(x, z, start, 1) || near(x, z, goal, 1);
     }
 
     private static BlockPos closest(List<BlockPos> candidates, BlockPos target) {
