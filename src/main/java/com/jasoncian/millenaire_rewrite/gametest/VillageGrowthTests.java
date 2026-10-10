@@ -562,6 +562,85 @@ public class VillageGrowthTests {
     }
 
     /**
+     * 诺曼的每个佈局模板都能长成村庄：建筑不重叠、道路连通、几乎所有建筑都排在佈局上
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void normanLayoutTemplatesAllGrow(GameTestHelper helper) {
+        growEveryTemplate(helper, 10400, Culture.NORMAN, "norman", "manor");
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void byzantineLayoutTemplatesAllGrow(GameTestHelper helper) {
+        growEveryTemplate(helper, 11000, Culture.BYZANTINE, "byzantines", "kastron");
+    }
+
+    private static void growEveryTemplate(GameTestHelper helper, int relativeZ, Culture culture, String folder,
+                                          String defaultTownHall) {
+        ServerLevel level = helper.getLevel();
+        BlockPos centre = helper.absolutePos(new BlockPos(0, 0, relativeZ));
+        setForced(level, centre, true);
+        var templates = com.jasoncian.millenaire_rewrite.village.layout.LayoutTemplate.forCulture(folder);
+        List<String> problems = new java.util.ArrayList<>();
+        if (templates.size() < 5) {
+            problems.add("only " + templates.size() + " templates");
+        }
+        for (int i = 0; i < templates.size(); i++) {
+            var template = templates.get(i);
+            // 每个模板在不同的 tick 里生成，避免单个 tick 太久
+            helper.runAtTickTime(1 + i * 10, () -> {
+                buildPlatform(level, centre);
+                String townHall = template.townHalls.isEmpty() ? defaultTownHall : template.townHalls.get(0);
+                com.jasoncian.millenaire_rewrite.village.layout.VillageLayout.forcedTemplate = template.name;
+                Village village;
+                try {
+                    village = VillageGenerator.forceGenerateVillage(level, centre, culture, townHall);
+                } finally {
+                    com.jasoncian.millenaire_rewrite.village.layout.VillageLayout.forcedTemplate = null;
+                }
+                if (village == null) {
+                    problems.add(template.name + ": generation failed");
+                    return;
+                }
+                VillageGrowth growth = village.getGrowth();
+                try {
+                    if (growth.getLayout() == null || !growth.getLayout().template.name.equals(template.name)) {
+                        problems.add(template.name + ": layout not used");
+                        return;
+                    }
+                    for (int p = 0; p < 20 && growth.forceNext(level) != null; p++) {
+                    }
+                    List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
+                    MillenaireRewrite.LOGGER.info("[gametest] template {}: {} buildings, {} placed freely: {}", template,
+                        buildings.size(), growth.getFreePlacements(), buildings.stream().map(b -> b.key).toList());
+                    try {
+                        assertNoOverlap(buildings);
+                        assertPathsConnected(level, village);
+                    } catch (GameTestAssertException e) {
+                        problems.add(template.name + ": " + e.getMessage());
+                    }
+                    if (buildings.size() < 8) {
+                        problems.add(template.name + ": only " + buildings.size() + " buildings");
+                    }
+                    if (growth.getFreePlacements() > 2) {
+                        problems.add(template.name + ": " + growth.getFreePlacements() + " buildings did not fit the layout");
+                    }
+                } finally {
+                    VillageManager.get(level).removeVillage(village);
+                    village.getActiveVillagers().forEach(v -> v.discard());
+                }
+            });
+        }
+        helper.runAtTickTime(templates.size() * 10 + 5, () -> {
+            setForced(level, centre, false);
+            if (!problems.isEmpty()) {
+                helper.fail(String.join("; ", problems));
+            } else {
+                helper.succeed();
+            }
+        });
+    }
+
+    /**
      * 坡地上的佈局村庄：道路按坡度铺设（相邻路面高差不超过 1），建筑沿路排列，林中道路清除树木
      */
     @GameTest(template = "empty", timeoutTicks = 200)

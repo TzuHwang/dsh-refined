@@ -1,0 +1,24 @@
+{
+  "_comment": "希波丹姆式网格城：广场（agora）北侧是市政厅，规整的街道网格，最外侧两条路外是田地和林地",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10],   "to": [0, 72],   "width": 3},
+    {"from": [-10, 0],  "to": [-72, 0],  "width": 3},
+    {"from": [10, 0],   "to": [72, 0],   "width": 3},
+    {"from": [-72, 38], "to": [72, 38],  "width": 3},
+    {"from": [-38, 2],  "to": [-38, 72], "width": 3},
+    {"from": [38, 2],   "to": [38, 72],  "width": 3}
+  ],
+  "frontages": [
+    {"road": 1, "side": "both",  "start": 2,  "end": 26,  "depth": 28, "tag": "plaza"},
+    {"road": 2, "side": "both",  "start": 2,  "end": 26,  "depth": 28, "tag": "plaza"},
+    {"road": 0, "side": "both",  "start": 2,  "end": 26,  "depth": 24, "tag": "plaza"},
+    {"road": 1, "side": "both",  "start": 30, "end": 62,  "depth": 18, "tag": "house"},
+    {"road": 2, "side": "both",  "start": 30, "end": 62,  "depth": 18, "tag": "house"},
+    {"road": 0, "side": "both",  "start": 30, "end": 62,  "depth": 20, "tag": "house"},
+    {"road": 3, "side": "both",  "start": 2,  "end": 142, "depth": 16, "tag": "house"},
+    {"road": 4, "side": "right", "start": 2,  "end": 70,  "depth": 26, "tag": "field"},
+    {"road": 5, "side": "left",  "start": 2,  "end": 70,  "depth": 26, "tag": "field"}
+  ]
+}

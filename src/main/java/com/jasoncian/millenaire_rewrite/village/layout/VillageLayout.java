@@ -522,6 +522,10 @@ public final class VillageLayout {
 
     // ================ 生成 ================
 
+    /** 测试用：指定下一个村庄使用的模板名（null 时按权重随机） */
+    @Nullable
+    public static String forcedTemplate;
+
     /**
      * 为文化挑一个模板和朝向，使市政厅的位置是干燥、平坦的地面
      *
@@ -530,7 +534,7 @@ public final class VillageLayout {
     @Nullable
     public static VillageLayout create(ServerLevel level, String culture, BuildingPlan townHall, BlockPos centre,
                                        RandomSource random) {
-        List<LayoutTemplate> templates = LayoutTemplate.forCulture(culture);
+        List<LayoutTemplate> templates = LayoutTemplate.forTownHall(culture, townHall.key);
         if (templates.isEmpty()) {
             return null;
         }
@@ -542,6 +546,12 @@ public final class VillageLayout {
             if (roll < 0) {
                 template = t;
                 break;
+            }
+        }
+        if (forcedTemplate != null) {
+            LayoutTemplate forced = LayoutTemplate.get(culture, forcedTemplate);
+            if (forced != null) {
+                template = forced;
             }
         }
         int ground = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, centre.getX(), centre.getZ());

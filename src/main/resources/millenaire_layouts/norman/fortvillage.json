@@ -1,0 +1,26 @@
+{
+  "_comment": "城堡网格村：城堡前方是规整的网格街区（中世纪新城 bastide），东西两侧的边界路外是田地",
+  "weight": 30,
+  "townhalls": ["fort", "largefort", "playerlargefort", "playerfort"],
+  "plaza": 7,
+  "roads": [
+    {"from": [0, 8],    "to": [0, 68],   "width": 3},
+    {"from": [-64, 34], "to": [64, 34],  "width": 3},
+    {"from": [-64, 68], "to": [64, 68],  "width": 3},
+    {"from": [-8, 0],   "to": [-64, 0],  "width": 3},
+    {"from": [8, 0],    "to": [64, 0],   "width": 3},
+    {"from": [-64, 0],  "to": [-64, 68], "width": 3},
+    {"from": [64, 0],   "to": [64, 68],  "width": 3}
+  ],
+  "frontages": [
+    {"road": 3, "side": "both",  "start": 2,  "end": 26,  "depth": 28, "tag": "plaza"},
+    {"road": 4, "side": "both",  "start": 2,  "end": 26,  "depth": 28, "tag": "plaza"},
+    {"road": 3, "side": "both",  "start": 28, "end": 54,  "depth": 14, "tag": "house"},
+    {"road": 4, "side": "both",  "start": 28, "end": 54,  "depth": 14, "tag": "house"},
+    {"road": 1, "side": "both",  "start": 2,  "end": 126, "depth": 14, "tag": "house"},
+    {"road": 2, "side": "left",  "start": 2,  "end": 126, "depth": 14, "tag": "house"},
+    {"road": 2, "side": "right", "start": 2,  "end": 126, "depth": 24, "tag": "field"},
+    {"road": 5, "side": "right", "start": 2,  "end": 66,  "depth": 24, "tag": "field"},
+    {"road": 6, "side": "left",  "start": 2,  "end": 66,  "depth": 24, "tag": "field"}
+  ]
+}

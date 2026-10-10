@@ -1,0 +1,27 @@
+{
+  "_comment": "卡斯特罗（kastro）：环城路围住市政厅和广场，环内是住宅，环外是田地和林地",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10],    "to": [0, 56],    "width": 3},
+    {"from": [-56, 56],  "to": [56, 56],   "width": 3},
+    {"from": [-56, -58], "to": [-56, 56],  "width": 3},
+    {"from": [56, -58],  "to": [56, 56],   "width": 3},
+    {"from": [-56, -58], "to": [56, -58],  "width": 3},
+    {"from": [-10, 0],   "to": [-56, 0],   "width": 3},
+    {"from": [10, 0],    "to": [56, 0],    "width": 3}
+  ],
+  "frontages": [
+    {"road": 5, "side": "both",  "start": 2, "end": 24,  "depth": 26, "tag": "plaza"},
+    {"road": 6, "side": "both",  "start": 2, "end": 24,  "depth": 26, "tag": "plaza"},
+    {"road": 0, "side": "both",  "start": 2, "end": 44,  "depth": 20, "tag": "house"},
+    {"road": 2, "side": "left",  "start": 2, "end": 112, "depth": 18, "tag": "house"},
+    {"road": 3, "side": "right", "start": 2, "end": 112, "depth": 18, "tag": "house"},
+    {"road": 1, "side": "left",  "start": 2, "end": 110, "depth": 18, "tag": "house"},
+    {"road": 4, "side": "right", "start": 2, "end": 110, "depth": 16, "tag": "house"},
+    {"road": 2, "side": "right", "start": 2, "end": 112, "depth": 24, "tag": "field"},
+    {"road": 3, "side": "left",  "start": 2, "end": 112, "depth": 24, "tag": "field"},
+    {"road": 1, "side": "right", "start": 2, "end": 110, "depth": 24, "tag": "field"},
+    {"road": 4, "side": "left",  "start": 2, "end": 110, "depth": 24, "tag": "field"}
+  ]
+}

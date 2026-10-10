@@ -86,6 +86,7 @@ public final class VillagePaths {
             MillenaireRewrite.LOGGER.info("No path route from {} to the town hall", building.key);
             return -1;
         }
+        rampDoorSteps(level, growth, route);
         int placed = 0;
         for (BlockPos surface : route) {
             BlockState current = level.getBlockState(surface);
@@ -110,6 +111,56 @@ public final class VillagePaths {
         MillenaireRewrite.LOGGER.debug("Path from {} to the town hall: {} cells, {} blocks placed",
             building.key, route.size(), placed);
         return placed;
+    }
+
+    /**
+     * 门口附近允许高差超过 1 的台阶（图纸画的门口高度）；坡地上门前的路会因此比街道高出两三格。
+     * 从两端的门口向外逐格把地面整成每格最多差 1 的坡道（挖低或填土），直到接上原本的地面。
+     */
+    private static void rampDoorSteps(ServerLevel level, VillageGrowth growth, List<BlockPos> route) {
+        int n = route.size();
+        if (n < 2) {
+            return;
+        }
+        int[] heights = new int[n];
+        for (int i = 0; i < n; i++) {
+            heights[i] = route.get(i).getY();
+        }
+        for (int i = 1; i < n; i++) {
+            int diff = heights[i] - heights[i - 1];
+            if (Math.abs(diff) <= 1 || growth.getPathNetwork().contains(key(route.get(i).getX(), route.get(i).getZ()))) {
+                break;
+            }
+            heights[i] = heights[i - 1] + Integer.signum(diff);
+        }
+        for (int i = n - 2; i >= 0; i--) {
+            int diff = heights[i] - heights[i + 1];
+            if (Math.abs(diff) <= 1 || growth.getPathNetwork().contains(key(route.get(i).getX(), route.get(i).getZ()))) {
+                break;
+            }
+            heights[i] = heights[i + 1] + Integer.signum(diff);
+        }
+        for (int i = 0; i < n; i++) {
+            BlockPos old = route.get(i);
+            int h = heights[i];
+            if (h == old.getY() || !isNaturalGround(level.getBlockState(old))) {
+                continue;
+            }
+            BlockState top = level.getBlockState(old);
+            BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos(old.getX(), 0, old.getZ());
+            for (int y = h + 1; y <= old.getY(); y++) {
+                p.setY(y);
+                level.setBlock(p, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+            }
+            for (int y = old.getY(); y < h; y++) {
+                p.setY(y);
+                level.setBlock(p, net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState(), Block.UPDATE_CLIENTS);
+            }
+            p.setY(h);
+            level.setBlock(p, top, Block.UPDATE_CLIENTS);
+            clearPlants(level, p.above());
+            route.set(i, p.immutable());
+        }
     }
 
     /**

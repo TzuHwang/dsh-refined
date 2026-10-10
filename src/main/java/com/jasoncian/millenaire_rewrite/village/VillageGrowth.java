@@ -191,6 +191,8 @@ public class VillageGrowth {
     /** 村庄佈局（有模板的文化）；null 时用旧的随机选址 */
     @Nullable
     private com.jasoncian.millenaire_rewrite.village.layout.VillageLayout layout;
+    /** 佈局放不下、改为自由选址的建筑数（不存档，测试和调试用） */
+    private int freePlacements;
 
     public VillageGrowth(Village village) {
         this.village = village;
@@ -207,6 +209,10 @@ public class VillageGrowth {
     @Nullable
     public com.jasoncian.millenaire_rewrite.village.layout.VillageLayout getLayout() {
         return layout;
+    }
+
+    public int getFreePlacements() {
+        return freePlacements;
     }
 
     public void setLayout(@Nullable com.jasoncian.millenaire_rewrite.village.layout.VillageLayout layout) {
@@ -589,6 +595,7 @@ public class VillageGrowth {
             }
             MillenaireRewrite.LOGGER.info("Village {}: no room on the layout for {}, placing it freely",
                 village.getName(), plan.key);
+            freePlacements++;
         }
         // 先找不压到道路的位置，找不到再允许压过道路（之后会重建路网）
         Site site = findSite(level, plan, random, true);

@@ -1,0 +1,21 @@
+{
+  "_comment": "梯田村：两条平行街道沿等高线排列，房屋面向南边（向阳），由一条坡道相连；最外一排是田地",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10],   "to": [0, 64],  "width": 3},
+    {"from": [-72, 32], "to": [72, 32], "width": 3},
+    {"from": [-72, 64], "to": [72, 64], "width": 3},
+    {"from": [-10, 0],  "to": [-44, 0], "width": 3},
+    {"from": [10, 0],   "to": [44, 0],  "width": 3}
+  ],
+  "frontages": [
+    {"road": 3, "side": "both",  "start": 2, "end": 32,  "depth": 26, "tag": "plaza"},
+    {"road": 4, "side": "both",  "start": 2, "end": 32,  "depth": 26, "tag": "plaza"},
+    {"road": 0, "side": "both",  "start": 2, "end": 18,  "depth": 18, "tag": "plaza"},
+    {"road": 1, "side": "left",  "start": 0, "end": 144, "depth": 18, "tag": "house"},
+    {"road": 1, "side": "right", "start": 0, "end": 144, "depth": 13, "tag": "house"},
+    {"road": 2, "side": "left",  "start": 0, "end": 144, "depth": 14, "tag": "house"},
+    {"road": 2, "side": "right", "start": 0, "end": 144, "depth": 26, "tag": "field"}
+  ]
+}

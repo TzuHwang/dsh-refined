@@ -1,0 +1,20 @@
+{
+  "_comment": "修道院村：教堂前的广场接一条南北向的朝圣大道，两旁是礼拜堂、旅店，村子南边一条东西向的田间小路",
+  "weight": 30,
+  "townhalls": ["church"],
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10],   "to": [0, 76],  "width": 3},
+    {"from": [-64, 46], "to": [64, 46], "width": 3},
+    {"from": [-10, 0],  "to": [-44, 0], "width": 3},
+    {"from": [10, 0],   "to": [44, 0],  "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2,  "end": 32,  "depth": 26, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 40, "end": 66,  "depth": 20, "tag": "house"},
+    {"road": 2, "side": "both", "start": 2,  "end": 34,  "depth": 22, "tag": "house"},
+    {"road": 3, "side": "both", "start": 2,  "end": 34,  "depth": 22, "tag": "house"},
+    {"road": 1, "side": "both", "start": 2,  "end": 54,  "depth": 26, "tag": "field"},
+    {"road": 1, "side": "both", "start": 74, "end": 128, "depth": 26, "tag": "field"}
+  ]
+}

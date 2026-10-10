@@ -58,8 +58,12 @@ public final class LayoutTemplate {
     public final int plaza;
     public final List<Road> roads;
     public final List<Frontage> frontages;
+    /** 只用于这些市政厅（空表示所有市政厅都可以用） */
+    public final List<String> townHalls;
 
-    private LayoutTemplate(String culture, String name, int weight, int plaza, List<Road> roads, List<Frontage> frontages) {
+    private LayoutTemplate(String culture, String name, int weight, int plaza, List<Road> roads, List<Frontage> frontages,
+                           List<String> townHalls) {
+        this.townHalls = List.copyOf(townHalls);
         this.culture = culture;
         this.name = name;
         this.weight = weight;
@@ -84,6 +88,13 @@ public final class LayoutTemplate {
      */
     public static List<LayoutTemplate> forCulture(String culture) {
         return TEMPLATES.computeIfAbsent(culture, LayoutTemplate::loadAll);
+    }
+
+    /**
+     * 适用于该市政厅的模板：通用模板，加上指定了这个市政厅的模板（按权重抽选）
+     */
+    public static List<LayoutTemplate> forTownHall(String culture, String townHall) {
+        return forCulture(culture).stream().filter(t -> t.townHalls.isEmpty() || t.townHalls.contains(townHall)).toList();
     }
 
     @Nullable
@@ -162,8 +173,12 @@ public final class LayoutTemplate {
                 frontages.add(new Frontage(road, true, start, end, depth, tag));
             }
         }
+        List<String> townHalls = new ArrayList<>();
+        if (json.has("townhalls")) {
+            json.getAsJsonArray("townhalls").forEach(e -> townHalls.add(e.getAsString()));
+        }
         return new LayoutTemplate(culture, name, json.has("weight") ? json.get("weight").getAsInt() : 10,
-            json.has("plaza") ? json.get("plaza").getAsInt() : 6, roads, frontages);
+            json.has("plaza") ? json.get("plaza").getAsInt() : 6, roads, frontages, townHalls);
     }
 
     private static Map<String, String> loadCategories(String culture) {
