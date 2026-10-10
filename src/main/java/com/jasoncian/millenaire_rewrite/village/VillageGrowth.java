@@ -666,6 +666,14 @@ public class VillageGrowth {
      */
     @Nullable
     public static Integer averageGround(ServerLevel level, BoundingBox box) {
+        return averageGround(level, box, MAX_HEIGHT_DIFFERENCE);
+    }
+
+    /**
+     * @param maxDifference 允许的最大高差（佈局地块会整成平台，可以放宽）
+     */
+    @Nullable
+    public static Integer averageGround(ServerLevel level, BoundingBox box, int maxDifference) {
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
         long sum = 0;
@@ -684,7 +692,7 @@ public class VillageGrowth {
                 count++;
             }
         }
-        if (count == 0 || max - min > MAX_HEIGHT_DIFFERENCE) {
+        if (count == 0 || max - min > maxDifference) {
             MillenaireRewrite.LOGGER.debug("site {}: height range {}-{}", box, min, max);
             return null;
         }

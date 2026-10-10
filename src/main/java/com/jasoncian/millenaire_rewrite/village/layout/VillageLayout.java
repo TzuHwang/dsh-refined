@@ -42,6 +42,14 @@ public final class VillageLayout {
     private static final int SETBACK = 1;
     /** 道路上方清除树木的高度 */
     private static final int ROAD_CLEAR_HEIGHT = 24;
+    /** 道路每格最多挖低或填高的格数，超过时（悬崖、深谷）不铺这一格 */
+    private static final int MAX_ROAD_CHANGE = 8;
+    /** 道路两侧整成缓坡的宽度 */
+    private static final int ROAD_SHOULDER = 3;
+    /** 地块允许的地面高差（建造时整成平台） */
+    private static final int PLOT_MAX_DIFFERENCE = 12;
+    /** 建筑地面与门前路面相差不超过这么多时，对齐路面 */
+    private static final int ALIGN_TO_ROAD = 4;
 
     /** 世界方向：0 西、1 南、2 东、3 北（与 BuildingPlacer 的 orientation 0~3 门朝向一致） */
     private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
@@ -237,10 +245,17 @@ public final class VillageLayout {
                     t += 2;
                     continue;
                 }
-                Integer ground = VillageGrowth.averageGround(level, box);
+                Integer ground = VillageGrowth.averageGround(level, box, PLOT_MAX_DIFFERENCE);
                 if (ground == null) {
                     t += 2;
                     continue;
+                }
+                // 门前路面的高度：建筑地面尽量与道路齐平，街道才连贯
+                int roadX = a[0] + u[0] * (t + along / 2);
+                int roadZ = a[1] + u[1] * (t + along / 2);
+                int roadY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, roadX, roadZ);
+                if (Math.abs(roadY - ground) <= ALIGN_TO_ROAD) {
+                    ground = roadY;
                 }
                 BlockPos origin = originFor(plan, orientation, box, ground);
                 return new Placement(origin, orientation, BuildingPlacer.footprint(plan, origin, orientation), i, t,
@@ -314,40 +329,143 @@ public final class VillageLayout {
     }
 
     /**
-     * 铺设道路和广场：清除上方的树木和杂草，地面换成路面（水面、建筑上不铺）
+     * 道路路面高度：广场为中心高度，沿道路向外每格最多升降 1 格，尽量贴近原地面
+     */
+    private Map<Long, Integer> gradeRoads(ServerLevel level) {
+        Set<Long> cells = roadCells();
+        Map<Long, Integer> heights = new java.util.HashMap<>();
+        java.util.ArrayDeque<Long> queue = new java.util.ArrayDeque<>();
+        int plazaY = centre.getY() - 1;
+        int p = template.plaza;
+        for (int x = -p; x <= p; x++) {
+            for (int z = -p; z <= p; z++) {
+                int[] w = point(x, z);
+                long cell = ChunkPos.asLong(w[0], w[1]);
+                heights.put(cell, plazaY);
+                queue.add(cell);
+            }
+        }
+        int[][] neighbours = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        while (!queue.isEmpty()) {
+            long cell = queue.poll();
+            int h = heights.get(cell);
+            int x = ChunkPos.getX(cell);
+            int z = ChunkPos.getZ(cell);
+            for (int[] d : neighbours) {
+                long n = ChunkPos.asLong(x + d[0], z + d[1]);
+                if (!cells.contains(n) || heights.containsKey(n) || !level.hasChunkAt(new BlockPos(x + d[0], 0, z + d[1]))) {
+                    continue;
+                }
+                Integer g = groundAt(level, x + d[0], z + d[1]);
+                int target = g == null ? h : Math.max(h - 1, Math.min(h + 1, g));
+                heights.put(n, target);
+                queue.add(n);
+            }
+        }
+        return heights;
+    }
+
+    /**
+     * 铺设道路和广场：按坡度整平路面（挖低或填高），清除上方的树木和杂草，
+     * 两侧整成缓坡；水面、建筑上不铺
      *
      * @return 铺好的格子（加入村庄路网）
      */
     public Set<Long> paveRoads(ServerLevel level, BlockState material, Predicate<BlockPos> protectedColumn) {
+        Map<Long, Integer> heights = gradeRoads(level);
         Set<Long> paved = new HashSet<>();
-        for (long cell : roadCells()) {
-            int x = ChunkPos.getX(cell);
-            int z = ChunkPos.getZ(cell);
-            if (!level.hasChunkAt(new BlockPos(x, 0, z)) || protectedColumn.test(new BlockPos(x, 0, z))) {
+        for (Map.Entry<Long, Integer> e : heights.entrySet()) {
+            int x = ChunkPos.getX(e.getKey());
+            int z = ChunkPos.getZ(e.getKey());
+            int h = e.getValue();
+            if (protectedColumn.test(new BlockPos(x, 0, z))) {
                 continue;
             }
-            Integer y = groundAt(level, x, z);
-            if (y == null) {
+            Integer g = groundAt(level, x, z);
+            if (g == null || Math.abs(g - h) > MAX_ROAD_CHANGE) {
                 continue;
             }
-            BlockPos surface = new BlockPos(x, y, z);
-            BlockState state = level.getBlockState(surface);
-            if (!isPath(state) && !isNaturalGround(state)) {
+            BlockState ground = level.getBlockState(new BlockPos(x, g, z));
+            if (!isPath(ground) && !isNaturalGround(ground)) {
                 continue;
             }
-            for (int dy = 1; dy <= ROAD_CLEAR_HEIGHT; dy++) {
-                BlockPos above = surface.above(dy);
-                BlockState s = level.getBlockState(above);
-                if (s.is(BlockTags.LOGS) || s.is(BlockTags.LEAVES) || !s.isAir() && s.canBeReplaced() && s.getFluidState().isEmpty()) {
-                    level.setBlock(above, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+            setColumn(level, x, z, g, h, material);
+            paved.add(e.getKey());
+        }
+        shapeShoulders(level, heights, protectedColumn);
+        return paved;
+    }
+
+    /**
+     * 把一列地面从 g 改到 h：清除 h 以上的方块（含树木），h 以下填土，顶面为 top
+     */
+    private static void setColumn(ServerLevel level, int x, int z, int g, int h, BlockState top) {
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos(x, h + 1, z);
+        int clearTo = Math.max(g, h) + ROAD_CLEAR_HEIGHT;
+        for (int y = h + 1; y <= clearTo; y++) {
+            p.setY(y);
+            BlockState s = level.getBlockState(p);
+            if (!s.isAir() && (y <= g || s.is(BlockTags.LOGS) || s.is(BlockTags.LEAVES)
+                || s.canBeReplaced() && s.getFluidState().isEmpty())) {
+                level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+            }
+        }
+        for (int y = g + 1; y < h; y++) {
+            p.setY(y);
+            level.setBlock(p, Blocks.DIRT.defaultBlockState(), Block.UPDATE_CLIENTS);
+        }
+        p.setY(h);
+        if (!level.getBlockState(p).is(top.getBlock())) {
+            level.setBlock(p, top, Block.UPDATE_CLIENTS);
+        }
+    }
+
+    /**
+     * 道路两侧 ROAD_SHOULDER 格内：地面与路面的高差不超过离道路的距离，形成缓坡而不是断崖
+     */
+    private void shapeShoulders(ServerLevel level, Map<Long, Integer> heights, Predicate<BlockPos> protectedColumn) {
+        Map<Long, int[]> limits = new java.util.HashMap<>();
+        for (Map.Entry<Long, Integer> e : heights.entrySet()) {
+            int x = ChunkPos.getX(e.getKey());
+            int z = ChunkPos.getZ(e.getKey());
+            int h = e.getValue();
+            for (int dx = -ROAD_SHOULDER; dx <= ROAD_SHOULDER; dx++) {
+                for (int dz = -ROAD_SHOULDER; dz <= ROAD_SHOULDER; dz++) {
+                    long n = ChunkPos.asLong(x + dx, z + dz);
+                    if (heights.containsKey(n)) {
+                        continue;
+                    }
+                    int d = Math.max(Math.abs(dx), Math.abs(dz));
+                    int[] limit = limits.computeIfAbsent(n, k -> new int[] {Integer.MIN_VALUE, Integer.MAX_VALUE});
+                    limit[0] = Math.max(limit[0], h - d);
+                    limit[1] = Math.min(limit[1], h + d);
                 }
             }
-            if (!isPath(state)) {
-                level.setBlock(surface, material, Block.UPDATE_CLIENTS);
-            }
-            paved.add(cell);
         }
-        return paved;
+        for (Map.Entry<Long, int[]> e : limits.entrySet()) {
+            int x = ChunkPos.getX(e.getKey());
+            int z = ChunkPos.getZ(e.getKey());
+            int[] limit = e.getValue();
+            if (limit[0] > limit[1] || !level.hasChunkAt(new BlockPos(x, 0, z))
+                || protectedColumn.test(new BlockPos(x, 0, z))) {
+                continue;
+            }
+            Integer g = groundAt(level, x, z);
+            if (g == null) {
+                continue;
+            }
+            int target = Math.max(limit[0], Math.min(limit[1], g));
+            if (target == g || Math.abs(target - g) > MAX_ROAD_CHANGE) {
+                continue;
+            }
+            BlockState surface = level.getBlockState(new BlockPos(x, g, z));
+            if (!isNaturalGround(surface)) {
+                continue;
+            }
+            BlockState top = surface.is(BlockTags.SAND) || surface.is(Blocks.SNOW_BLOCK) ? surface
+                : Blocks.GRASS_BLOCK.defaultBlockState();
+            setColumn(level, x, z, g, target, top);
+        }
     }
 
     /**
@@ -428,22 +546,51 @@ public final class VillageLayout {
         }
         int ground = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, centre.getX(), centre.getZ());
         BlockPos plaza = new BlockPos(centre.getX(), ground, centre.getZ());
-        int startRotation = random.nextInt(4);
-        boolean startMirror = random.nextBoolean();
+        // 8 种旋转/镜像按地形打分（道路经过水面、高差），由好到差尝试；同分时随机
+        List<VillageLayout> candidates = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
-            VillageLayout layout = new VillageLayout(template, plaza, startRotation + i / 2, startMirror ^ (i % 2 == 1));
+            candidates.add(new VillageLayout(template, plaza, i / 2, i % 2 == 1));
+        }
+        java.util.Collections.shuffle(candidates, new java.util.Random(random.nextLong()));
+        Map<VillageLayout, Integer> scores = new java.util.HashMap<>();
+        candidates.forEach(c -> scores.put(c, c.terrainScore(level)));
+        candidates.sort(java.util.Comparator.comparingInt(scores::get));
+        for (VillageLayout layout : candidates) {
             Placement hall = layout.townHall(townHall);
             boolean loaded = loaded(level, hall.footprint());
             Integer hallGround = loaded ? VillageGrowth.averageGround(level, hall.footprint()) : null;
             MillenaireRewrite.LOGGER.debug("Layout {} rotation {} mirror {}: town hall {} loaded {} ground {}", template,
                 layout.rotation, layout.mirror, hall.footprint(), loaded, hallGround);
             if (loaded && hallGround != null) {
-                MillenaireRewrite.LOGGER.info("Village layout {} at {} rotation {} mirror {}", template, plaza.toShortString(),
-                    layout.rotation, layout.mirror);
+                MillenaireRewrite.LOGGER.info("Village layout {} at {} rotation {} mirror {} (terrain score {})", template,
+                    plaza.toShortString(), layout.rotation, layout.mirror, scores.get(layout));
                 return layout;
             }
         }
         return null;
+    }
+
+    /**
+     * 地形分数（越低越好）：道路格子与广场高度的高差之和，水面和未加载的格子重罚
+     */
+    private int terrainScore(ServerLevel level) {
+        int score = 0;
+        int plazaY = centre.getY() - 1;
+        int i = 0;
+        for (long cell : roadCells()) {
+            if (i++ % 3 != 0) {
+                continue;
+            }
+            int x = ChunkPos.getX(cell);
+            int z = ChunkPos.getZ(cell);
+            if (!level.hasChunkAt(new BlockPos(x, 0, z))) {
+                score += 30;
+                continue;
+            }
+            Integer g = groundAt(level, x, z);
+            score += g == null ? 30 : Math.min(Math.abs(g - plazaY), 20);
+        }
+        return score;
     }
 
     // ================ 存档 ================

@@ -562,6 +562,106 @@ public class VillageGrowthTests {
     }
 
     /**
+     * 坡地上的佈局村庄：道路按坡度铺设（相邻路面高差不超过 1），建筑沿路排列，林中道路清除树木
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void normanLayoutOnHillside(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 9800));
+        setForced(level, centre, true);
+        buildPlatform(level, centre);
+        // 向东缓升的山坡（每 6 格升 1 格，最高 28 格）、东南的小丘，以及散布的树木
+        var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+        var grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
+        for (int dx = -PLATFORM_HALF_SIZE; dx <= PLATFORM_HALF_SIZE; dx++) {
+            for (int dz = -PLATFORM_HALF_SIZE; dz <= PLATFORM_HALF_SIZE; dz++) {
+                int rise = Math.max(0, Math.min(28, (dx + 40) / 6));
+                double mound = Math.hypot(dx - 30, dz - 30);
+                rise += mound < 15 ? (int) Math.round(10 * (1 - mound / 15)) : 0;
+                for (int y = 1; y <= rise; y++) {
+                    level.setBlock(new BlockPos(centre.getX() + dx, PLATFORM_TOP + y, centre.getZ() + dz),
+                        y == rise ? grass : stone, 2);
+                }
+                if (Math.floorMod(dx * 7 + dz * 13, 41) == 0 && Math.abs(dx) > 10) {
+                    BlockPos base = new BlockPos(centre.getX() + dx, PLATFORM_TOP + rise + 1, centre.getZ() + dz);
+                    for (int y = 0; y < 5; y++) {
+                        level.setBlock(base.above(y), net.minecraft.world.level.block.Blocks.OAK_LOG.defaultBlockState(), 2);
+                    }
+                    for (int lx = -2; lx <= 2; lx++) {
+                        for (int lz = -2; lz <= 2; lz++) {
+                            BlockPos leaf = base.offset(lx, 5, lz);
+                            if (level.getBlockState(leaf).isAir()) {
+                                level.setBlock(leaf, net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState()
+                                    .setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true), 2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Village village = VillageGenerator.forceGenerateVillage(level, centre, Culture.NORMAN, "manor");
+        if (village == null) {
+            setForced(level, centre, false);
+            helper.fail("village generation failed");
+            return;
+        }
+        VillageGrowth growth = village.getGrowth();
+        try {
+            if (growth.getLayout() == null) {
+                helper.fail("norman village has no layout");
+                return;
+            }
+            for (int i = 0; i < 25; i++) {
+                if (growth.forceNext(level) == null) {
+                    break;
+                }
+            }
+            List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
+            // 佈局道路：相邻两格路面高差不超过 1，路上没有树
+            int steep = 0;
+            int trees = 0;
+            java.util.Set<Long> road = new java.util.HashSet<>(growth.getLayout().roadCells());
+            road.retainAll(growth.getPathNetwork());
+            for (long cell : road) {
+                int x = ChunkPos.getX(cell);
+                int z = ChunkPos.getZ(cell);
+                int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                for (int[] d : new int[][] {{1, 0}, {0, 1}}) {
+                    long n = ChunkPos.asLong(x + d[0], z + d[1]);
+                    if (road.contains(n) && Math.abs(level.getHeight(
+                        net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + d[0], z + d[1]) - y) > 1) {
+                        steep++;
+                    }
+                }
+                for (int dy = 0; dy < 10; dy++) {
+                    var above = level.getBlockState(new BlockPos(x, y + dy, z));
+                    if (above.is(net.minecraft.tags.BlockTags.LOGS) || above.is(net.minecraft.tags.BlockTags.LEAVES)) {
+                        trees++;
+                        break;
+                    }
+                }
+            }
+            MillenaireRewrite.LOGGER.info("[gametest] hillside {}: {} road cells, {} steep steps, {} under trees, buildings {}",
+                growth.getLayout().template, road.size(), steep, trees, buildings.stream().map(b -> b.key).toList());
+            dumpMap(level, growth, 40);
+            assertNoOverlap(buildings);
+            assertPathsConnected(level, village);
+            if (steep > 0) {
+                helper.fail(steep + " road steps are higher than 1 block");
+            }
+            if (trees > 0) {
+                helper.fail(trees + " road cells are under trees");
+            }
+            if (buildings.size() < 8) {
+                helper.fail("only " + buildings.size() + " buildings were placed on the hillside");
+            }
+        } finally {
+            cleanup(level, village);
+        }
+        helper.succeed();
+    }
+
+    /**
      * 印度宫殿村庄：道路连到市政厅门口
      */
     @GameTest(template = "empty", timeoutTicks = 200)
