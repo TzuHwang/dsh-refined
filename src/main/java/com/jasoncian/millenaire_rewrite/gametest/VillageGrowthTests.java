@@ -527,6 +527,58 @@ public class VillageGrowthTests {
     }
 
     /**
+     * 印度宫殿村庄：道路连到市政厅门口
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void indianPalaceKeepsPathsThroughUpgrades(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Village village = createVillage(helper, 8000, Culture.INDIAN, "palace");
+        VillageGrowth growth = village.getGrowth();
+        for (int i = 0; i < 20; i++) {
+            if (growth.forceNext(level) == null) {
+                break;
+            }
+        }
+        try {
+            dumpMap(level, growth);
+            assertNoOverlap(growth.getBuildings());
+            assertPathsConnected(level, village);
+        } finally {
+            cleanup(level, village);
+        }
+        helper.succeed();
+    }
+
+    /** 调试：市政厅周围的俯视图 P=路面 #=有碰撞 .=草地 S=道路起点 小写=市政厅占地内 */
+    private static void dumpMap(ServerLevel level, VillageGrowth growth) {
+        VillageGrowth.PlacedBuilding hall = growth.getBuildings().stream().filter(b -> b.townHall).findFirst().orElseThrow();
+        BoundingBox f = hall.footprint;
+        StringBuilder sb = new StringBuilder("\n");
+        for (int z = f.minZ() - 12; z <= f.maxZ() + 12; z++) {
+            for (int x = f.minX() - 12; x <= f.maxX() + 12; x++) {
+                int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                BlockPos pos = new BlockPos(x, y, z);
+                final int fx = x, fz = z;
+                char c;
+                if (hall.pathStarts.stream().anyMatch(s -> s.getX() == fx && s.getZ() == fz)) {
+                    c = 'S';
+                } else if (com.jasoncian.millenaire_rewrite.village.VillagePaths.isPath(level.getBlockState(pos))) {
+                    c = growth.getPathNetwork().contains(ChunkPos.asLong(x, z)) ? 'P' : 'Q';
+                } else if (y > PLATFORM_TOP) {
+                    c = '#';
+                } else {
+                    c = '.';
+                }
+                boolean inside = x >= f.minX() && x <= f.maxX() && z >= f.minZ() && z <= f.maxZ();
+                sb.append(inside ? Character.toLowerCase(c) : c);
+            }
+            sb.append('\n');
+        }
+        MillenaireRewrite.LOGGER.info("[gametest] map around {} (y of S {}):{}", hall.key,
+            hall.pathStarts.stream().map(BlockPos::getY).toList(), sb);
+    }
+
+    /**
      * 从市政厅道路起点沿路面方块（高差 1 格内）能走到每栋建筑的道路起点附近
      */
     private static void assertPathsConnected(ServerLevel level, Village village) {
@@ -587,12 +639,16 @@ public class VillageGrowthTests {
         if (!reachesHallDoor) {
             throw new GameTestAssertException("paths stop at the town hall's edge instead of reaching its door");
         }
-        // 路网中的每一格都必须能从市政厅沿路走到（不能有被截断的路段）
-        long orphaned = village.getGrowth().getPathNetwork().stream().filter(cell -> !reached.contains(cell)).count();
+        // 路网中的每一格都必须能从市政厅沿路走到（不能有被截断的路段）；
+        // 建筑占地内的路格经由建筑本身的地板（门廊、台阶）相连，不算截断
+        java.util.function.LongPredicate cutOff = cell -> !reached.contains(cell)
+            && !com.jasoncian.millenaire_rewrite.village.VillagePaths.insideAnyFootprint(buildings,
+                ChunkPos.getX(cell), ChunkPos.getZ(cell));
+        long orphaned = village.getGrowth().getPathNetwork().stream().filter(cutOff::test).count();
         MillenaireRewrite.LOGGER.info("[gametest] paths: {} network cells, {} not reachable from the town hall",
             village.getGrowth().getPathNetwork().size(), orphaned);
         if (orphaned > 0) {
-            village.getGrowth().getPathNetwork().stream().filter(cell -> !reached.contains(cell)).limit(6).forEach(cell -> {
+            village.getGrowth().getPathNetwork().stream().filter(cutOff::test).limit(6).forEach(cell -> {
                 int x = ChunkPos.getX(cell);
                 int z = ChunkPos.getZ(cell);
                 StringBuilder sb = new StringBuilder();

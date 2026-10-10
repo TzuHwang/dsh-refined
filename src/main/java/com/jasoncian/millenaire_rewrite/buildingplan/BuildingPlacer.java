@@ -380,7 +380,43 @@ public final class BuildingPlacer {
         }
         addChestOps(c);
         addDoorOps(c);
+        if (!c.result.specialPoints.containsKey("pathStartPos")) {
+            addWalkwayPathStarts(c, plan, origin, finalOrientation);
+        }
         return c;
+    }
+
+    /**
+     * 图纸没有道路起点（如印度宫殿）时，以图纸自带步道上最靠近占地边缘的那几格（步道的外端）为道路起点，
+     * 村庄道路才会接上建筑的步道，而不是随便停在占地边上。
+     */
+    private static void addWalkwayPathStarts(Construction c, BuildingPlan plan, BlockPos origin, int finalOrientation) {
+        int best = Integer.MAX_VALUE;
+        List<BlockPos> ends = new ArrayList<>();
+        for (int floor = 0; floor < plan.nbFloors; floor++) {
+            int y = floor + plan.startLevel;
+            if (y != -1 && y != 0) {
+                continue;
+            }
+            for (int l = 0; l < plan.length; l++) {
+                for (int w = 0; w < plan.width; w++) {
+                    PointType pt = plan.plan[floor][l][w];
+                    if (pt == null || pt.state() == null
+                        || !com.jasoncian.millenaire_rewrite.village.VillagePaths.isPath(pt.state())) {
+                        continue;
+                    }
+                    int toEdge = Math.min(Math.min(l, plan.length - 1 - l), Math.min(w, plan.width - 1 - w));
+                    if (toEdge < best) {
+                        best = toEdge;
+                        ends.clear();
+                    }
+                    if (toEdge == best) {
+                        ends.add(worldPos(origin, y + 1, l - plan.lengthOffset(), w - plan.widthOffset(), finalOrientation));
+                    }
+                }
+            }
+        }
+        ends.forEach(pos -> c.result.addPoint("pathStartPos", pos));
     }
 
     /**

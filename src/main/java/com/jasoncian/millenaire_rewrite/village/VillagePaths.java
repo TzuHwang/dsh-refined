@@ -37,7 +37,7 @@ public final class VillagePaths {
     /** 起点附近不并入路网的范围，避免一出门就接上自己门口的路 */
     private static final int ENDPOINT_RADIUS = 3;
     /** 在建筑自己的占地内行走的成本倍数，让道路尽快离开庭院 */
-    private static final double COST_INSIDE_FACTOR = 2.0;
+    private static final double COST_INSIDE_FACTOR = 5.0;
     private static final double COST_STEP = 1.0;
     private static final double COST_EXISTING_PATH = 0.4;
     private static final double COST_PER_HEIGHT = 1.0;
@@ -335,7 +335,7 @@ public final class VillagePaths {
         return best;
     }
 
-    static boolean insideAnyFootprint(List<VillageGrowth.PlacedBuilding> buildings, int x, int z) {
+    public static boolean insideAnyFootprint(List<VillageGrowth.PlacedBuilding> buildings, int x, int z) {
         for (VillageGrowth.PlacedBuilding b : buildings) {
             BoundingBox f = b.footprint;
             if (x >= f.minX() && x <= f.maxX() && z >= f.minZ() && z <= f.maxZ()) {
