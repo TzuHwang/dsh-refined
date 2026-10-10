@@ -534,7 +534,8 @@ public final class BuildingPlacer {
         }
         switch (type) {
             case "empty" -> {
-                if (c.plan.level == 0) {
+                // 原版：升级和子建筑的空白点不动原有方块（子建筑叠在母建筑上，否则会把母建筑清空）
+                if (c.plan.level == 0 && !c.plan.subBuilding) {
                     c.set(pos, Blocks.AIR.defaultBlockState());
                 }
             }

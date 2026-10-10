@@ -118,6 +118,13 @@ public class MillenaireCommands {
             .then(Commands.literal("stats")
                 .executes(MillenaireCommands::showStats)
             )
+
+            // /millenaire showcase [andstop] - 从世界出生点起把所有佈局模板的村庄排成网格（用于超平坦展示世界）
+            .then(Commands.literal("showcase")
+                .executes(ctx -> showcase(ctx, false))
+                .then(Commands.literal("andstop")
+                    .executes(ctx -> showcase(ctx, true)))
+            )
         );
 
         // 简短别名
@@ -130,6 +137,17 @@ public class MillenaireCommands {
     }
 
     // ================ 命令实现 ================
+
+    private static int showcase(CommandContext<CommandSourceStack> ctx, boolean stop) {
+        CommandSourceStack source = ctx.getSource();
+        ServerLevel level = source.getServer().overworld();
+        BlockPos spawn = level.getSharedSpawnPos();
+        int count = LayoutShowcase.start(level, spawn.offset(16, 0, 16),
+            message -> source.sendSuccess(() -> Component.literal("[showcase] " + message), true), stop);
+        source.sendSuccess(() -> Component.literal("[showcase] building " + count + " layout villages from "
+            + spawn.offset(16, 0, 16).toShortString() + ", one per tick"), true);
+        return count;
+    }
 
     /**
      * 生成村庄命令

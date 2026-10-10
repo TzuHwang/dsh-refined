@@ -562,6 +562,56 @@ public class VillageGrowthTests {
     }
 
     /**
+     * 子建筑叠在母建筑上建造，不会清掉母建筑（拜占庭教堂的圣所、仓库、学校等）
+     */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void subBuildingsKeepParent(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 11600));
+        setForced(level, centre, true);
+        buildPlatform(level, centre);
+        try {
+            var plan = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("byzantines", "church", 'A', 0);
+            BlockPos origin = new BlockPos(centre.getX(), PLATFORM_TOP + 1, centre.getZ());
+            com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, plan, origin, 0);
+            BoundingBox f = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.footprint(plan, origin, 0);
+            int before = solidBlocks(level, f);
+            for (String sub : plan.subBuildings) {
+                var subPlan = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("byzantines", sub, 'A', 0);
+                com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, subPlan, origin, 0);
+            }
+            int after = solidBlocks(level, f);
+            MillenaireRewrite.LOGGER.info("[gametest] church blocks before sub-buildings {}, after {} ({})", before, after,
+                plan.subBuildings);
+            if (plan.subBuildings.isEmpty()) {
+                helper.fail("church has no sub-buildings");
+            }
+            if (after < before * 9 / 10) {
+                helper.fail("sub-buildings removed the church: " + before + " -> " + after + " blocks");
+            }
+        } catch (java.io.IOException e) {
+            helper.fail(e.toString());
+        } finally {
+            setForced(level, centre, false);
+        }
+        helper.succeed();
+    }
+
+    private static int solidBlocks(ServerLevel level, BoundingBox f) {
+        int count = 0;
+        for (int x = f.minX(); x <= f.maxX(); x++) {
+            for (int z = f.minZ(); z <= f.maxZ(); z++) {
+                for (int y = PLATFORM_TOP + 1; y <= PLATFORM_TOP + 30; y++) {
+                    if (!level.getBlockState(new BlockPos(x, y, z)).isAir()) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
      * 诺曼的每个佈局模板都能长成村庄：建筑不重叠、道路连通、几乎所有建筑都排在佈局上
      */
     @GameTest(template = "empty", timeoutTicks = 200)

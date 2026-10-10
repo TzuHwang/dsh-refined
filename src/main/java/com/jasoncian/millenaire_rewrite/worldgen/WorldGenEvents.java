@@ -80,6 +80,11 @@ public class WorldGenEvents {
         if (event.phase != TickEvent.Phase.END) return;
         int processed = 0;
 
+        // 佈局展示生成期间不自然生成村庄（展示会加载大量区块）
+        if (com.jasoncian.millenaire_rewrite.command.LayoutShowcase.running) {
+            pendingChunks.clear();
+            return;
+        }
         while (!pendingChunks.isEmpty() && processed < MAX_CHUNKS_PER_TICK) {
             PendingChunk pending = pendingChunks.poll();
             if (pending != null && pending.level() != null) {

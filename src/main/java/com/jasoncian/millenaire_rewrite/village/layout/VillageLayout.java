@@ -171,7 +171,7 @@ public final class VillageLayout {
      */
     public Placement townHall(ServerLevel level, BuildingPlan plan) {
         Placement p = townHall(plan);
-        Integer ground = VillageGrowth.averageGround(level, p.footprint());
+        Integer ground = VillageGrowth.averageGround(level, p.footprint(), PLOT_MAX_DIFFERENCE);
         if (ground == null) {
             return p;
         }
@@ -568,7 +568,7 @@ public final class VillageLayout {
         for (VillageLayout layout : candidates) {
             Placement hall = layout.townHall(townHall);
             boolean loaded = loaded(level, hall.footprint());
-            Integer hallGround = loaded ? VillageGrowth.averageGround(level, hall.footprint()) : null;
+            Integer hallGround = loaded ? VillageGrowth.averageGround(level, hall.footprint(), PLOT_MAX_DIFFERENCE) : null;
             MillenaireRewrite.LOGGER.debug("Layout {} rotation {} mirror {}: town hall {} loaded {} ground {}", template,
                 layout.rotation, layout.mirror, hall.footprint(), loaded, hallGround);
             if (loaded && hallGround != null) {
