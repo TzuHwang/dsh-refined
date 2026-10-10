@@ -283,9 +283,10 @@ public class GoalManager {
             stuckTicks++;
 
             if (stuckTicks >= currentGoal.getStuckDelay()) {
-                // 触发卡住动作
+                // 卡住（如被栅栏挡住、导航放弃）：执行卡住动作后放弃这个目标，改做别的事
                 currentGoal.stuckAction(villager);
                 stuckTicks = 0;
+                completeGoal(GoalState.FAILED);
             }
         } else {
             stuckTicks = 0;

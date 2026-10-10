@@ -39,15 +39,10 @@ public class VillagerBehaviourTests {
         try {
             BuildingPlan plan = BuildingPlan.load("norman", "manor", 'A', 0);
             BlockPos column = helper.absolutePos(new BlockPos(0, 0, 700));
-            origin = new BlockPos(column.getX(),
-                level.getHeight(Heightmap.Types.WORLD_SURFACE, column.getX(), column.getZ()), column.getZ());
-            // 远离测试结构的区块默认不更新实体，强制加载建筑周围的区块
-            net.minecraft.world.level.ChunkPos centre = new net.minecraft.world.level.ChunkPos(origin);
-            for (int cx = -3; cx <= 3; cx++) {
-                for (int cz = -3; cz <= 3; cz++) {
-                    level.setChunkForced(centre.x + cx, centre.z + cz, true);
-                }
-            }
+            // 远离测试结构的区块默认不更新实体，强制加载并在平台上进行（不受随机地形影响）
+            TestTerrain.setForced(level, column, true);
+            TestTerrain.buildPlatform(level, column);
+            origin = TestTerrain.ground(column);
             BuildingPlacer.Result result = BuildingPlacer.place(level, plan, origin, 0);
             Village village = new Village(origin, Culture.NORMAN);
             residents = ResidentSpawner.spawnResidents(level, village, plan, result);
@@ -97,12 +92,7 @@ public class VillagerBehaviourTests {
             }
             level.setDayTime(1000);
             residents.forEach(MillVillager::discard);
-            net.minecraft.world.level.ChunkPos centre = new net.minecraft.world.level.ChunkPos(origin);
-            for (int cx = -3; cx <= 3; cx++) {
-                for (int cz = -3; cz <= 3; cz++) {
-                    level.setChunkForced(centre.x + cx, centre.z + cz, false);
-                }
-            }
+            TestTerrain.setForced(level, origin, false);
             helper.succeed();
         });
     }

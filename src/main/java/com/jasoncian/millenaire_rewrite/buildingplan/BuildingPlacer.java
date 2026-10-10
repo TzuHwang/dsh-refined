@@ -1,5 +1,6 @@
 package com.jasoncian.millenaire_rewrite.buildingplan;
 
+import com.jasoncian.millenaire_rewrite.content.Crops;
 import com.jasoncian.millenaire_rewrite.core.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -12,8 +13,11 @@ import net.minecraft.world.level.block.BannerBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.FarmBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.WallBannerBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -193,6 +197,29 @@ public final class BuildingPlacer {
                     level.setBlock(pos, updated, FLAGS | Block.UPDATE_KNOWN_SHAPE);
                 }
             }
+            growTrees(level);
+        }
+
+        /**
+         * 原版生成树林时种树点上直接是长好的树：让种树点上的树苗立即长成树，伐木工才有工作
+         */
+        private void growTrees(ServerLevel level) {
+            result.specialPoints.forEach((type, positions) -> {
+                if (!type.endsWith("spawn")) {
+                    return;
+                }
+                for (BlockPos pos : positions) {
+                    BlockState state = level.getBlockState(pos);
+                    if (state.getBlock() instanceof SaplingBlock sapling) {
+                        // 树苗分两个阶段：第一次推进到 stage 1，第二次才生成树
+                        sapling.advanceTree(level, pos, state, level.random);
+                        BlockState staged = level.getBlockState(pos);
+                        if (staged.getBlock() instanceof SaplingBlock) {
+                            sapling.advanceTree(level, pos, staged, level.random);
+                        }
+                    }
+                }
+            });
         }
 
         private void set(BlockPos pos, BlockState state) {
@@ -373,10 +400,21 @@ public final class BuildingPlacer {
                  "plainSignGuess", "signwallGuess", "ladderGuess" -> {
                 // 暂不处理
             }
-            case "grass", "soil", "ricesoil", "turmericsoil", "sugarcanesoil", "potatosoil", "vinesoil",
-                 "maizesoil", "cacaospot", "carrotsoil", "flowersoil", "cottonsoil", "freegrass_block" ->
+            case "soil", "ricesoil", "turmericsoil", "potatosoil", "maizesoil", "carrotsoil", "cottonsoil" -> {
+                // 耕作点：湿润的耕地，第二轮在上方种下作物；记录点位供农夫工作
+                c.set(pos, Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, FarmBlock.MAX_MOISTURE));
+                c.result.addPoint(type, pos);
+            }
+            case "grass", "sugarcanesoil", "vinesoil", "cacaospot", "flowersoil", "freegrass_block" -> {
                 c.set(pos, Blocks.GRASS_BLOCK.defaultBlockState());
-            case "netherwartsoil" -> c.set(pos, Blocks.SOUL_SAND.defaultBlockState());
+                if (!type.equals("grass") && !type.equals("freegrass_block")) {
+                    c.result.addPoint(type, pos);
+                }
+            }
+            case "netherwartsoil" -> {
+                c.set(pos, Blocks.SOUL_SAND.defaultBlockState());
+                c.result.addPoint(type, pos);
+            }
             case "snailsoilblock" -> c.set(pos, Blocks.DIRT.defaultBlockState());
             case "furnaceGuess" -> c.set(pos, Blocks.FURNACE.defaultBlockState());
             case "silkwormblock" -> c.set(pos, ModBlocks.SILKWORM.get().defaultBlockState());
@@ -386,6 +424,10 @@ public final class BuildingPlacer {
                 BlockState resource = resourceBlock(type);
                 if (resource != null) {
                     c.set(pos, resource);
+                    if (type.endsWith("source")) {
+                        // 采石场等的资源点：记录点位供矿工工作
+                        c.result.addPoint(type, pos);
+                    }
                 } else if (type.startsWith("mainchest") || type.startsWith("lockedchest")) {
                     placeChest(c, type, pos, rotation);
                 } else {
@@ -403,6 +445,12 @@ public final class BuildingPlacer {
         }
         if (type.equals("torchGuess")) {
             c.set(pos, Blocks.TORCH.defaultBlockState());
+        } else if (Crops.cropForSoil(type) instanceof CropBlock crop) {
+            // 生长阶段按位置固定分散，田地看起来自然，也有一部分很快成熟可收
+            int age = Math.floorMod(pos.hashCode(), crop.getMaxAge() + 1);
+            c.set(pos.above(), crop.getStateForAge(age));
+        } else if (type.equals("netherwartsoil")) {
+            c.set(pos.above(), Blocks.NETHER_WART.defaultBlockState());
         } else if (type.endsWith("spawn")) {
             BlockState sapling = saplingFor(type);
             if (sapling != null) {

@@ -25,30 +25,11 @@ import java.util.List;
 @PrefixGameTestTemplate(false)
 public class VillageGrowthTests {
 
-    /** 村庄选址半径约 72 格，强制加载周围 6 个区块 */
-    private static final int CHUNK_RADIUS = 6;
-
-    /** 测试世界是正常地形（山地、河流），在高空搭平台让村庄测试结果不受地形影响 */
-    private static final int PLATFORM_TOP = 200;
-    private static final int PLATFORM_HALF_SIZE = 85;
-    private static final int PLATFORM_DEPTH = 12;
+    private static final int PLATFORM_TOP = TestTerrain.PLATFORM_TOP;
+    private static final int PLATFORM_HALF_SIZE = TestTerrain.PLATFORM_HALF_SIZE;
 
     private static void buildPlatform(ServerLevel level, BlockPos centre) {
-        var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
-        var grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
-        int flags = net.minecraft.world.level.block.Block.UPDATE_CLIENTS
-            | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE;
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        for (int x = -PLATFORM_HALF_SIZE; x <= PLATFORM_HALF_SIZE; x++) {
-            for (int z = -PLATFORM_HALF_SIZE; z <= PLATFORM_HALF_SIZE; z++) {
-                for (int y = PLATFORM_TOP - PLATFORM_DEPTH; y < PLATFORM_TOP; y++) {
-                    p.set(centre.getX() + x, y, centre.getZ() + z);
-                    level.setBlock(p, stone, flags);
-                }
-                p.set(centre.getX() + x, PLATFORM_TOP, centre.getZ() + z);
-                level.setBlock(p, grass, flags);
-            }
-        }
+        TestTerrain.buildPlatform(level, centre);
     }
 
     private static Village createVillage(GameTestHelper helper, int relativeZ, Culture culture) {
@@ -70,16 +51,7 @@ public class VillageGrowthTests {
     }
 
     private static void setForced(ServerLevel level, BlockPos pos, boolean forced) {
-        ChunkPos centre = new ChunkPos(pos);
-        for (int cx = -CHUNK_RADIUS; cx <= CHUNK_RADIUS; cx++) {
-            for (int cz = -CHUNK_RADIUS; cz <= CHUNK_RADIUS; cz++) {
-                level.setChunkForced(centre.x + cx, centre.z + cz, forced);
-                if (forced) {
-                    // 强制加载是异步的，这里同步加载，确保选址时区块已就绪
-                    level.getChunk(centre.x + cx, centre.z + cz);
-                }
-            }
-        }
+        TestTerrain.setForced(level, pos, forced);
     }
 
     private static void assertNoOverlap(List<VillageGrowth.PlacedBuilding> buildings) {
@@ -92,6 +64,89 @@ public class VillageGrowthTests {
                 }
             }
         }
+    }
+
+    /**
+     * 村民在自家建筑的工作点工作：农夫收成、伐木工砍树林的树、矿工采石
+     */
+    @GameTest(template = "empty", timeoutTicks = 1600)
+    public static void villagersWorkAtWorkPoints(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 4400));
+        setForced(level, centre, true);
+        buildPlatform(level, centre);
+        BlockPos ground = new BlockPos(centre.getX(), PLATFORM_TOP + 1, centre.getZ());
+        Village village = new Village(ground, Culture.NORMAN);
+        VillageManager.get(level).registerVillage(village);
+
+        List<com.jasoncian.millenaire_rewrite.entity.MillVillager> workers = new java.util.ArrayList<>();
+        java.util.Map<String, VillageGrowth.PlacedBuilding> placed = new java.util.HashMap<>();
+        String[] keys = {"farm", "quarry", "lumbermanhut", "grove"};
+        int[][] offsets = {{-35, 0}, {35, 0}, {0, 35}, {0, -35}};
+        try {
+            for (int i = 0; i < keys.length; i++) {
+                var plan = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("norman", keys[i], 'A', 0);
+                BlockPos origin = ground.offset(offsets[i][0], 0, offsets[i][1]);
+                var result = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, plan, origin, 0);
+                placed.put(keys[i], village.getGrowth().recordBuilding(plan, origin, 0, result, i == 0));
+                workers.addAll(com.jasoncian.millenaire_rewrite.content.ResidentSpawner.spawnResidents(level, village, plan, result));
+            }
+        } catch (java.io.IOException e) {
+            cleanup(level, village);
+            helper.fail(e.toString());
+            return;
+        }
+
+        // 农场作物全部设为成熟；树林每个种树点放一棵长好的树（5 格高的原木）
+        List<BlockPos> soils = placed.get("farm").points("soil");
+        for (BlockPos soil : soils) {
+            level.setBlock(soil.above(), ((net.minecraft.world.level.block.CropBlock) net.minecraft.world.level.block.Blocks.WHEAT)
+                .getStateForAge(7), 3);
+        }
+        List<BlockPos> trees = placed.get("grove").points("oakspawn");
+        for (BlockPos t : trees) {
+            for (int y = 0; y < 5; y++) {
+                level.setBlock(t.above(y), net.minecraft.world.level.block.Blocks.OAK_LOG.defaultBlockState(), 3);
+            }
+        }
+        level.setDayTime(1000);
+        MillenaireRewrite.LOGGER.info("[gametest] work: {} soils, {} trees, workers {}", soils.size(), trees.size(),
+            workers.stream().map(v -> v.getVillagerType()).toList());
+
+        helper.runAtTickTime(1400, () -> {
+            long harvested = soils.stream().filter(s -> {
+                var crop = level.getBlockState(s.above());
+                return crop.getBlock() instanceof net.minecraft.world.level.block.CropBlock cb && !cb.isMaxAge(crop);
+            }).count();
+            long chopped = trees.stream().filter(t -> !level.getBlockState(t).is(net.minecraft.tags.BlockTags.LOGS)).count();
+            int cobble = workers.stream().mapToInt(v -> v.countInInventory(net.minecraft.world.item.Items.COBBLESTONE)).sum()
+                + chestCount(level, placed.get("quarry"), net.minecraft.world.item.Items.COBBLESTONE);
+            MillenaireRewrite.LOGGER.info("[gametest] work: harvested {}/{}, chopped {}/{}, cobblestone {}",
+                harvested, soils.size(), chopped, trees.size(), cobble);
+            cleanup(level, village);
+            if (soils.isEmpty() || harvested == 0) {
+                helper.fail("farmer harvested nothing");
+            }
+            if (trees.isEmpty() || chopped == 0) {
+                helper.fail("lumberman chopped nothing");
+            }
+            if (cobble == 0) {
+                helper.fail("miner mined nothing");
+            }
+            helper.succeed();
+        });
+    }
+
+    private static int chestCount(ServerLevel level, VillageGrowth.PlacedBuilding building, net.minecraft.world.item.Item item) {
+        int count = 0;
+        List<BlockPos> chests = new java.util.ArrayList<>(building.points("lockedchest"));
+        chests.addAll(building.points("mainchest"));
+        for (BlockPos c : chests) {
+            if (level.getBlockEntity(c) instanceof net.minecraft.world.Container container) {
+                count += container.countItem(item);
+            }
+        }
+        return count;
     }
 
     /**

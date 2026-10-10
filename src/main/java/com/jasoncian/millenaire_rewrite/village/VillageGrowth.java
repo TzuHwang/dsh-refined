@@ -19,8 +19,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -59,9 +61,12 @@ public class VillageGrowth {
         public final boolean townHall;
         /** 图纸中的道路起点（通常在门口），用于连接道路网 */
         public final List<BlockPos> pathStarts;
+        /** 图纸中的功能点位（耕作点、资源点、种树点、箱子、睡觉位置等），升级时合并新点位 */
+        public final Map<String, List<BlockPos>> points = new HashMap<>();
 
         PlacedBuilding(String key, char variation, int level, BlockPos origin, int orientation,
-                       BoundingBox footprint, boolean townHall, List<BlockPos> pathStarts) {
+                       BoundingBox footprint, boolean townHall, List<BlockPos> pathStarts,
+                       Map<String, List<BlockPos>> points) {
             this.key = key;
             this.variation = variation;
             this.level = level;
@@ -70,6 +75,27 @@ public class VillageGrowth {
             this.footprint = footprint;
             this.townHall = townHall;
             this.pathStarts = List.copyOf(pathStarts);
+            addPoints(points);
+        }
+
+        void addPoints(Map<String, List<BlockPos>> newPoints) {
+            newPoints.forEach((type, list) -> {
+                List<BlockPos> existing = points.computeIfAbsent(type, k -> new ArrayList<>());
+                for (BlockPos p : list) {
+                    if (!existing.contains(p)) {
+                        existing.add(p);
+                    }
+                }
+            });
+        }
+
+        public List<BlockPos> points(String type) {
+            return points.getOrDefault(type, List.of());
+        }
+
+        public boolean contains(BlockPos pos) {
+            return pos.getX() >= footprint.minX() && pos.getX() <= footprint.maxX()
+                && pos.getZ() >= footprint.minZ() && pos.getZ() <= footprint.maxZ();
         }
 
         CompoundTag save() {
@@ -85,6 +111,13 @@ public class VillageGrowth {
             ListTag starts = new ListTag();
             pathStarts.forEach(p -> starts.add(NbtUtils.writeBlockPos(p)));
             tag.put("PathStarts", starts);
+            CompoundTag pointsTag = new CompoundTag();
+            points.forEach((type, list) -> {
+                ListTag l = new ListTag();
+                list.forEach(p -> l.add(NbtUtils.writeBlockPos(p)));
+                pointsTag.put(type, l);
+            });
+            tag.put("Points", pointsTag);
             return tag;
         }
 
@@ -95,9 +128,19 @@ public class VillageGrowth {
             for (int i = 0; i < list.size(); i++) {
                 starts.add(NbtUtils.readBlockPos(list.getCompound(i)));
             }
+            Map<String, List<BlockPos>> points = new HashMap<>();
+            CompoundTag pointsTag = tag.getCompound("Points");
+            for (String type : pointsTag.getAllKeys()) {
+                ListTag l = pointsTag.getList(type, 10);
+                List<BlockPos> typePoints = new ArrayList<>();
+                for (int i = 0; i < l.size(); i++) {
+                    typePoints.add(NbtUtils.readBlockPos(l.getCompound(i)));
+                }
+                points.put(type, typePoints);
+            }
             return new PlacedBuilding(tag.getString("Key"), tag.getString("Variation").charAt(0), tag.getInt("Level"),
                 NbtUtils.readBlockPos(tag.getCompound("Origin")), tag.getInt("Orientation"),
-                new BoundingBox(f[0], f[1], f[2], f[3], f[4], f[5]), tag.getBoolean("TownHall"), starts);
+                new BoundingBox(f[0], f[1], f[2], f[3], f[4], f[5]), tag.getBoolean("TownHall"), starts, points);
         }
     }
 
@@ -151,6 +194,31 @@ public class VillageGrowth {
         return pathNetwork;
     }
 
+    /**
+     * 记录一栋已经放置好的建筑（测试或外部放置建筑时使用）
+     */
+    public PlacedBuilding recordBuilding(BuildingPlan plan, BlockPos origin, int orientation,
+                                         BuildingPlacer.Result result, boolean townHall) {
+        PlacedBuilding placed = new PlacedBuilding(plan.key, plan.variation, plan.level, origin, orientation,
+            BuildingPlacer.footprint(plan, origin, orientation), townHall, pathStarts(result), result.specialPoints);
+        buildings.add(placed);
+        village.markDirty();
+        return placed;
+    }
+
+    /**
+     * 占地包含该位置的建筑（用于找村民的家）
+     */
+    @Nullable
+    public PlacedBuilding getBuildingAt(BlockPos pos) {
+        for (PlacedBuilding b : buildings) {
+            if (b.contains(pos)) {
+                return b;
+            }
+        }
+        return null;
+    }
+
     public boolean isConstructing() {
         return project != null;
     }
@@ -174,7 +242,8 @@ public class VillageGrowth {
                            RandomSource random) {
         villageTypeFile = type.fileName();
         buildings.add(new PlacedBuilding(townHall.key, townHall.variation, townHall.level, origin, orientation,
-            BuildingPlacer.footprint(townHall, origin, orientation), true, pathStarts(townHallResult)));
+            BuildingPlacer.footprint(townHall, origin, orientation), true, pathStarts(townHallResult),
+            townHallResult.specialPoints));
 
         for (String key : type.start()) {
             try {
@@ -190,7 +259,7 @@ public class VillageGrowth {
                 BuildingPlacer.spawnAnimals(level, c.result);
                 ResidentSpawner.spawnResidents(level, village, plan, c.result);
                 PlacedBuilding placed = new PlacedBuilding(key, 'A', 0, site.origin(), site.orientation(),
-                    site.footprint(), false, pathStarts(c.result));
+                    site.footprint(), false, pathStarts(c.result), c.result.specialPoints);
                 buildings.add(placed);
             } catch (IOException e) {
                 MillenaireRewrite.LOGGER.error("Village {}: cannot load start building {}", village.getName(), key, e);
@@ -331,6 +400,7 @@ public class VillageGrowth {
         if (p.upgradeOf >= 0 && p.upgradeOf < buildings.size()) {
             PlacedBuilding upgraded = buildings.get(p.upgradeOf);
             upgraded.level = p.level;
+            upgraded.addPoints(c.result.specialPoints);
             // 升级可能在庭院里加了栅栏等，把穿过庭院的道路截断：重建路网绕开它们
             if (VillagePaths.coversNetwork(this, upgraded.footprint)) {
                 try {
@@ -342,7 +412,8 @@ public class VillageGrowth {
         } else {
             ResidentSpawner.spawnResidents(level, village, c.plan, c.result);
             PlacedBuilding placed = new PlacedBuilding(p.key, p.variation, p.level, p.origin, p.orientation,
-                BuildingPlacer.footprint(c.plan, p.origin, p.orientation), false, pathStarts(c.result));
+                BuildingPlacer.footprint(c.plan, p.origin, p.orientation), false, pathStarts(c.result),
+                c.result.specialPoints);
             boolean coveredPaths = VillagePaths.coversNetwork(this, placed.footprint);
             buildings.add(placed);
             try {

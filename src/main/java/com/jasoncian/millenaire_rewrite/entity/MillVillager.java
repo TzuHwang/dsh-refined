@@ -206,9 +206,11 @@ public class MillVillager extends PathfinderMob {
         goalManager.getAvailableGoals().removeIf(goal ->
             goal.getTags().contains("work"));
 
-        // 暂不添加工作目标：GoalFarm/GoalChop/GoalMine 会在村民当前位置周围
-        // 翻耕草地、砍树、挖方块。原版 Millénaire 只在建筑图纸指定的工作点工作，
-        // 等村庄能建造工作建筑（农田、伐木场、采石场）后再按工作点接回这些目标。
+        // 按原版村民类型的 goal= 列表，在自家建筑的工作点上工作（收成、采矿、砍树、送货）。
+        // 1.21 版的 GoalFarm/GoalChop/GoalMine 会在村民身边随意翻地、砍树、挖方块，不再使用。
+        if (!this.level().isClientSide()) {
+            com.jasoncian.millenaire_rewrite.entity.ai.work.WorkGoals.forVillager(this).forEach(goalManager::addGoal);
+        }
     }
 
     // ================ 属性定义 ================
@@ -447,7 +449,7 @@ public class MillVillager extends PathfinderMob {
         setFirstName(tag.getString("FirstName"));
         setFamilyName(tag.getString("FamilyName"));
         setChild(tag.getBoolean("IsChild"));
-        this.entityData.set(DATA_VILLAGER_TYPE, tag.getString("VillagerType"));
+        setVillagerType(tag.getString("VillagerType"));
         this.entityData.set(DATA_SKIN, tag.getString("Skin"));
         this.entityData.set(DATA_CLOTHES_0, tag.getString("Clothes0"));
         this.entityData.set(DATA_CLOTHES_1, tag.getString("Clothes1"));
@@ -812,6 +814,7 @@ public class MillVillager extends PathfinderMob {
 
     public void setVillagerType(String type) {
         this.entityData.set(DATA_VILLAGER_TYPE, type);
+        refreshWorkGoals();
     }
 
     /**
