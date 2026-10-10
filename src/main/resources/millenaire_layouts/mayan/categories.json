@@ -1,0 +1,4 @@
+{
+  "plaza": ["mayantemple", "mayanshrine", "mayanalter", "mayanballcourt", "mayancalendar", "mayanmarket", "mayanbigwell", "mayanwell", "mayancistern", "mayanlibrary", "mayaninn", "mayanshamangrounds"],
+  "field": ["mayangrove", "mayancornfarm", "mayancacaofarm", "mayansheepchickenfarm", "mayanmining", "mayanlumber", "mayanplayersmallfield", "mayanplayerlargefield", "mayanplayerhugefield"]
+}

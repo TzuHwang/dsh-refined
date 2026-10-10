@@ -1,0 +1,22 @@
+{
+  "_comment": "农庄（çiftlik）：住所围着中央空地排成 U 形，外侧是麦田和果园",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [-10, 0], "to": [-36, 0], "width": 3},
+    {"from": [10, 0], "to": [36, 0], "width": 3},
+    {"from": [-36, 0], "to": [-36, 54], "width": 3},
+    {"from": [36, 0], "to": [36, 54], "width": 3},
+    {"from": [-36, 54], "to": [36, 54], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2, "end": 24, "depth": 26, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 2, "end": 24, "depth": 26, "tag": "plaza"},
+    {"road": 2, "side": "left", "start": 2, "end": 52, "depth": 18, "tag": "house"},
+    {"road": 3, "side": "right", "start": 2, "end": 52, "depth": 18, "tag": "house"},
+    {"road": 4, "side": "left", "start": 2, "end": 70, "depth": 18, "tag": "house"},
+    {"road": 2, "side": "right", "start": 2, "end": 52, "depth": 26, "tag": "field"},
+    {"road": 3, "side": "left", "start": 2, "end": 52, "depth": 26, "tag": "field"},
+    {"road": 4, "side": "right", "start": 2, "end": 70, "depth": 26, "tag": "field"}
+  ]
+}

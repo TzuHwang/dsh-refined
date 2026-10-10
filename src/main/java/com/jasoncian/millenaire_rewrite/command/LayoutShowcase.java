@@ -34,16 +34,21 @@ import java.util.function.Consumer;
 @Mod.EventBusSubscriber(modid = MillenaireRewrite.MOD_ID)
 public final class LayoutShowcase {
 
-    /** 每格边长 */
-    private static final int CELL = 200;
+    /** 每格边长（日本、塞尔柱的村庄田地可伸到离广场 110 格） */
+    private static final int CELL = 240;
     /** 网格列数 */
-    private static final int COLUMNS = 4;
+    private static final int COLUMNS = 6;
     /** 每个村庄生成后立即完成的工程数 */
     private static final int PROJECTS = 30;
     /** 展示的文化（目录名、文化、默认市政厅） */
     private static final Object[][] CULTURES = {
         {"norman", Culture.NORMAN, "manor"},
         {"byzantines", Culture.BYZANTINE, "kastron"},
+        {"indian", Culture.INDIAN, "chiefhouse"},
+        {"japanese", Culture.JAPANESE, "japanesepalace"},
+        {"mayan", Culture.MAYAN, "mayanpyramid"},
+        {"seljuk", Culture.SELJUK, "hamlettownhall"},
+        {"inuits", Culture.INUIT, "tannery"},
     };
     private static final DyeColor[] COLORS = {
         DyeColor.RED, DyeColor.ORANGE, DyeColor.YELLOW, DyeColor.LIME, DyeColor.CYAN, DyeColor.BLUE,

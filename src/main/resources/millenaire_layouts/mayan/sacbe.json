@@ -1,0 +1,19 @@
+{
+  "_comment": "白色大道（sacbe）：金字塔前的广场接一条南北向的仪式大道，两旁是神庙和球场",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10], "to": [0, 76], "width": 3},
+    {"from": [-64, 44], "to": [64, 44], "width": 3},
+    {"from": [-10, 0], "to": [-43, 0], "width": 3},
+    {"from": [10, 0], "to": [43, 0], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2, "end": 28, "depth": 24, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 38, "end": 62, "depth": 16, "tag": "house"},
+    {"road": 2, "side": "both", "start": 2, "end": 31, "depth": 16, "tag": "house"},
+    {"road": 3, "side": "both", "start": 2, "end": 31, "depth": 16, "tag": "house"},
+    {"road": 1, "side": "both", "start": 0, "end": 54, "depth": 20, "tag": "field"},
+    {"road": 1, "side": "both", "start": 74, "end": 128, "depth": 20, "tag": "field"}
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": "广场群：神庙广场前规整的街区，外圈是玉米田（milpa）",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10], "to": [0, 76], "width": 3},
+    {"from": [-64, 38], "to": [64, 38], "width": 3},
+    {"from": [-64, 76], "to": [64, 76], "width": 3},
+    {"from": [-10, 0], "to": [-64, 0], "width": 3},
+    {"from": [10, 0], "to": [64, 0], "width": 3},
+    {"from": [-64, 0], "to": [-64, 76], "width": 3},
+    {"from": [64, 0], "to": [64, 76], "width": 3}
+  ],
+  "frontages": [
+    {"road": 3, "side": "both", "start": 2, "end": 26, "depth": 24, "tag": "plaza"},
+    {"road": 4, "side": "both", "start": 2, "end": 26, "depth": 24, "tag": "plaza"},
+    {"road": 3, "side": "both", "start": 28, "end": 52, "depth": 16, "tag": "house"},
+    {"road": 4, "side": "both", "start": 28, "end": 52, "depth": 16, "tag": "house"},
+    {"road": 1, "side": "both", "start": 2, "end": 126, "depth": 16, "tag": "house"},
+    {"road": 2, "side": "left", "start": 2, "end": 126, "depth": 16, "tag": "house"},
+    {"road": 2, "side": "right", "start": 2, "end": 126, "depth": 20, "tag": "field"},
+    {"road": 5, "side": "right", "start": 2, "end": 74, "depth": 20, "tag": "field"},
+    {"road": 6, "side": "left", "start": 2, "end": 74, "depth": 20, "tag": "field"}
+  ]
+}

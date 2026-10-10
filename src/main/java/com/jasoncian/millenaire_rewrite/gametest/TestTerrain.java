@@ -26,9 +26,13 @@ public final class TestTerrain {
      * 强制加载（或释放）pos 周围的区块。强制加载是异步的，这里同步加载，确保之后立刻可用
      */
     public static void setForced(ServerLevel level, BlockPos pos, boolean forced) {
+        setForced(level, pos, forced, CHUNK_RADIUS);
+    }
+
+    public static void setForced(ServerLevel level, BlockPos pos, boolean forced, int chunkRadius) {
         ChunkPos centre = new ChunkPos(pos);
-        for (int cx = -CHUNK_RADIUS; cx <= CHUNK_RADIUS; cx++) {
-            for (int cz = -CHUNK_RADIUS; cz <= CHUNK_RADIUS; cz++) {
+        for (int cx = -chunkRadius; cx <= chunkRadius; cx++) {
+            for (int cz = -chunkRadius; cz <= chunkRadius; cz++) {
                 level.setChunkForced(centre.x + cx, centre.z + cz, forced);
                 if (forced) {
                     level.getChunk(centre.x + cx, centre.z + cz);
@@ -44,12 +48,19 @@ public final class TestTerrain {
      * 在 centre 周围搭一块草地平台，顶面在 PLATFORM_TOP，地面上第一格空气为 PLATFORM_TOP + 1
      */
     public static void buildPlatform(ServerLevel level, BlockPos centre) {
+        buildPlatform(level, centre, PLATFORM_HALF_SIZE);
+    }
+
+    /**
+     * @param halfSize 平台半宽（佈局村庄的田地可能伸到 100 格以外）
+     */
+    public static void buildPlatform(ServerLevel level, BlockPos centre, int halfSize) {
         BlockState stone = Blocks.STONE.defaultBlockState();
         BlockState grass = Blocks.GRASS_BLOCK.defaultBlockState();
         int flags = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        for (int x = -PLATFORM_HALF_SIZE; x <= PLATFORM_HALF_SIZE; x++) {
-            for (int z = -PLATFORM_HALF_SIZE; z <= PLATFORM_HALF_SIZE; z++) {
+        for (int x = -halfSize; x <= halfSize; x++) {
+            for (int z = -halfSize; z <= halfSize; z++) {
                 for (int y = PLATFORM_TOP - PLATFORM_DEPTH; y < PLATFORM_TOP; y++) {
                     p.set(centre.getX() + x, y, centre.getZ() + z);
                     level.setBlock(p, stone, flags);

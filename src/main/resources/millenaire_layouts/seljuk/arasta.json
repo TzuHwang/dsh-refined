@@ -1,0 +1,21 @@
+{
+  "_comment": "商队大道：一条东西向的长街（arasta），两侧是作坊和商铺，两端通往田地",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [-10, 0], "to": [-80, 0], "width": 3},
+    {"from": [10, 0], "to": [80, 0], "width": 3},
+    {"from": [0, 10], "to": [0, 28], "width": 3},
+    {"from": [-46, 2], "to": [-46, 64], "width": 3},
+    {"from": [46, 2], "to": [46, 64], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2, "end": 27, "depth": 26, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 2, "end": 27, "depth": 26, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2, "end": 16, "depth": 18, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 29, "end": 72, "depth": 18, "tag": "house"},
+    {"road": 1, "side": "both", "start": 29, "end": 72, "depth": 18, "tag": "house"},
+    {"road": 3, "side": "both", "start": 22, "end": 60, "depth": 26, "tag": "field"},
+    {"road": 4, "side": "both", "start": 22, "end": 60, "depth": 26, "tag": "field"}
+  ]
+}

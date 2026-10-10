@@ -1,0 +1,27 @@
+{
+  "_comment": "街坊（mohalla）：几条曲折的巷子从广场伸出，巷子尽头是田地和砖窑",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10], "to": [0, 32], "width": 3},
+    {"from": [0, 32], "to": [-39, 32], "width": 3},
+    {"from": [-39, 32], "to": [-39, 72], "width": 3},
+    {"from": [10, 0], "to": [33, 0], "width": 3},
+    {"from": [33, 0], "to": [33, 39], "width": 3},
+    {"from": [33, 39], "to": [72, 39], "width": 3},
+    {"from": [-10, 0], "to": [-30, 0], "width": 3},
+    {"from": [-30, 0], "to": [-30, -50], "width": 3},
+    {"from": [-30, -50], "to": [-72, -50], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2, "end": 19, "depth": 30, "tag": "plaza"},
+    {"road": 3, "side": "both", "start": 2, "end": 20, "depth": 30, "tag": "plaza"},
+    {"road": 6, "side": "both", "start": 2, "end": 17, "depth": 30, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 3, "end": 37, "depth": 16, "tag": "house"},
+    {"road": 4, "side": "both", "start": 3, "end": 37, "depth": 16, "tag": "house"},
+    {"road": 7, "side": "both", "start": 3, "end": 47, "depth": 16, "tag": "house"},
+    {"road": 2, "side": "both", "start": 3, "end": 40, "depth": 20, "tag": "field"},
+    {"road": 5, "side": "both", "start": 3, "end": 39, "depth": 20, "tag": "field"},
+    {"road": 8, "side": "both", "start": 3, "end": 42, "depth": 20, "tag": "field"}
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "plaza": ["hindushrine", "villagetemple", "bazaar", "well", "tank", "villagetree", "inn", "guesthouse", "archives"],
+  "field": ["grove", "paddy", "sugarplantation", "cottonfield", "spicegarden", "quarry", "brickkiln", "lumbermanhouse", "playersmallfield", "playerlargefield", "playerhugefield"]
+}

@@ -572,7 +572,9 @@ public class VillageGrowth {
                 .getBlock("stone_path").get().defaultBlockState();
             case "pathsandstone", "pathochretiles" -> com.jasoncian.millenaire_rewrite.blocks.system.BuildingBlockRegistry
                 .getBlock("sandstone_path").get().defaultBlockState();
-            case "pathsnow" -> net.minecraft.world.level.block.Blocks.SNOW_BLOCK.defaultBlockState();
+            // 雪块无法和地面区分（不算路面），雪地村庄改用碎石路
+            case "pathsnow" -> com.jasoncian.millenaire_rewrite.blocks.system.BuildingBlockRegistry
+                .getBlock("gravel_path").get().defaultBlockState();
             default -> net.minecraft.world.level.block.Blocks.DIRT_PATH.defaultBlockState();
         };
     }

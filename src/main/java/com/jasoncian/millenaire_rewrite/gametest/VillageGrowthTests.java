@@ -624,11 +624,40 @@ public class VillageGrowthTests {
         growEveryTemplate(helper, 11000, Culture.BYZANTINE, "byzantines", "kastron");
     }
 
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void indianLayoutTemplatesAllGrow(GameTestHelper helper) {
+        growEveryTemplate(helper, 12200, Culture.INDIAN, "indian", "chiefhouse");
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void inuitLayoutTemplatesAllGrow(GameTestHelper helper) {
+        growEveryTemplate(helper, 12800, Culture.INUIT, "inuits", "tannery");
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void japaneseLayoutTemplatesAllGrow(GameTestHelper helper) {
+        growEveryTemplate(helper, 13400, Culture.JAPANESE, "japanese", "japanesepalace");
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void mayanLayoutTemplatesAllGrow(GameTestHelper helper) {
+        growEveryTemplate(helper, 14000, Culture.MAYAN, "mayan", "mayanpyramid");
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void seljukLayoutTemplatesAllGrow(GameTestHelper helper) {
+        growEveryTemplate(helper, 14600, Culture.SELJUK, "seljuk", "hamlettownhall");
+    }
+
+    /** 佈局模板测试用的大平台：田地可能伸到离广场 100 格以外 */
+    private static final int LAYOUT_PLATFORM_HALF_SIZE = 120;
+    private static final int LAYOUT_CHUNK_RADIUS = 9;
+
     private static void growEveryTemplate(GameTestHelper helper, int relativeZ, Culture culture, String folder,
                                           String defaultTownHall) {
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(new BlockPos(0, 0, relativeZ));
-        setForced(level, centre, true);
+        TestTerrain.setForced(level, centre, true, LAYOUT_CHUNK_RADIUS);
         var templates = com.jasoncian.millenaire_rewrite.village.layout.LayoutTemplate.forCulture(folder);
         List<String> problems = new java.util.ArrayList<>();
         if (templates.size() < 5) {
@@ -638,7 +667,7 @@ public class VillageGrowthTests {
             var template = templates.get(i);
             // 每个模板在不同的 tick 里生成，避免单个 tick 太久
             helper.runAtTickTime(1 + i * 10, () -> {
-                buildPlatform(level, centre);
+                TestTerrain.buildPlatform(level, centre, LAYOUT_PLATFORM_HALF_SIZE);
                 String townHall = template.townHalls.isEmpty() ? defaultTownHall : template.townHalls.get(0);
                 com.jasoncian.millenaire_rewrite.village.layout.VillageLayout.forcedTemplate = template.name;
                 Village village;
@@ -664,7 +693,7 @@ public class VillageGrowthTests {
                         buildings.size(), growth.getFreePlacements(), buildings.stream().map(b -> b.key).toList());
                     try {
                         assertNoOverlap(buildings);
-                        assertPathsConnected(level, village);
+                        assertPathsConnected(level, village, LAYOUT_PLATFORM_HALF_SIZE);
                     } catch (GameTestAssertException e) {
                         problems.add(template.name + ": " + e.getMessage());
                     }
@@ -681,7 +710,7 @@ public class VillageGrowthTests {
             });
         }
         helper.runAtTickTime(templates.size() * 10 + 5, () -> {
-            setForced(level, centre, false);
+            TestTerrain.setForced(level, centre, false, LAYOUT_CHUNK_RADIUS);
             if (!problems.isEmpty()) {
                 helper.fail(String.join("; ", problems));
             } else {
@@ -764,7 +793,8 @@ public class VillageGrowthTests {
                 }
                 for (int dy = 0; dy < 10; dy++) {
                     var above = level.getBlockState(new BlockPos(x, y + dy, z));
-                    if (above.is(net.minecraft.tags.BlockTags.LOGS) || above.is(net.minecraft.tags.BlockTags.LEAVES)) {
+                    // 树干挡路才算；林地的树冠伸到路上方是正常的
+                    if (above.is(net.minecraft.tags.BlockTags.LOGS)) {
                         trees++;
                         break;
                     }
@@ -850,10 +880,13 @@ public class VillageGrowthTests {
      * 从市政厅道路起点沿路面方块（高差 1 格内）能走到每栋建筑的道路起点附近
      */
     private static void assertPathsConnected(ServerLevel level, Village village) {
+        assertPathsConnected(level, village, PLATFORM_HALF_SIZE);
+    }
+
+    private static void assertPathsConnected(ServerLevel level, Village village, int radius) {
         List<VillageGrowth.PlacedBuilding> buildings = village.getGrowth().getBuildings();
         VillageGrowth.PlacedBuilding hall = buildings.stream().filter(b -> b.townHall).findFirst().orElseThrow();
         BlockPos centre = village.getTownHallPos();
-        int radius = PLATFORM_HALF_SIZE;
         java.util.Map<Long, Integer> pathCells = new java.util.HashMap<>();
         for (int x = centre.getX() - radius; x <= centre.getX() + radius; x++) {
             for (int z = centre.getZ() - radius; z <= centre.getZ() + radius; z++) {

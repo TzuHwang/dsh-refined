@@ -230,18 +230,22 @@ public final class VillageLayout {
             int along = u[0] != 0 ? f.getXSpan() : f.getZSpan();
             int depth = u[0] != 0 ? f.getZSpan() : f.getXSpan();
             if (depth > fr.depth()) {
+                MillenaireRewrite.LOGGER.debug("[layoutdebug] {} frontage {} ({}): depth {} > {}", plan.key, i, fr.tag(), depth, fr.depth());
                 continue;
             }
+            int[] why = new int[4];
             int offset = road.width() / 2 + 1 + SETBACK;
             int t = fr.start();
             while (t + along - 1 <= fr.end()) {
                 int conflictEnd = conflict(i, t, t + along - 1);
                 if (conflictEnd != Integer.MIN_VALUE) {
+                    why[0]++;
                     t = conflictEnd + GAP + 1;
                     continue;
                 }
                 BoundingBox box = rect(a, u, n, t, along, offset, depth, centre.getY());
                 if (coversRoad(box) || blocked.test(box) || !loaded(level, box)) {
+                    why[coversRoad(box) ? 1 : 2]++;
                     t += 2;
                     continue;
                 }
@@ -261,6 +265,8 @@ public final class VillageLayout {
                 return new Placement(origin, orientation, BuildingPlacer.footprint(plan, origin, orientation), i, t,
                     t + along - 1);
             }
+            MillenaireRewrite.LOGGER.debug("[layoutdebug] {} frontage {} ({}) {}x{} len {}: occupied {} road {} blocked {}",
+                plan.key, i, fr.tag(), along, depth, fr.end() - fr.start(), why[0], why[1], why[2]);
         }
         return null;
     }

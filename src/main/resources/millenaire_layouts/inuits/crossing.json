@@ -1,0 +1,21 @@
+{
+  "_comment": "路口营地：两条小路在聚会广场交会",
+  "weight": 10,
+  "plaza": 6,
+  "roads": [
+    {"from": [0, 7], "to": [0, 48], "width": 3},
+    {"from": [-7, 0], "to": [-48, 0], "width": 3},
+    {"from": [7, 0], "to": [48, 0], "width": 3},
+    {"from": [-40, 28], "to": [40, 28], "width": 3}
+  ],
+  "frontages": [
+    {"road": 1, "side": "both", "start": 2, "end": 19, "depth": 18, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2, "end": 19, "depth": 18, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 2, "end": 18, "depth": 12, "tag": "house"},
+    {"road": 1, "side": "both", "start": 21, "end": 39, "depth": 12, "tag": "house"},
+    {"road": 2, "side": "both", "start": 21, "end": 39, "depth": 12, "tag": "house"},
+    {"road": 0, "side": "both", "start": 24, "end": 39, "depth": 12, "tag": "house"},
+    {"road": 3, "side": "both", "start": 0, "end": 21, "depth": 14, "tag": "field"},
+    {"road": 3, "side": "both", "start": 59, "end": 80, "depth": 14, "tag": "field"}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "_comment": "梯田：两排住所沿等高线排列，最外一排是梯田",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10], "to": [0, 75], "width": 3},
+    {"from": [-72, 38], "to": [72, 38], "width": 3},
+    {"from": [-72, 75], "to": [72, 75], "width": 3},
+    {"from": [-10, 0], "to": [-39, 0], "width": 3},
+    {"from": [10, 0], "to": [39, 0], "width": 3}
+  ],
+  "frontages": [
+    {"road": 3, "side": "both", "start": 2, "end": 27, "depth": 24, "tag": "plaza"},
+    {"road": 4, "side": "both", "start": 2, "end": 27, "depth": 24, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 2, "end": 25, "depth": 24, "tag": "plaza"},
+    {"road": 1, "side": "left", "start": 0, "end": 144, "depth": 34, "tag": "house"},
+    {"road": 1, "side": "right", "start": 0, "end": 144, "depth": 20, "tag": "house"},
+    {"road": 2, "side": "left", "start": 0, "end": 144, "depth": 20, "tag": "house"},
+    {"road": 2, "side": "right", "start": 0, "end": 144, "depth": 20, "tag": "field"}
+  ]
+}

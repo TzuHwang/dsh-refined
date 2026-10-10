@@ -1,0 +1,28 @@
+{
+  "_comment": "农村：弯曲的田间小路连着散落的农家和稻田",
+  "weight": 30,
+  "townhalls": ["japanesefarmbig"],
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10], "to": [0, 38], "width": 3},
+    {"from": [0, 38], "to": [-47, 38], "width": 3},
+    {"from": [-47, 38], "to": [-47, 86], "width": 3},
+    {"from": [10, 0], "to": [41, 0], "width": 3},
+    {"from": [41, 0], "to": [41, 47], "width": 3},
+    {"from": [41, 47], "to": [86, 47], "width": 3},
+    {"from": [-10, 0], "to": [-29, 0], "width": 3},
+    {"from": [-29, 0], "to": [-29, -60], "width": 3},
+    {"from": [-29, -60], "to": [-86, -60], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2, "end": 25, "depth": 32, "tag": "plaza"},
+    {"road": 3, "side": "both", "start": 2, "end": 28, "depth": 32, "tag": "plaza"},
+    {"road": 6, "side": "both", "start": 2, "end": 16, "depth": 32, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 3, "end": 45, "depth": 20, "tag": "house"},
+    {"road": 4, "side": "both", "start": 3, "end": 45, "depth": 20, "tag": "house"},
+    {"road": 7, "side": "both", "start": 3, "end": 57, "depth": 20, "tag": "house"},
+    {"road": 2, "side": "both", "start": 3, "end": 48, "depth": 30, "tag": "field"},
+    {"road": 5, "side": "both", "start": 3, "end": 45, "depth": 30, "tag": "field"},
+    {"road": 8, "side": "both", "start": 3, "end": 57, "depth": 30, "tag": "field"}
+  ]
+}
