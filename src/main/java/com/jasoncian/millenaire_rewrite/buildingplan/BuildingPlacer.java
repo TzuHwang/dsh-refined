@@ -1,6 +1,7 @@
 package com.jasoncian.millenaire_rewrite.buildingplan;
 
 import com.jasoncian.millenaire_rewrite.content.Crops;
+import com.jasoncian.millenaire_rewrite.blocks.functional.LockedChestBlock;
 import com.jasoncian.millenaire_rewrite.core.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -22,8 +23,11 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.WallBannerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,6 +74,10 @@ public final class BuildingPlacer {
     private static final int MAX_FOUNDATION_DEPTH = 24;
     /** 建筑上方最多向上清除的高度 */
     private static final int MAX_CLEAR_HEIGHT = 32;
+    /** 建筑周围的地形过渡带宽度：清除树木，并把地面渐进地接回原地形 */
+    public static final int SURROUND_MARGIN = 4;
+    /** 过渡带每一列最多挖掉或填高的格数 */
+    private static final int MAX_SURROUND_CHANGE = 12;
 
     /**
      * 一个放置步骤。onlyIfNotSolid 用于"保留地面"：只填补空洞，不覆盖原有地面；
@@ -77,9 +85,9 @@ public final class BuildingPlacer {
      * clearAbove 为清除柱：从 pos 向上把地形和树木清空，直到碰到空气。
      */
     private record Op(BlockPos pos, BlockState state, int flags, boolean onlyIfNotSolid, boolean foundation,
-                      boolean clearAbove) {
+                      boolean clearAbove, int surround) {
         Op(BlockPos pos, BlockState state, int flags, boolean onlyIfNotSolid) {
-            this(pos, state, flags, onlyIfNotSolid, false, false);
+            this(pos, state, flags, onlyIfNotSolid, false, false, 0);
         }
     }
 
@@ -97,6 +105,8 @@ public final class BuildingPlacer {
         private final List<BlockPos> shaped = new ArrayList<>();
         /** 图纸中门的预定状态，最后统一换算成步骤 */
         private final Map<BlockPos, BlockState> plannedDoors = new HashMap<>();
+        /** 图纸中上锁箱子的预定状态，配对成大箱子后再换算成步骤 */
+        private final Map<BlockPos, BlockState> plannedChests = new HashMap<>();
         private int next;
 
         private Construction(BuildingPlan plan, BlockPos origin, int orientation) {
@@ -158,15 +168,19 @@ public final class BuildingPlacer {
                 return;
             }
             if (op.clearAbove()) {
+                // 整列向上扫描：树冠和建筑顶之间可能隔着空气
                 BlockPos.MutableBlockPos p = op.pos().mutable();
                 for (int i = 0; i < MAX_CLEAR_HEIGHT && p.getY() < level.getMaxBuildHeight(); i++) {
-                    if (level.getBlockState(p).isAir()) {
-                        break;
+                    if (!level.getBlockState(p).isAir()) {
+                        level.setBlock(p, Blocks.AIR.defaultBlockState(), op.flags());
+                        result.blocksPlaced++;
                     }
-                    level.setBlock(p, Blocks.AIR.defaultBlockState(), op.flags());
-                    result.blocksPlaced++;
                     p.move(Direction.UP);
                 }
+                return;
+            }
+            if (op.surround() > 0) {
+                blendSurroundings(level, op);
                 return;
             }
             BlockState current = level.getBlockState(op.pos());
@@ -180,6 +194,53 @@ public final class BuildingPlacer {
                 level.playSound(null, op.pos(), type.getPlaceSound(), SoundSource.BLOCKS,
                     (type.getVolume() + 1.0F) / 4.0F, type.getPitch() * 0.8F);
             }
+        }
+
+        /**
+         * 地形过渡带的一列：清除树木和杂草，再把地面高度从建筑地面渐进地接回原地形
+         * （离建筑越近越接近建筑地面），形成自然的斜坡而不是断崖。
+         * op.pos 的 y 为建筑地面（最上层地表方块）的高度，op.surround 为离占地的距离。
+         */
+        private void blendSurroundings(ServerLevel level, Op op) {
+            int x = op.pos().getX();
+            int z = op.pos().getZ();
+            int groundY = op.pos().getY();
+            // 清除树木、树叶和杂草
+            BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+            for (int y = groundY - MAX_SURROUND_CHANGE; y <= groundY + MAX_CLEAR_HEIGHT; y++) {
+                p.set(x, y, z);
+                BlockState state = level.getBlockState(p);
+                if (state.is(BlockTags.LOGS) || state.is(BlockTags.LEAVES)
+                    || !state.isAir() && state.canBeReplaced() && state.getFluidState().isEmpty()) {
+                    level.setBlock(p, Blocks.AIR.defaultBlockState(), op.flags());
+                    result.blocksPlaced++;
+                }
+            }
+            int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+            BlockPos surfacePos = new BlockPos(x, surfaceY, z);
+            BlockState surface = level.getBlockState(surfacePos);
+            if (!surface.getFluidState().isEmpty() || surface.is(BlockTags.ICE)) {
+                return;
+            }
+            int target = groundY + (int) Math.round((surfaceY - groundY) * op.surround() / (SURROUND_MARGIN + 1.0));
+            if (Math.abs(surfaceY - target) > MAX_SURROUND_CHANGE) {
+                return;
+            }
+            BlockState top = surface.is(BlockTags.SAND) || surface.is(Blocks.SNOW_BLOCK) ? surface
+                : Blocks.GRASS_BLOCK.defaultBlockState();
+            if (surfaceY > target) {
+                for (int y = surfaceY; y > target; y--) {
+                    level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), op.flags());
+                }
+                level.setBlock(new BlockPos(x, target, z), top, op.flags());
+            } else if (surfaceY < target) {
+                BlockState fill = top.is(Blocks.GRASS_BLOCK) ? Blocks.DIRT.defaultBlockState() : top;
+                for (int y = surfaceY; y < target; y++) {
+                    level.setBlock(new BlockPos(x, y, z), fill, op.flags());
+                }
+                level.setBlock(new BlockPos(x, target, z), top, op.flags());
+            }
+            result.blocksPlaced += Math.abs(surfaceY - target) + 1;
         }
 
         /**
@@ -257,6 +318,14 @@ public final class BuildingPlacer {
      * 把图纸换算为施工步骤（不读取世界，可在任何时候调用并从存档恢复进度）
      */
     public static Construction prepare(BuildingPlan plan, BlockPos origin, int orientation) {
+        return prepare(plan, origin, orientation, column -> false);
+    }
+
+    /**
+     * @param protectedColumn 地形过渡带不得改动的列（其他建筑、道路）
+     */
+    public static Construction prepare(BuildingPlan plan, BlockPos origin, int orientation,
+                                       java.util.function.Predicate<BlockPos> protectedColumn) {
         Construction c = new Construction(plan, origin.immutable(), orientation);
         int finalOrientation = finalOrientation(plan, orientation);
         Rotation rotation = rotationFor(finalOrientation);
@@ -269,9 +338,20 @@ public final class BuildingPlacer {
                     int dx = l - plan.lengthOffset();
                     int dz = w - plan.widthOffset();
                     BlockPos above = worldPos(origin, plan.startLevel + plan.nbFloors, dx, dz, finalOrientation);
-                    c.ops.add(new Op(above, Blocks.AIR.defaultBlockState(), FLAGS, false, false, true));
+                    c.ops.add(new Op(above, Blocks.AIR.defaultBlockState(), FLAGS, false, false, true, 0));
                     BlockPos below = worldPos(origin, plan.startLevel - 1, dx, dz, finalOrientation);
-                    c.ops.add(new Op(below, Blocks.DIRT.defaultBlockState(), FLAGS, false, true, false));
+                    c.ops.add(new Op(below, Blocks.DIRT.defaultBlockState(), FLAGS, false, true, false, 0));
+                }
+            }
+            // 建筑周围的过渡带
+            BoundingBox box = footprint(plan, origin, orientation);
+            for (int x = box.minX() - SURROUND_MARGIN; x <= box.maxX() + SURROUND_MARGIN; x++) {
+                for (int z = box.minZ() - SURROUND_MARGIN; z <= box.maxZ() + SURROUND_MARGIN; z++) {
+                    int d = Math.max(Math.max(box.minX() - x, x - box.maxX()), Math.max(box.minZ() - z, z - box.maxZ()));
+                    BlockPos column = new BlockPos(x, origin.getY() - 1, z);
+                    if (d > 0 && !protectedColumn.test(column)) {
+                        c.ops.add(new Op(column, Blocks.AIR.defaultBlockState(), FLAGS, false, false, false, d));
+                    }
                 }
             }
         }
@@ -298,6 +378,7 @@ public final class BuildingPlacer {
                 }
             }
         }
+        addChestOps(c);
         addDoorOps(c);
         return c;
     }
@@ -338,6 +419,33 @@ public final class BuildingPlacer {
             case 3 -> Rotation.CLOCKWISE_90;
             default -> Rotation.NONE;
         };
+    }
+
+    // ================ 箱子 ================
+
+    /**
+     * 并排、同朝向的上锁箱子配成大箱子（另一半在 facing 顺时针方向的为左半）
+     */
+    private static void addChestOps(Construction c) {
+        Map<BlockPos, BlockState> chests = c.plannedChests;
+        for (Map.Entry<BlockPos, BlockState> entry : chests.entrySet()) {
+            BlockState state = entry.getValue();
+            if (state.getValue(LockedChestBlock.TYPE) != ChestType.SINGLE) {
+                continue;
+            }
+            Direction facing = state.getValue(LockedChestBlock.FACING);
+            BlockPos partnerPos = entry.getKey().relative(facing.getClockWise());
+            BlockState partner = chests.get(partnerPos);
+            if (partner != null && partner.getValue(LockedChestBlock.TYPE) == ChestType.SINGLE
+                && partner.getValue(LockedChestBlock.FACING) == facing) {
+                entry.setValue(state.setValue(LockedChestBlock.TYPE, ChestType.LEFT));
+                chests.put(partnerPos, partner.setValue(LockedChestBlock.TYPE, ChestType.RIGHT));
+            }
+        }
+        chests.forEach((pos, state) -> {
+            c.ops.add(new Op(pos, state, FLAGS, false));
+            c.shaped.add(pos);
+        });
     }
 
     // ================ 门 ================
@@ -469,24 +577,26 @@ public final class BuildingPlacer {
         }
     }
 
+    /**
+     * 原版 BuildingPlan：Top 朝西、Bottom 朝东、Left 朝南、Right 朝北；主箱子也是上锁箱子
+     */
     private static void placeChest(Construction c, String type, BlockPos pos, Rotation rotation) {
         Direction facing;
         if (type.endsWith("Top")) {
-            facing = Direction.EAST;
-        } else if (type.endsWith("Bottom")) {
             facing = Direction.WEST;
+        } else if (type.endsWith("Bottom")) {
+            facing = Direction.EAST;
         } else if (type.endsWith("Left")) {
-            facing = Direction.NORTH;
-        } else if (type.endsWith("Right")) {
             facing = Direction.SOUTH;
+        } else if (type.endsWith("Right")) {
+            facing = Direction.NORTH;
         } else {
             facing = Direction.NORTH;
         }
         boolean main = type.startsWith("mainchest");
-        BlockState chest = main
-            ? Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, facing)
-            : ModBlocks.LOCKED_CHEST.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
-        c.set(pos, chest.rotate(rotation));
+        BlockState chest = ModBlocks.LOCKED_CHEST.get().defaultBlockState()
+            .setValue(LockedChestBlock.FACING, facing).rotate(rotation);
+        c.plannedChests.put(pos.immutable(), chest);
         if (main) {
             c.result.mainChest = pos.immutable();
         }

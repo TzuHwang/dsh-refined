@@ -73,11 +73,11 @@ public final class VillagePaths {
         }
         int placed = 0;
         for (BlockPos surface : route) {
-            // 门口（道路起点 1 格内）是建筑自己的门槛、台阶或栅栏门，不铺路面也不记入路网
-            if (isDoorCell(surface.getX(), surface.getZ(), start, hallStart)) {
+            BlockState current = level.getBlockState(surface);
+            // 门口（道路起点 1 格内）：上方被栅栏、墙挡住的格子（如栅栏门旁边）不铺路面
+            if (isDoorCell(surface.getX(), surface.getZ(), start, hallStart) && feetBlocked(level, surface.above())) {
                 continue;
             }
-            BlockState current = level.getBlockState(surface);
             if (isPath(current)) {
                 growth.getPathNetwork().add(key(surface.getX(), surface.getZ()));
                 continue;
@@ -170,7 +170,12 @@ public final class VillagePaths {
             closest = Math.min(closest, Math.abs(node.x() - goal.getX()) + Math.abs(node.z() - goal.getZ()));
             boolean nearStart = near(node.x(), node.z(), start);
             if (near(node.x(), node.z(), goal, 1) || !nearStart && growth.getPathNetwork().contains(nodeKey)) {
-                return reconstruct(cameFrom, heights, nodeKey);
+                List<BlockPos> route = reconstruct(cameFrom, heights, nodeKey);
+                // 路线一定通到终点（门口）那一格
+                if (near(node.x(), node.z(), goal, 1) && (node.x() != goal.getX() || node.z() != goal.getZ())) {
+                    route.add(goal.below());
+                }
+                return route;
             }
             for (int dir = 0; dir < DIRECTIONS.length; dir++) {
                 int[] d = DIRECTIONS[dir];
@@ -275,6 +280,18 @@ public final class VillagePaths {
         int x = Math.max(f.minX(), Math.min(f.maxX(), towards.getX()));
         int z = Math.max(f.minZ(), Math.min(f.maxZ(), towards.getZ()));
         return List.of(new BlockPos(x, building.origin.getY(), z));
+    }
+
+    /**
+     * 脚下这一格是否被挡住（栅栏、墙等有碰撞的方块；门和栅栏门可以通过）
+     */
+    private static boolean feetBlocked(ServerLevel level, BlockPos feet) {
+        BlockState state = level.getBlockState(feet);
+        if (state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
+            || state.getBlock() instanceof net.minecraft.world.level.block.FenceGateBlock) {
+            return false;
+        }
+        return !state.getCollisionShape(level, feet).isEmpty();
     }
 
     private static boolean isDoorCell(int x, int z, BlockPos start, BlockPos goal) {

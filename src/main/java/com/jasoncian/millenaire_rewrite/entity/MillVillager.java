@@ -19,7 +19,6 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
-import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -130,6 +129,8 @@ public class MillVillager extends PathfinderMob {
 
     /** Millenaire目标管理器 */
     private final GoalManager goalManager;
+    private final com.jasoncian.millenaire_rewrite.entity.ai.DoorOpener doorOpener =
+        new com.jasoncian.millenaire_rewrite.entity.ai.DoorOpener(this);
 
     /** 交易系统 */
     private final VillagerTrader trader;
@@ -177,10 +178,14 @@ public class MillVillager extends PathfinderMob {
         this.villagerId = UUID.randomUUID().getMostSignificantBits();
         this.goalManager = new GoalManager(this);
         this.trader = new VillagerTrader(this);
-        ((GroundPathNavigation) this.getNavigation()).setCanOpenDoors(true);
 
         // 初始化Millenaire目标系统
         initializeGoals();
+    }
+
+    @Override
+    protected net.minecraft.world.entity.ai.navigation.PathNavigation createNavigation(Level level) {
+        return new com.jasoncian.millenaire_rewrite.entity.ai.VillagerNavigation(this, level);
     }
 
     /**
@@ -270,6 +275,9 @@ public class MillVillager extends PathfinderMob {
 
             // 如果有目标目的地，更新导航
             updateNavigationFromGoal();
+
+            // 路过关着的木门时开门，走过后关门
+            doorOpener.tick();
         }
 
         // 更新动画状态

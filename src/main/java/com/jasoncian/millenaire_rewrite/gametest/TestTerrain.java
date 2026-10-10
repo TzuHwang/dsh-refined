@@ -37,6 +37,9 @@ public final class TestTerrain {
         }
     }
 
+    /** 平台上方清空的高度 */
+    private static final int CLEAR_HEIGHT = 40;
+
     /**
      * 在 centre 周围搭一块草地平台，顶面在 PLATFORM_TOP，地面上第一格空气为 PLATFORM_TOP + 1
      */
@@ -53,6 +56,13 @@ public final class TestTerrain {
                 }
                 p.set(centre.getX() + x, PLATFORM_TOP, centre.getZ() + z);
                 level.setBlock(p, grass, flags);
+                // 清空平台上方：新种子的世界里山峰、树木可能高过平台
+                for (int y = PLATFORM_TOP + 1; y <= PLATFORM_TOP + CLEAR_HEIGHT; y++) {
+                    p.set(centre.getX() + x, y, centre.getZ() + z);
+                    if (!level.getBlockState(p).isAir()) {
+                        level.setBlock(p, Blocks.AIR.defaultBlockState(), flags);
+                    }
+                }
             }
         }
     }

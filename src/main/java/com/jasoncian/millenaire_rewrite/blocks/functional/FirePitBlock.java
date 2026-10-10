@@ -170,4 +170,18 @@ public class FirePitBlock extends BaseEntityBlock {
     public static void setLit(Level level, BlockPos pos, BlockState state, boolean lit) {
         level.setBlock(pos, state.setValue(LIT, lit), 3);
     }
+
+    /**
+     * 跟随建筑朝向旋转（建造器用 BlockState.rotate 旋转图纸中的方块）
+     */
+    @Override
+    public BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) {
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+    }
+
+    @Override
+    public BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) {
+        BlockState rotated = state.rotate(mirror.getRotation(state.getValue(FACING)));
+        return rotated;
+    }
 }

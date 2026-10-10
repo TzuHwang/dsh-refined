@@ -25,7 +25,9 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -51,24 +53,47 @@ import org.jetbrains.annotations.Nullable;
 public class LockedChestBlock extends BaseEntityBlock {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    /** 与原版箱子相同：并排、同朝向的两个箱子组成大箱子 */
+    public static final EnumProperty<ChestType> TYPE = BlockStateProperties.CHEST_TYPE;
 
     protected static final VoxelShape SHAPE = Block.box(1.0, 0.0, 1.0, 15.0, 14.0, 15.0);
 
     public LockedChestBlock(BlockBehaviour.Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
-            .setValue(FACING, Direction.NORTH));
+            .setValue(FACING, Direction.NORTH)
+            .setValue(TYPE, ChestType.SINGLE));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, TYPE);
     }
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return this.defaultBlockState()
-            .setValue(FACING, context.getHorizontalDirection().getOpposite());
+        Direction facing = context.getHorizontalDirection().getOpposite();
+        BlockState state = this.defaultBlockState().setValue(FACING, facing);
+        // 与旁边同朝向的单箱子相连（原版 ChestBlock 的规则）
+        if (isSingleFacing(context.getLevel().getBlockState(context.getClickedPos().relative(facing.getClockWise())), facing)) {
+            return state.setValue(TYPE, ChestType.LEFT);
+        }
+        if (isSingleFacing(context.getLevel().getBlockState(context.getClickedPos().relative(facing.getCounterClockWise())), facing)) {
+            return state.setValue(TYPE, ChestType.RIGHT);
+        }
+        return state;
+    }
+
+    private boolean isSingleFacing(BlockState state, Direction facing) {
+        return state.is(this) && state.getValue(TYPE) == ChestType.SINGLE && state.getValue(FACING) == facing;
+    }
+
+    /**
+     * 大箱子另一半所在的方向（与原版 ChestBlock.getConnectedDirection 相同）
+     */
+    public static Direction connectedDirection(BlockState state) {
+        Direction facing = state.getValue(FACING);
+        return state.getValue(TYPE) == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise();
     }
 
     @Override
@@ -142,9 +167,16 @@ public class LockedChestBlock extends BaseEntityBlock {
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                    LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        // 更新相邻箱子连接状态
-        if (level.getBlockEntity(pos) instanceof LockedChestBlockEntity chest) {
-            chest.updateNeighbors();
+        // 与原版 ChestBlock.updateShape 相同：另一半放下时连上，另一半被破坏时变回单箱子
+        if (neighborState.is(this) && direction.getAxis().isHorizontal()) {
+            ChestType neighborType = neighborState.getValue(TYPE);
+            if (state.getValue(TYPE) == ChestType.SINGLE && neighborType != ChestType.SINGLE
+                && state.getValue(FACING) == neighborState.getValue(FACING)
+                && connectedDirection(neighborState) == direction.getOpposite()) {
+                return state.setValue(TYPE, neighborType.getOpposite());
+            }
+        } else if (state.getValue(TYPE) != ChestType.SINGLE && connectedDirection(state) == direction) {
+            return state.setValue(TYPE, ChestType.SINGLE);
         }
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
@@ -163,5 +195,21 @@ public class LockedChestBlock extends BaseEntityBlock {
     public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         return net.minecraft.world.inventory.AbstractContainerMenu.getRedstoneSignalFromBlockEntity(
             level.getBlockEntity(pos));
+    }
+
+    /**
+     * 跟随建筑朝向旋转（建造器用 BlockState.rotate 旋转图纸中的方块）
+     */
+    @Override
+    public BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) {
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+    }
+
+    @Override
+    public BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) {
+        BlockState rotated = state.rotate(mirror.getRotation(state.getValue(FACING)));
+        // 与原版箱子相同：镜像后大箱子的左右半互换
+        return mirror == net.minecraft.world.level.block.Mirror.NONE ? rotated
+            : rotated.setValue(TYPE, rotated.getValue(TYPE).getOpposite());
     }
 }

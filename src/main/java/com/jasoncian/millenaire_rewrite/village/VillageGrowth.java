@@ -39,7 +39,7 @@ public class VillageGrowth {
     /** 每 tick 放置的方块数 */
     public static final int BLOCKS_PER_TICK = 4;
     /** 建筑之间至少留出的空地 */
-    private static final int SITE_MARGIN = 3;
+    private static final int SITE_MARGIN = 4;
     private static final int MIN_SITE_DISTANCE = 12;
     private static final int MAX_SITE_DISTANCE = 72;
     private static final int SITE_ATTEMPTS = 160;
@@ -195,6 +195,14 @@ public class VillageGrowth {
     }
 
     /**
+     * 地形过渡带不得改动的列：其他建筑的占地和道路
+     */
+    private boolean isProtectedColumn(BlockPos column) {
+        return VillagePaths.insideAnyFootprint(buildings, column.getX(), column.getZ())
+            || pathNetwork.contains(net.minecraft.world.level.ChunkPos.asLong(column.getX(), column.getZ()));
+    }
+
+    /**
      * 记录一栋已经放置好的建筑（测试或外部放置建筑时使用）
      */
     public PlacedBuilding recordBuilding(BuildingPlan plan, BlockPos origin, int orientation,
@@ -253,7 +261,8 @@ public class VillageGrowth {
                     MillenaireRewrite.LOGGER.warn("Village {}: no site for start building {}", village.getName(), key);
                     continue;
                 }
-                BuildingPlacer.Construction c = BuildingPlacer.prepare(plan, site.origin(), site.orientation());
+                BuildingPlacer.Construction c = BuildingPlacer.prepare(plan, site.origin(), site.orientation(),
+                    this::isProtectedColumn);
                 c.step(level, Integer.MAX_VALUE, false, false);
                 c.finish(level);
                 BuildingPlacer.spawnAnimals(level, c.result);
@@ -457,7 +466,7 @@ public class VillageGrowth {
                 project = null;
                 return null;
             }
-            construction = BuildingPlacer.prepare(plan, project.origin, project.orientation);
+            construction = BuildingPlacer.prepare(plan, project.origin, project.orientation, this::isProtectedColumn);
             construction.skipTo(project.progress);
         }
         return construction;

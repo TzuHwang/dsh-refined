@@ -118,11 +118,13 @@ public class VillageGrowthTests {
                 var crop = level.getBlockState(s.above());
                 return crop.getBlock() instanceof net.minecraft.world.level.block.CropBlock cb && !cb.isMaxAge(crop);
             }).count();
-            long chopped = trees.stream().filter(t -> !level.getBlockState(t).is(net.minecraft.tags.BlockTags.LOGS)).count();
+            // 砍下的原木数（伐木工可能砍了一部分就先把木头送回家）
+            long chopped = trees.stream().flatMap(t -> java.util.stream.IntStream.range(0, 5).mapToObj(t::above))
+                .filter(p -> !level.getBlockState(p).is(net.minecraft.tags.BlockTags.LOGS)).count();
             int cobble = workers.stream().mapToInt(v -> v.countInInventory(net.minecraft.world.item.Items.COBBLESTONE)).sum()
                 + chestCount(level, placed.get("quarry"), net.minecraft.world.item.Items.COBBLESTONE);
-            MillenaireRewrite.LOGGER.info("[gametest] work: harvested {}/{}, chopped {}/{}, cobblestone {}",
-                harvested, soils.size(), chopped, trees.size(), cobble);
+            MillenaireRewrite.LOGGER.info("[gametest] work: harvested {}/{}, chopped {}/{} logs, cobblestone {}",
+                harvested, soils.size(), chopped, trees.size() * 5, cobble);
             cleanup(level, village);
             if (soils.isEmpty() || harvested == 0) {
                 helper.fail("farmer harvested nothing");
@@ -147,6 +149,129 @@ public class VillageGrowthTests {
             }
         }
         return count;
+    }
+
+    /**
+     * 上锁箱子朝向房间内的空地（正面没有被方块挡住），并排的箱子组成大箱子；四个朝向都要正确
+     */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void chestsFaceOutwardAndPair(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 5000));
+        setForced(level, centre, true);
+        buildPlatform(level, centre);
+        String[] keys = {"farm", "quarry", "manor", "lumbermanhut"};
+        int blocked = 0;
+        int unpaired = 0;
+        int chests = 0;
+        try {
+            for (int i = 0; i < keys.length; i++) {
+                var plan = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("norman", keys[i], 'A', 0);
+                for (int orientation = 0; orientation < 4; orientation++) {
+                    BlockPos origin = new BlockPos(centre.getX() - 60 + orientation * 40, PLATFORM_TOP + 1,
+                        centre.getZ() - 60 + i * 40);
+                    var result = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, plan, origin, orientation);
+                    List<BlockPos> positions = new java.util.ArrayList<>(result.specialPoints.getOrDefault("lockedchest", List.of()));
+                    positions.addAll(result.specialPoints.getOrDefault("mainchest", List.of()));
+                    for (BlockPos pos : positions) {
+                        var state = level.getBlockState(pos);
+                        if (!(state.getBlock() instanceof com.jasoncian.millenaire_rewrite.blocks.functional.LockedChestBlock)) {
+                            continue;
+                        }
+                        chests++;
+                        var facing = state.getValue(com.jasoncian.millenaire_rewrite.blocks.functional.LockedChestBlock.FACING);
+                        BlockPos front = pos.relative(facing);
+                        if (level.getBlockState(front).isSolidRender(level, front)) {
+                            blocked++;
+                            MillenaireRewrite.LOGGER.info("[gametest] chest {} o{} at {} faces {} into {}", keys[i], orientation,
+                                pos.toShortString(), facing, level.getBlockState(front));
+                        }
+                        var type = state.getValue(com.jasoncian.millenaire_rewrite.blocks.functional.LockedChestBlock.TYPE);
+                        var side = level.getBlockState(pos.relative(facing.getClockWise()));
+                        if (type == net.minecraft.world.level.block.state.properties.ChestType.SINGLE
+                            && side.getBlock() instanceof com.jasoncian.millenaire_rewrite.blocks.functional.LockedChestBlock
+                            && side.getValue(com.jasoncian.millenaire_rewrite.blocks.functional.LockedChestBlock.FACING) == facing) {
+                            unpaired++;
+                        }
+                    }
+                }
+            }
+        } catch (java.io.IOException e) {
+            helper.fail(e.toString());
+        } finally {
+            setForced(level, centre, false);
+        }
+        MillenaireRewrite.LOGGER.info("[gametest] chests: {} checked, {} facing a wall, {} side-by-side but not paired",
+            chests, blocked, unpaired);
+        if (chests == 0) {
+            helper.fail("no chests placed");
+        }
+        if (blocked > 0) {
+            helper.fail(blocked + " chests face a wall");
+        }
+        if (unpaired > 0) {
+            helper.fail(unpaired + " side-by-side chests are not joined");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * 地形过渡：建筑旁的小丘被削成渐进的斜坡（相邻两格高差不超过 3），旁边的树被清掉
+     */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void surroundingsBlendIntoTerrain(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 5600));
+        setForced(level, centre, true);
+        buildPlatform(level, centre);
+        try {
+            var plan = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("norman", "farm", 'A', 0);
+            BlockPos origin = new BlockPos(centre.getX(), PLATFORM_TOP + 1, centre.getZ());
+            BoundingBox f = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.footprint(plan, origin, 0);
+            // 东侧紧贴占地的小丘：高 8 格
+            for (int x = f.maxX() + 1; x <= f.maxX() + 20; x++) {
+                for (int z = f.minZ(); z <= f.maxZ(); z++) {
+                    for (int y = PLATFORM_TOP + 1; y <= PLATFORM_TOP + 8; y++) {
+                        level.setBlock(new BlockPos(x, y, z), net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState(), 2);
+                    }
+                }
+            }
+            // 南侧过渡带里的一棵树
+            BlockPos tree = new BlockPos((f.minX() + f.maxX()) / 2, PLATFORM_TOP + 1, f.maxZ() + 2);
+            for (int y = 0; y < 5; y++) {
+                level.setBlock(tree.above(y), net.minecraft.world.level.block.Blocks.OAK_LOG.defaultBlockState(), 2);
+            }
+            level.setBlock(tree.above(5), net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState(), 2);
+
+            com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, plan, origin, 0);
+
+            int ground = origin.getY() - 1;
+            int maxStep = 0;
+            int zMid = (f.minZ() + f.maxZ()) / 2;
+            int previous = ground;
+            StringBuilder profile = new StringBuilder();
+            for (int x = f.maxX() + 1; x <= f.maxX() + 1 + com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.SURROUND_MARGIN; x++) {
+                int h = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, zMid) - 1;
+                maxStep = Math.max(maxStep, Math.abs(h - previous));
+                profile.append(h - ground).append(' ');
+                previous = h;
+            }
+            boolean treeCleared = !level.getBlockState(tree).is(net.minecraft.tags.BlockTags.LOGS)
+                && !level.getBlockState(tree.above(5)).is(net.minecraft.tags.BlockTags.LEAVES);
+            MillenaireRewrite.LOGGER.info("[gametest] blend: east slope heights above ground {}, max step {}, tree cleared {}",
+                profile.toString().trim(), maxStep, treeCleared);
+            if (maxStep > 3) {
+                helper.fail("terrain next to the building has a step of " + maxStep + " blocks");
+            }
+            if (!treeCleared) {
+                helper.fail("tree next to the building was not cleared");
+            }
+        } catch (java.io.IOException e) {
+            helper.fail(e.toString());
+        } finally {
+            setForced(level, centre, false);
+        }
+        helper.succeed();
     }
 
     /**
@@ -329,8 +454,11 @@ public class VillageGrowthTests {
                 int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
                 for (int y = top; y >= top - 10; y--) {
                     BlockPos pos = new BlockPos(x, y, z);
-                    if (com.jasoncian.millenaire_rewrite.village.VillagePaths.isPath(level.getBlockState(pos))
-                        && !level.getBlockState(pos.above()).isSolid()) {
+                    var above = level.getBlockState(pos.above());
+                    // 门和栅栏门下的路面也算通行（关着的栅栏门 isSolid 为 true）
+                    boolean passable = !above.isSolid() || above.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
+                        || above.getBlock() instanceof net.minecraft.world.level.block.FenceGateBlock;
+                    if (com.jasoncian.millenaire_rewrite.village.VillagePaths.isPath(level.getBlockState(pos)) && passable) {
                         pathCells.put(ChunkPos.asLong(x, z), y);
                         break;
                     }
@@ -367,7 +495,7 @@ public class VillageGrowthTests {
         }
         // 道路必须通到市政厅的门口（道路起点），不能只停在市政厅占地边缘
         boolean reachesHallDoor = hall.pathStarts.isEmpty()
-            || reached.stream().anyMatch(cell -> nearAny(cell, hall.pathStarts, 2));
+            || reached.stream().anyMatch(cell -> nearAny(cell, hall.pathStarts, 1));
         MillenaireRewrite.LOGGER.info("[gametest] paths: reach town hall door: {}", reachesHallDoor);
         if (!reachesHallDoor) {
             throw new GameTestAssertException("paths stop at the town hall's edge instead of reaching its door");
