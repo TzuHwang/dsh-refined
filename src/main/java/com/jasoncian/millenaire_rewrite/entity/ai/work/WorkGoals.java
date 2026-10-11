@@ -49,6 +49,11 @@ public final class WorkGoals {
                 case "delivergoodshousehold" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.DeliverGoodsHousehold());
                 case "deliverresourcesshop" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.DeliverResourcesShop());
                 case "gethousethresources" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.GetResourcesForShops());
+                case "breed" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.WorkSpecials.BreedAnimals());
+                case "shearsheep" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.WorkSpecials.ShearSheep());
+                case "plantsaplings" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.WorkSpecials.PlantSaplings());
+                case "plantsugarcane" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.WorkSpecials.SugarCane(false));
+                case "harvestsugarcane" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.WorkSpecials.SugarCane(true));
                 case "gathergoods" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.GatherGoods());
                 case "choptrees" -> goals.add(new GoalChopTrees());
                 case "bringbackresourceshome" -> goals.add(new GoalDeliver());

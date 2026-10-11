@@ -441,7 +441,7 @@ public final class FarmGoalTypes {
         }
 
         @Nullable
-        static Block saplingFor(String spawnType) {
+        public static Block saplingFor(String spawnType) {
             return switch (spawnType) {
                 case "oakspawn", "appletreespawn", "olivetreespawn", "pistachiotreespawn" -> Blocks.OAK_SAPLING;
                 case "pinespawn" -> Blocks.SPRUCE_SAPLING;

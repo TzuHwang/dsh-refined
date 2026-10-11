@@ -260,4 +260,61 @@ public class VillagerBehaviourTests {
             helper.fail(e.toString());
         }
     }
+
+    /**
+     * 原版剪羊毛：牧羊人剪掉自家养殖场附近羊的毛，羊毛带回家
+     */
+    @GameTest(template = "empty", timeoutTicks = 2000, batch = "time_sheep")
+    public static void shepherdShearsSheep(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "shepherdShearsSheep")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 18800));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        try {
+            var plan = BuildingPlan.get("norman", "sheepchickenfarm", 'A', 0);
+            var origin = TestTerrain.ground(centre);
+            var result = BuildingPlacer.place(level, plan, origin, 0);
+            var village = new Village(origin, Culture.NORMAN);
+            com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).registerVillage(village);
+            var farm = village.getGrowth().recordBuilding(plan, origin, 0, result, false);
+            var home = farm.points("sleepingPos").isEmpty() ? origin : farm.points("sleepingPos").get(0);
+            MillVillager shepherd = ResidentSpawner.spawnResident(level, village, "norman", "shepherd", home);
+            List<net.minecraft.world.entity.animal.Sheep> sheep = new java.util.ArrayList<>();
+            for (int i = 0; i < 3; i++) {
+                var s = net.minecraft.world.entity.EntityType.SHEEP.create(level);
+                s.moveTo(origin.getX() + 0.5 + i, origin.getY(), origin.getZ() - 6.5, 0, 0);
+                level.addFreshEntity(s);
+                sheep.add(s);
+            }
+            level.setDayTime(1000);
+            int previous = com.jasoncian.millenaire_rewrite.command.TickWarp.factor();
+            com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(10);
+            helper.runAtTickTime(1500, () -> {
+                com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(previous);
+                long sheared = sheep.stream().filter(net.minecraft.world.entity.animal.Sheep::isSheared).count();
+                var wool = new com.jasoncian.millenaire_rewrite.economy.Goods.Good("wool", net.minecraft.world.item.Items.WHITE_WOOL,
+                    null, net.minecraft.tags.ItemTags.WOOL);
+                int woolTotal = (shepherd == null ? 0 : shepherd.countGood(wool))
+                    + com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, farm, wool);
+                MillenaireRewrite.LOGGER.info("[gametest] shepherd: {} of 3 sheep sheared, wool {}, goal {}", sheared, woolTotal,
+                    shepherd == null ? null : shepherd.getGoalManager().getCurrentGoal());
+                com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).removeVillage(village);
+                if (shepherd != null) {
+                    shepherd.discard();
+                }
+                sheep.forEach(net.minecraft.world.entity.Entity::discard);
+                TestTerrain.setForced(level, centre, false);
+                if (sheared == 0 || woolTotal == 0) {
+                    helper.fail("the shepherd sheared " + sheared + " sheep");
+                }
+                helper.succeed();
+            });
+        } catch (java.io.IOException e) {
+            TestTerrain.setForced(level, centre, false);
+            helper.fail(e.toString());
+        }
+    }
 }
