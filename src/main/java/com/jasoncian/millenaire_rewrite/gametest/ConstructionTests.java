@@ -88,4 +88,44 @@ public class ConstructionTests {
             helper.succeed();
         });
     }
+
+    /**
+     * /millenaire spawn 指令：建好市政厅并生成居民（玩家回报过 spawn 后没有村民）
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void spawnCommandCreatesVillagers(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "spawnCommandCreatesVillagers")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 22600));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        var ground = TestTerrain.ground(centre);
+        var source = level.getServer().createCommandSourceStack().withLevel(level)
+            .withPosition(net.minecraft.world.phys.Vec3.atBottomCenterOf(ground)).withPermission(4).withSuppressedOutput();
+        int result = level.getServer().getCommands().performPrefixedCommand(source, "millenaire spawn norman");
+        var manager = com.jasoncian.millenaire_rewrite.village.VillageManager.get(level);
+        helper.runAtTickTime(100, () -> {
+            var box = new net.minecraft.world.phys.AABB(ground).inflate(96);
+            var villagers = level.getEntitiesOfClass(com.jasoncian.millenaire_rewrite.entity.MillVillager.class, box);
+            var village = manager.getAllVillages().stream()
+                .filter(v -> v.getTownHallPos().distSqr(ground) < 96 * 96).findFirst().orElse(null);
+            MillenaireRewrite.LOGGER.info("[gametest] spawn command: result {}, village {}, {} villagers in world, {} registered",
+                result, village == null ? null : village.getName(), villagers.size(),
+                village == null ? 0 : village.getActiveVillagers().size());
+            if (village != null) {
+                manager.removeVillage(village);
+            }
+            villagers.forEach(v -> v.discard());
+            TestTerrain.setForced(level, centre, false);
+            if (village == null) {
+                helper.fail("spawn command created no village");
+            }
+            if (villagers.isEmpty()) {
+                helper.fail("spawn command created no villagers");
+            }
+            helper.succeed();
+        });
+    }
 }
