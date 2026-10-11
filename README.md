@@ -1,4 +1,4 @@
-# 🏰 Millenaire Rewrite | 千年村庄重制版
+# 🏰 Millénaire Refined | 千年村庄精修版
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-green.svg)](https://minecraft.net)
 [![Forge](https://img.shields.io/badge/Forge-47.4.3-orange.svg)](https://files.minecraftforge.net)
@@ -14,9 +14,9 @@
 
 ### 📖 About
 
-**Millenaire Rewrite** is a complete modernization of the classic Millenaire mod for Minecraft 1.20.1. This project brings the beloved village-building and cultural experience to modern Minecraft with enhanced performance, updated mechanics, and a cleaner codebase.
+**Millénaire Refined** is a fork of [JasonCian/Millenaire-rewrite](https://github.com/JasonCian/Millenaire-rewrite), continuing a complete modernization of the classic Millenaire mod for Minecraft 1.20.1. This project brings the beloved village-building and cultural experience to modern Minecraft with enhanced performance, updated mechanics, and a cleaner codebase.
 
-Originally created as one of Minecraft's most ambitious civilization mods, Millenaire adds living, breathing villages with unique cultures that grow and evolve over time. This rewrite preserves the core spirit while embracing modern modding standards.
+Originally created as one of Minecraft's most ambitious civilization mods, Millenaire adds living, breathing villages with unique cultures that grow and evolve over time. This project preserves the core spirit while embracing modern modding standards.
 
 ~~btw,I did not find the open source code library for 1.12. The reference code of the project is forked from https://github.com/MoonCutter2B/Millenaire seems to be version 1.8.~~
 
@@ -80,7 +80,7 @@ All 7 cultures fully implemented with complete item sets:
 
 ### 🚀 Development Status
 
-**Current Version**: `0.3.0-alpha` (NeoForge 1.21.1 Port)
+**Current Version**: `0.1.4-alpha` (Forge 1.20.1)
 **Last Updated**: January 17, 2026
 
 #### ✅ Completed Systems
@@ -121,7 +121,7 @@ All 7 cultures fully implemented with complete item sets:
 
 #### 🏗️ Modern Architecture
 
-- **Package Structure**: Clean `com.jasoncian.millenaire_rewrite` organization
+- **Package Structure**: Clean `com.jasoncian.millenaire_rewrite` organization (package and mod ID `millenaire_rewrite` are kept from upstream for save compatibility)
 - **Type Safety**: Full generic system for variant blocks and items
 - **Data Generation**: Automated resource file generation (200+ files)
 - **Localization**: Complete English/Chinese translation support
@@ -156,8 +156,8 @@ All 7 cultures fully implemented with complete item sets:
 
 ```bash
 # Clone the repository
-git clone https://github.com/jasoncian/millenaire-rewrite.git
-cd millenaire-rewrite
+git clone https://github.com/TzuHwang/dsh-refined.git
+cd dsh-refined
 
 # Setup development environment
 ./gradlew genEclipseRuns  # For Eclipse
@@ -195,6 +195,7 @@ This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) 
 ### 🙏 Acknowledgments
 
 - **Original Millenaire Team** - For creating the beloved original mod
+- **[JasonCian](https://github.com/JasonCian/Millenaire-rewrite)** - For the Millenaire Rewrite 1.20.1 port this project is based on
 - **MinecraftForge Team** - For providing the modding framework
 - **Community Contributors** - For feedback and suggestions
 
@@ -204,9 +205,9 @@ This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) 
 
 ### 📖 关于项目
 
-**千年村庄重制版**是经典千年村庄（Millenaire）模组在 Minecraft 1.20.1 上的完全现代化重制。本项目将备受喜爱的村庄建设和文化体验带到现代 Minecraft 中，具有增强的性能、更新的机制和更清洁的代码库。
+**千年村庄精修版**（Millénaire Refined）fork 自 [JasonCian/Millenaire-rewrite](https://github.com/JasonCian/Millenaire-rewrite)，是经典千年村庄（Millenaire）模组在 Minecraft 1.20.1 上的完全现代化重制。本项目将备受喜爱的村庄建设和文化体验带到现代 Minecraft 中，具有增强的性能、更新的机制和更清洁的代码库。
 
-作为 Minecraft 最具雄心的文明类模组之一，千年村庄添加了具有独特文化的活跃村庄，这些村庄会随时间增长和演化。这次重制保留了核心精神，同时拥抱现代模组开发标准。
+作为 Minecraft 最具雄心的文明类模组之一，千年村庄添加了具有独特文化的活跃村庄，这些村庄会随时间增长和演化。本项目保留了核心精神，同时拥抱现代模组开发标准。
 
 ~~提一嘴，我没有找到 1.12 的开源代码库，项目的参考代码 fork 自https://github.com/MoonCutter2B/Millenaire
 貌似是 1.8 版本~~
@@ -268,7 +269,7 @@ This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) 
 
 ### 🚀 开发状态
 
-**当前版本**: `0.3.0-alpha` (NeoForge 1.21.1 移植版)
+**当前版本**: `0.1.4-alpha` (Forge 1.20.1)
 **最后更新**: 2026 年 1 月 17 日
 
 #### ✅ 已完成系统
@@ -309,7 +310,7 @@ This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) 
 
 #### 🏗️ 现代架构
 
-- **包结构**: 清洁的 `com.jasoncian.millenaire_rewrite`组织
+- **包结构**: 清洁的 `com.jasoncian.millenaire_rewrite` 组织（包名与 mod ID `millenaire_rewrite` 沿用上游，以保持存档兼容）
 - **类型安全**: 变体方块和物品的完整泛型系统
 - **数据生成**: 自动化资源文件生成（200+文件）
 - **本地化**: 完整的英中文翻译支持
@@ -344,8 +345,8 @@ This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) 
 
 ```bash
 # 克隆仓库
-git clone https://github.com/jasoncian/millenaire-rewrite.git
-cd millenaire-rewrite
+git clone https://github.com/TzuHwang/dsh-refined.git
+cd dsh-refined
 
 # 设置开发环境
 ./gradlew genEclipseRuns  # Eclipse用
@@ -383,6 +384,7 @@ cd millenaire-rewrite
 ### 🙏 致谢
 
 - **原版千年村庄团队** - 创造了备受喜爱的原版模组
+- **[JasonCian](https://github.com/JasonCian/Millenaire-rewrite)** - 本项目所基于的 Millenaire Rewrite 1.20.1 移植
 - **MinecraftForge 团队** - 提供模组开发框架
 - **社区贡献者** - 提供反馈和建议
 
@@ -390,7 +392,8 @@ cd millenaire-rewrite
 
 ## 🔗 Links | 链接
 
-- **Issues** | **问题报告**: [GitHub Issue](https://github.com/jasoncian/millenaire-rewrite/issues)
+- **Issues** | **问题报告**: [GitHub Issue](https://github.com/TzuHwang/dsh-refined/issues)
+- **Upstream** | **上游项目**: [JasonCian/Millenaire-rewrite](https://github.com/JasonCian/Millenaire-rewrite)
 - **Original Mod** | **原版模组**: [Millenaire Legacy](https://millenaire.org)
 
 ---
