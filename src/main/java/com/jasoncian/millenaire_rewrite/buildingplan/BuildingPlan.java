@@ -39,6 +39,9 @@ public final class BuildingPlan {
     public final List<String> subBuildings = new ArrayList<>();
     /** 本身是子建筑：与母建筑共用位置，不整地 */
     public boolean subBuilding;
+    /** 这一级的商店（shops/&lt;名称&gt;.txt），升级没写时沿用之前的商店 */
+    @javax.annotation.Nullable
+    public String shop;
 
     public int nbFloors;
     /** [楼层][长度方向][宽度方向]，null 表示未知颜色（按空处理） */
@@ -135,9 +138,16 @@ public final class BuildingPlan {
                 case "initial.male" -> maleResidents.add(v);
                 case "initial.female" -> femaleResidents.add(v);
                 case "building.issubbuilding" -> subBuilding = Boolean.parseBoolean(v);
+                case "initial.shop" -> {
+                    if (level == 0) {
+                        shop = v.toLowerCase();
+                    }
+                }
                 default -> {
                     if (k.equals((level == 0 ? "initial." : upgradePrefix) + "subbuilding")) {
                         subBuildings.add(v);
+                    } else if (k.equals(upgradePrefix + "shop")) {
+                        shop = v.toLowerCase();
                     } else if (k.equals(upgradePrefix + "startlevel")) {
                         upgradeStartLevel = Integer.parseInt(v);
                     } else if (k.equals(upgradePrefix + "priority")) {

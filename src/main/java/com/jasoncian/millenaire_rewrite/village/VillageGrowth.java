@@ -65,6 +65,9 @@ public class VillageGrowth {
         public final Map<String, List<BlockPos>> points = new HashMap<>();
         /** 子建筑：与母建筑重叠，道路由母建筑负责 */
         public boolean subBuilding;
+        /** 商店（shops/&lt;名称&gt;.txt），没有商店为 null */
+        @Nullable
+        public String shop;
 
         PlacedBuilding(String key, char variation, int level, BlockPos origin, int orientation,
                        BoundingBox footprint, boolean townHall, List<BlockPos> pathStarts,
@@ -121,6 +124,9 @@ public class VillageGrowth {
             });
             tag.put("Points", pointsTag);
             tag.putBoolean("Sub", subBuilding);
+            if (shop != null) {
+                tag.putString("Shop", shop);
+            }
             return tag;
         }
 
@@ -145,6 +151,7 @@ public class VillageGrowth {
                 tag.getInt("Level"), NbtUtils.readBlockPos(tag.getCompound("Origin")), tag.getInt("Orientation"),
                 new BoundingBox(f[0], f[1], f[2], f[3], f[4], f[5]), tag.getBoolean("TownHall"), starts, points);
             building.subBuilding = tag.getBoolean("Sub");
+            building.shop = tag.contains("Shop") ? tag.getString("Shop") : null;
             return building;
         }
     }
@@ -244,6 +251,7 @@ public class VillageGrowth {
                                          BuildingPlacer.Result result, boolean townHall) {
         PlacedBuilding placed = new PlacedBuilding(plan.key, plan.variation, plan.level, origin, orientation,
             BuildingPlacer.footprint(plan, origin, orientation), townHall, pathStarts(result), result.specialPoints);
+        placed.shop = plan.shop;
         buildings.add(placed);
         village.markDirty();
         return placed;
@@ -252,6 +260,29 @@ public class VillageGrowth {
     /**
      * 占地包含该位置的建筑（用于找村民的家）
      */
+    /**
+     * 建筑的商店；旧存档没有记录时按图纸补上
+     */
+    @Nullable
+    public String shopOf(PlacedBuilding building) {
+        if (building.shop == null) {
+            for (int level = building.level; level >= 0 && building.shop == null; level--) {
+                BuildingPlan plan = plan(building.key, building.variation, level);
+                if (plan != null) {
+                    building.shop = plan.shop;
+                }
+            }
+        }
+        return building.shop;
+    }
+
+    /**
+     * 有商店的建筑
+     */
+    public List<PlacedBuilding> getShops() {
+        return buildings.stream().filter(b -> shopOf(b) != null).toList();
+    }
+
     @Nullable
     public PlacedBuilding getBuildingAt(BlockPos pos) {
         for (PlacedBuilding b : buildings) {
@@ -287,6 +318,7 @@ public class VillageGrowth {
         PlacedBuilding hall = new PlacedBuilding(townHall.key, townHall.variation, townHall.level, origin, orientation,
             BuildingPlacer.footprint(townHall, origin, orientation), true, pathStarts(townHallResult),
             townHallResult.specialPoints);
+        hall.shop = townHall.shop;
         buildings.add(hall);
         buildSubBuildings(level, townHall, hall);
         if (layout != null) {
@@ -311,6 +343,7 @@ public class VillageGrowth {
                 ResidentSpawner.spawnResidents(level, village, plan, c.result);
                 PlacedBuilding placed = new PlacedBuilding(key, 'A', 0, site.origin(), site.orientation(),
                     site.footprint(), false, pathStarts(c.result), c.result.specialPoints);
+                placed.shop = plan.shop;
                 buildings.add(placed);
                 buildSubBuildings(level, plan, placed);
             } catch (IOException e) {
@@ -453,6 +486,9 @@ public class VillageGrowth {
             PlacedBuilding upgraded = buildings.get(p.upgradeOf);
             upgraded.level = p.level;
             upgraded.addPoints(c.result.specialPoints);
+            if (c.plan.shop != null) {
+                upgraded.shop = c.plan.shop;
+            }
             buildSubBuildings(level, c.plan, upgraded);
             // 升级可能在庭院里加了栅栏等，把穿过庭院的道路截断：重建路网绕开它们
             if (pathsIncomplete || VillagePaths.coversNetwork(this, upgraded.footprint)) {
@@ -468,6 +504,7 @@ public class VillageGrowth {
             PlacedBuilding placed = new PlacedBuilding(p.key, p.variation, p.level, p.origin, p.orientation,
                 BuildingPlacer.footprint(c.plan, p.origin, p.orientation), false, pathStarts(c.result),
                 c.result.specialPoints);
+            placed.shop = c.plan.shop;
             boolean coveredPaths = VillagePaths.coversNetwork(this, placed.footprint);
             buildings.add(placed);
             buildSubBuildings(level, c.plan, placed);
@@ -523,6 +560,7 @@ public class VillageGrowth {
                 BuildingPlacer.footprint(sub, parent.origin, parent.orientation), false, pathStarts(c.result),
                 c.result.specialPoints);
             placed.subBuilding = true;
+            placed.shop = sub.shop;
             buildings.add(placed);
             MillenaireRewrite.LOGGER.info("Village {} built sub-building {} of {}", village.getName(), key, parent.key);
             buildSubBuildings(level, sub, placed);

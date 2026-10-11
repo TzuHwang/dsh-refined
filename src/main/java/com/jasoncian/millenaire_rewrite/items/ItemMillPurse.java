@@ -41,9 +41,9 @@ public class ItemMillPurse extends Item {
     /** 双击间隔时间（毫秒） */
     private static final long DOUBLE_CLICK_INTERVAL = 500;
     
-    /** 货币转换比率 */
-    public static final int COPPER_PER_SILVER = 10;
-    public static final int SILVER_PER_GOLD = 10;
+    /** 货币转换比率（与原版相同：1 银 = 64 铜，1 金 = 64 银） */
+    public static final int COPPER_PER_SILVER = 64;
+    public static final int SILVER_PER_GOLD = 64;
     public static final int COPPER_PER_GOLD = COPPER_PER_SILVER * SILVER_PER_GOLD;
     
     public ItemMillPurse(Properties properties) {
