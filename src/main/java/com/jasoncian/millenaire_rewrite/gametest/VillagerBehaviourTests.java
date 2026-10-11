@@ -477,4 +477,70 @@ public class VillagerBehaviourTests {
             helper.fail(e.toString());
         }
     }
+
+    /**
+     * 原版外地商人：夜里市集召来商人（不超过摊位数），货存进市集；白天守摊；住满 5 晚离开
+     */
+    @GameTest(template = "empty", timeoutTicks = 2000, batch = "time_merchant")
+    public static void foreignMerchantKeepsStall(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "foreignMerchantKeepsStall")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 21200));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        try {
+            var plan = BuildingPlan.get("norman", "market", 'A', 0);
+            var origin = TestTerrain.ground(centre);
+            var result = BuildingPlacer.place(level, plan, origin, 0);
+            var village = new Village(origin, Culture.NORMAN);
+            com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).registerVillage(village);
+            var market = village.getGrowth().recordBuilding(plan, origin, 0, result, false);
+            int stalls = market.points("stall").size();
+            level.setDayTime(14000);
+            com.jasoncian.millenaire_rewrite.entity.ai.original.VisitorGoals.tick(level, village);
+            var merchants = village.getActiveVillagers();
+            MillVillager merchant = merchants.stream().findFirst().orElse(null);
+            int stock = merchant == null ? 0 : com.jasoncian.millenaire_rewrite.content.VillagerTypes
+                .get("norman", merchant.getVillagerType()).merchantStock().keySet().stream()
+                .map(com.jasoncian.millenaire_rewrite.economy.Goods::get).filter(java.util.Objects::nonNull)
+                .mapToInt(g -> com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, market, g)).sum();
+            MillenaireRewrite.LOGGER.info("[gametest] market: {} stalls, merchant {} stock {}", stalls,
+                merchant == null ? null : merchant.getFullName() + " " + merchant.getVillagerType(), stock);
+            Runnable cleanup = () -> {
+                com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).removeVillage(village);
+                village.getActiveVillagers().forEach(v -> v.discard());
+                TestTerrain.setForced(level, centre, false);
+            };
+            if (stalls == 0 || merchant == null || stock == 0) {
+                cleanup.run();
+                helper.fail("market got no merchant with goods (stalls " + stalls + ")");
+                return;
+            }
+            level.setDayTime(1000);
+            merchant.getGoalManager().forceGoal(new com.jasoncian.millenaire_rewrite.entity.ai.original.VisitorGoals.KeepStall());
+            helper.runAtTickTime(600, () -> {
+                double d = market.points("stall").stream()
+                    .mapToDouble(p -> merchant.distanceToSqr(p.getX() + 0.5, p.getY(), p.getZ() + 0.5)).min().orElse(1e9);
+                // 住满 5 晚后离开
+                for (int i = 0; i < 6 && !merchant.isRemoved(); i++) {
+                    com.jasoncian.millenaire_rewrite.entity.ai.original.VisitorGoals.nightAction(merchant);
+                }
+                MillenaireRewrite.LOGGER.info("[gametest] merchant {} from stall, left {}", Math.sqrt(d), merchant.isRemoved());
+                boolean left = merchant.isRemoved();
+                cleanup.run();
+                if (d > 9) {
+                    helper.fail("merchant did not go to a stall (" + Math.sqrt(d) + " blocks)");
+                }
+                if (!left) {
+                    helper.fail("merchant did not leave after 5 nights");
+                }
+                helper.succeed();
+            });
+        } catch (java.io.IOException e) {
+            TestTerrain.setForced(level, centre, false);
+            helper.fail(e.toString());
+        }
+    }
 }

@@ -424,6 +424,7 @@ public class VillageGrowth {
         }
         if (level.getGameTime() % 20 == 0) {
             com.jasoncian.millenaire_rewrite.economy.SellerDispatch.tick(level, village);
+            com.jasoncian.millenaire_rewrite.entity.ai.original.VisitorGoals.tick(level, village);
         }
         if (project != null) {
             BuildingPlacer.Construction c = construction(level);

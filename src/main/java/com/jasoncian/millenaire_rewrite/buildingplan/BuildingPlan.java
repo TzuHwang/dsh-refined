@@ -35,6 +35,8 @@ public final class BuildingPlan {
     public String nativeName;
     public final List<String> maleResidents = new ArrayList<>();
     public final List<String> femaleResidents = new ArrayList<>();
+    /** 原版 initial.visitor：会来住几晚的访客类型（如朝圣者） */
+    public final List<String> visitors = new ArrayList<>();
     /** 子建筑（如市政厅的市集）：这一级完工后在同一位置叠加建造，之后各自升级 */
     public final List<String> subBuildings = new ArrayList<>();
     /** 本身是子建筑：与母建筑共用位置，不整地 */
@@ -139,6 +141,7 @@ public final class BuildingPlan {
                 case "initial.priority" -> initialPriority = Integer.parseInt(v);
                 case "initial.male" -> maleResidents.add(v);
                 case "initial.female" -> femaleResidents.add(v);
+                case "initial.visitor" -> visitors.add(v);
                 case "building.issubbuilding" -> subBuilding = Boolean.parseBoolean(v);
                 case "initial.tag" -> {
                     if (level == 0) {

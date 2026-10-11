@@ -41,6 +41,8 @@ public class VillageMerchant implements Merchant {
     private MerchantOffers offers = new MerchantOffers();
     /** 与 offers 同序：每项交易对应的商店商品 */
     private final List<VillageTrade.Offer> sources = new ArrayList<>();
+    /** 外地商人：只卖自己带来的货（存在市集里），价格为 foreignMerchantPrice */
+    private boolean foreign;
 
     public VillageMerchant(ServerLevel level, Village village, VillageGrowth.PlacedBuilding building,
                            @Nullable MillVillager seller) {
@@ -57,6 +59,9 @@ public class VillageMerchant implements Merchant {
      */
     public static boolean openFor(ServerPlayer player, MillVillager seller) {
         Village village = seller.getHomeVillage();
+        if (village != null && openForeign(player, village, seller)) {
+            return true;
+        }
         if (village == null || !VillageTrade.isSeller(seller)) {
             return false;
         }
@@ -74,6 +79,62 @@ public class VillageMerchant implements Merchant {
     }
 
     /**
+     * 外地商人（原版 tag foreignmerchant）：右键打开他带来的货
+     */
+    private static boolean openForeign(ServerPlayer player, Village village, MillVillager merchant) {
+        com.jasoncian.millenaire_rewrite.content.VillagerTypes.VillagerType type;
+        try {
+            type = com.jasoncian.millenaire_rewrite.content.VillagerTypes.get(
+                com.jasoncian.millenaire_rewrite.buildingplan.VillageTypes.cultureFolder(merchant.getCulture()),
+                merchant.getVillagerType());
+        } catch (java.io.IOException e) {
+            return false;
+        }
+        if (!type.isForeignMerchant()) {
+            return false;
+        }
+        VillageGrowth.PlacedBuilding market = village.getGrowth().getBuildings().stream()
+            .filter(b -> !b.subBuilding && merchant.getHousePos() != null && b.contains(merchant.getHousePos())
+                && village.getGrowth().tagsOf(b).contains("market"))
+            .findFirst().orElse(null);
+        if (market == null) {
+            return false;
+        }
+        VillageMerchant m = new VillageMerchant(player.serverLevel(), village, market, merchant);
+        m.foreign = true;
+        m.open(player, merchant.getName());
+        return true;
+    }
+
+    /**
+     * 外地商人的货：商人类型的 merchantstock，按文化的 foreignMerchantPrice 卖，库存为市集里的数量
+     */
+    private List<VillageTrade.Offer> foreignOffers() {
+        List<VillageTrade.Offer> list = new ArrayList<>();
+        if (seller == null) {
+            return list;
+        }
+        try {
+            String culture = com.jasoncian.millenaire_rewrite.buildingplan.VillageTypes.cultureFolder(seller.getCulture());
+            var type = com.jasoncian.millenaire_rewrite.content.VillagerTypes.get(culture, seller.getVillagerType());
+            CultureEconomy economy = CultureEconomy.get(culture);
+            for (String key : type.merchantStock().keySet()) {
+                CultureEconomy.TradeGood g = economy.good(key);
+                if (g == null || g.foreignMerchantPrice() <= 0) {
+                    continue;
+                }
+                int stock = BuildingStock.count(level, building, g.good());
+                if (stock > 0) {
+                    list.add(new VillageTrade.Offer(true, key, g.good().create(1), g.foreignMerchantPrice(), stock, 0));
+                }
+            }
+        } catch (java.io.IOException e) {
+            // 没有类型资料时不卖
+        }
+        return list;
+    }
+
+    /**
      * 打开原版交易界面
      */
     public void open(ServerPlayer player, Component title) {
@@ -86,7 +147,7 @@ public class VillageMerchant implements Merchant {
         offers = new MerchantOffers();
         sources.clear();
         int reputation = village.getGrowth().getReputation(player.getUUID());
-        for (VillageTrade.Offer o : VillageTrade.offers(level, village, building, player)) {
+        for (VillageTrade.Offer o : foreign ? foreignOffers() : VillageTrade.offers(level, village, building, player)) {
             if (reputation < o.minReputation()) {
                 continue;
             }
@@ -174,14 +235,14 @@ public class VillageMerchant implements Merchant {
             return;
         }
         VillageTrade.Offer source = sources.get(index);
-        CultureEconomy.TradeGood good = CultureEconomy.get(
-            com.jasoncian.millenaire_rewrite.buildingplan.VillageTypes.cultureFolder(village.getCulture())).good(source.key());
+        CultureEconomy.TradeGood good = CultureEconomy.get(com.jasoncian.millenaire_rewrite.buildingplan.VillageTypes.cultureFolder(
+            foreign && seller != null ? seller.getCulture() : village.getCulture())).good(source.key());
         if (good == null) {
             return;
         }
         int count = source.item().getCount();
         if (source.villageSells()) {
-            if (!good.autoGenerate()) {
+            if (foreign || !good.autoGenerate()) {
                 BuildingStock.take(level, building, good.good(), count);
             }
         } else if (BuildingStock.store(level, building, good.good(), count) < count) {

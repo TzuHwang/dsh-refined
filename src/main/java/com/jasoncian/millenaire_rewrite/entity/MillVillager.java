@@ -473,6 +473,7 @@ public class MillVillager extends PathfinderMob {
         tag.putString("FamilyName", getFamilyName());
         tag.putBoolean("IsChild", isChild());
         tag.putInt("ChildSize", getChildSize());
+        tag.putInt("VisitorNights", visitorNights);
         tag.putString("VillagerType", getVillagerType());
         tag.putString("Skin", this.entityData.get(DATA_SKIN));
         tag.putString("Clothes0", this.entityData.get(DATA_CLOTHES_0));
@@ -540,6 +541,7 @@ public class MillVillager extends PathfinderMob {
         setFamilyName(tag.getString("FamilyName"));
         setChild(tag.getBoolean("IsChild"));
         setChildSize(tag.getInt("ChildSize"));
+        visitorNights = tag.getInt("VisitorNights");
         setVillagerType(tag.getString("VillagerType"));
         this.entityData.set(DATA_SKIN, tag.getString("Skin"));
         this.entityData.set(DATA_CLOTHES_0, tag.getString("Clothes0"));
@@ -716,6 +718,17 @@ public class MillVillager extends PathfinderMob {
 
     public void setChildSize(int size) {
         this.entityData.set(DATA_CHILD_SIZE, size);
+    }
+
+    /** 访客已经住了几晚（原版 visitorNbNights，超过 5 晚离开） */
+    private int visitorNights;
+
+    public int getVisitorNights() {
+        return visitorNights;
+    }
+
+    public void setVisitorNights(int nights) {
+        this.visitorNights = nights;
     }
 
     /** 当晚的夜间动作（长大、怀孕）已经做过（不存档，醒来时重置） */

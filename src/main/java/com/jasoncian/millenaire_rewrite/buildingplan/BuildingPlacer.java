@@ -541,7 +541,8 @@ public final class BuildingPlacer {
             }
             case "preserveground" ->
                 c.add(pos, (underground ? Blocks.DIRT : Blocks.GRASS_BLOCK).defaultBlockState(), true);
-            case "allbuttrees", "stall", "brickspot", "healingspot", "fishingspot",
+            case "stall" -> c.result.addPoint(type, pos);
+            case "allbuttrees", "brickspot", "healingspot", "fishingspot",
                  "plainSignGuess", "signwallGuess", "ladderGuess" -> {
                 // 暂不处理
             }

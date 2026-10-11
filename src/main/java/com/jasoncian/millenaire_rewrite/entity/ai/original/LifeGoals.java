@@ -64,6 +64,10 @@ public final class LifeGoals {
             if (!villager.nightActionPerformed()) {
                 villager.setNightActionPerformed(true);
                 FamilyGoals.nightAction(villager);
+                VisitorGoals.nightAction(villager);
+                if (villager.isRemoved()) {
+                    return true;
+                }
             }
             // 一直睡到天亮（夜间限制失效时目标结束）
             return false;

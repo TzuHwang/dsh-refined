@@ -30,7 +30,18 @@ public final class VillagerTypes {
                                float baseHeight, int health, List<String> tags, String model,
                                List<String> goals, Map<String, Integer> requiredGoods, List<String> collectGoods,
                                List<String> bringBackHomeGoods, @Nullable String defaultWeapon, int baseAttackStrength,
-                               @Nullable String maleChild, @Nullable String femaleChild) {
+                               @Nullable String maleChild, @Nullable String femaleChild,
+                               Map<String, Integer> merchantStock, int chanceWeight) {
+
+        /** 原版 tag=visitor：访客，住几晚后离开 */
+        public boolean isVisitor() {
+            return tags.stream().anyMatch(t -> t.equalsIgnoreCase("visitor"));
+        }
+
+        /** 原版 tag=foreignmerchant：在市集摆摊的外地商人 */
+        public boolean isForeignMerchant() {
+            return tags.stream().anyMatch(t -> t.equalsIgnoreCase("foreignmerchant"));
+        }
 
         /** 原版 tag=child */
         public boolean isChild() {
@@ -56,6 +67,28 @@ public final class VillagerTypes {
     private static final Map<String, List<String>> NAME_LISTS = new HashMap<>();
 
     private VillagerTypes() {
+    }
+
+    /**
+     * 文化的所有村民类型
+     */
+    public static synchronized List<VillagerType> all(String culture) throws IOException {
+        List<VillagerType> list = new ArrayList<>();
+        java.nio.file.Path dir = MillContent.resolve("cultures", culture, "villagers");
+        if (!java.nio.file.Files.isDirectory(dir)) {
+            return list;
+        }
+        try (var files = java.nio.file.Files.walk(dir)) {
+            for (java.nio.file.Path f : files.filter(p -> p.toString().endsWith(".txt")).toList()) {
+                String name = f.getFileName().toString();
+                try {
+                    list.add(get(culture, name.substring(0, name.length() - 4)));
+                } catch (IOException | RuntimeException e) {
+                    // 跳过读不了的类型
+                }
+            }
+        }
+        return list;
     }
 
     public static synchronized VillagerType get(String culture, String key) throws IOException {
@@ -114,6 +147,8 @@ public final class VillagerTypes {
         String defaultWeapon = null;
         String maleChild = null;
         String femaleChild = null;
+        Map<String, Integer> merchantStock = new java.util.LinkedHashMap<>();
+        int chanceWeight = 0;
         int baseAttackStrength = 1;
 
         for (String raw : MillContent.readLines(file)) {
@@ -149,6 +184,24 @@ public final class VillagerTypes {
                 case "collectgood" -> collectGoods.add(v.toLowerCase());
                 case "defaultweapon" -> defaultWeapon = v.toLowerCase();
                 case "malechild" -> maleChild = v.toLowerCase();
+                case "merchantstock" -> {
+                    String[] p = v.split(",");
+                    if (p.length == 2) {
+                        try {
+                            merchantStock.merge(p[0].trim().toLowerCase(),
+                                com.jasoncian.millenaire_rewrite.economy.CultureEconomy.readInteger(p[1]), Integer::sum);
+                        } catch (NumberFormatException e) {
+                            // 忽略写错的行
+                        }
+                    }
+                }
+                case "chanceweight" -> {
+                    try {
+                        chanceWeight = Integer.parseInt(v);
+                    } catch (NumberFormatException e) {
+                        // 忽略
+                    }
+                }
                 case "femalechild" -> femaleChild = v.toLowerCase();
                 case "baseattackstrength" -> {
                     try {
@@ -173,6 +226,6 @@ public final class VillagerTypes {
         return new VillagerType(culture, key, nativeName, female, firstNames, familyNames,
             List.copyOf(textures), clothes, baseHeight, health, List.copyOf(tags), model, List.copyOf(goals),
             Map.copyOf(requiredGoods), List.copyOf(collectGoods), List.copyOf(bringBackHomeGoods), defaultWeapon,
-            baseAttackStrength, maleChild, femaleChild);
+            baseAttackStrength, maleChild, femaleChild, Map.copyOf(merchantStock), chanceWeight);
     }
 }
