@@ -119,6 +119,22 @@ public class MillenaireCommands {
                 .executes(MillenaireCommands::showStats)
             )
 
+            // /millenaire speed [倍数] - 世界加速（1~20 倍，1 为正常速度），不带参数时显示当前倍数
+            .then(Commands.literal("speed")
+                .executes(ctx -> {
+                    int f = TickWarp.factor();
+                    ctx.getSource().sendSuccess(() -> Component.literal("World speed: x" + f), false);
+                    return f;
+                })
+                .then(Commands.argument("factor", IntegerArgumentType.integer(1, TickWarp.MAX_FACTOR))
+                    .executes(ctx -> {
+                        TickWarp.setFactor(IntegerArgumentType.getInteger(ctx, "factor"));
+                        int f = TickWarp.factor();
+                        ctx.getSource().sendSuccess(() -> Component.literal("World speed set to x" + f), true);
+                        return f;
+                    }))
+            )
+
             // /millenaire showcase [andstop] - 从世界出生点起把所有佈局模板的村庄排成网格（用于超平坦展示世界）
             .then(Commands.literal("showcase")
                 .executes(ctx -> showcase(ctx, false))

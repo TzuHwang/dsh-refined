@@ -77,6 +77,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 1600)
     public static void villagersWorkAtWorkPoints(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "villagersWorkAtWorkPoints")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 4400));
         setForced(level, centre, true);
@@ -116,10 +119,14 @@ public class VillageGrowthTests {
             }
         }
         level.setDayTime(1000);
+        // 等待村民工作 1400 tick：期间世界加速 10 倍
+        int previousSpeed = com.jasoncian.millenaire_rewrite.command.TickWarp.factor();
+        com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(10);
         MillenaireRewrite.LOGGER.info("[gametest] work: {} soils, {} trees, workers {}", soils.size(), trees.size(),
             workers.stream().map(v -> v.getVillagerType()).toList());
 
         helper.runAtTickTime(1400, () -> {
+            com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(previousSpeed);
             long harvested = soils.stream().filter(s -> {
                 var crop = level.getBlockState(s.above());
                 return crop.getBlock() instanceof net.minecraft.world.level.block.CropBlock cb && !cb.isMaxAge(crop);
@@ -162,6 +169,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 100)
     public static void chestsFaceOutwardAndPair(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "chestsFaceOutwardAndPair")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 5000));
         setForced(level, centre, true);
@@ -226,6 +236,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 100)
     public static void surroundingsBlendIntoTerrain(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "surroundingsBlendIntoTerrain")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 5600));
         setForced(level, centre, true);
@@ -285,6 +298,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 100)
     public static void footprintContainsBuilding(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "footprintContainsBuilding")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 3800));
         setForced(level, centre, true);
@@ -331,6 +347,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 100)
     public static void foundationFillsDeepWater(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "foundationFillsDeepWater")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BlockPos corner = helper.absolutePos(new BlockPos(0, 0, 3200));
         setForced(level, corner, true);
@@ -377,6 +396,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty")
     public static void siteSelectionRejectsFrozenWater(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "siteSelectionRejectsFrozenWater")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BlockPos corner = helper.absolutePos(new BlockPos(0, 0, 2600));
         setForced(level, corner, true);
@@ -407,6 +429,9 @@ public class VillageGrowthTests {
 
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void villageGrowsWithoutOverlaps(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "villageGrowsWithoutOverlaps")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         Village village = createVillage(helper, 1400, Culture.NORMAN);
         VillageGrowth growth = village.getGrowth();
@@ -450,6 +475,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void byzantineFortressKeepsPathsThroughUpgrades(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "byzantineFortressKeepsPathsThroughUpgrades")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         Village village = createVillage(helper, 6200, Culture.BYZANTINE, "fortress");
         VillageGrowth growth = village.getGrowth();
@@ -477,6 +505,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void byzantineKastronKeepsPathsThroughUpgrades(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "byzantineKastronKeepsPathsThroughUpgrades")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         Village village = createVillage(helper, 6800, Culture.BYZANTINE, "kastron");
         VillageGrowth growth = village.getGrowth();
@@ -504,6 +535,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void byzantineChurchKeepsPathsThroughUpgrades(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "byzantineChurchKeepsPathsThroughUpgrades")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         Village village = createVillage(helper, 7400, Culture.BYZANTINE, "church");
         VillageGrowth growth = village.getGrowth();
@@ -531,6 +565,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void normanLayoutVillageGrows(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "normanLayoutVillageGrows")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         Village village = createVillage(helper, 9200, Culture.NORMAN, "manor");
         VillageGrowth growth = village.getGrowth();
@@ -562,10 +599,37 @@ public class VillageGrowthTests {
     }
 
     /**
+     * /millenaire speed：加速 5 倍时，世界时间前进 100 tick 只需约 20 个服务器 tick
+     * （GameTest 的计时用世界时间，所以加速也能缩短测试）
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void tickWarpSpeedsUpWorld(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "tickWarpSpeedsUpWorld")) {
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+        int startServerTick = level.getServer().getTickCount();
+        int previous = com.jasoncian.millenaire_rewrite.command.TickWarp.factor();
+        com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(5);
+        helper.runAtTickTime(100, () -> {
+            com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(previous);
+            int serverTicks = level.getServer().getTickCount() - startServerTick;
+            MillenaireRewrite.LOGGER.info("[gametest] warp x5: 100 world ticks took {} server ticks", serverTicks);
+            if (serverTicks > 40) {
+                helper.fail("100 world ticks took " + serverTicks + " server ticks at x5");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
      * 子建筑叠在母建筑上建造，不会清掉母建筑（拜占庭教堂的圣所、仓库、学校等）
      */
     @GameTest(template = "empty", timeoutTicks = 100)
     public static void subBuildingsKeepParent(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "subBuildingsKeepParent")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 11600));
         setForced(level, centre, true);
@@ -616,36 +680,57 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void normanLayoutTemplatesAllGrow(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "normanLayoutTemplatesAllGrow")) {
+            return;
+        }
         growEveryTemplate(helper, 10400, Culture.NORMAN, "norman", "manor");
     }
 
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void byzantineLayoutTemplatesAllGrow(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "byzantineLayoutTemplatesAllGrow")) {
+            return;
+        }
         growEveryTemplate(helper, 11000, Culture.BYZANTINE, "byzantines", "kastron");
     }
 
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void indianLayoutTemplatesAllGrow(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "indianLayoutTemplatesAllGrow")) {
+            return;
+        }
         growEveryTemplate(helper, 12200, Culture.INDIAN, "indian", "chiefhouse");
     }
 
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void inuitLayoutTemplatesAllGrow(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "inuitLayoutTemplatesAllGrow")) {
+            return;
+        }
         growEveryTemplate(helper, 12800, Culture.INUIT, "inuits", "tannery");
     }
 
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void japaneseLayoutTemplatesAllGrow(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "japaneseLayoutTemplatesAllGrow")) {
+            return;
+        }
         growEveryTemplate(helper, 13400, Culture.JAPANESE, "japanese", "japanesepalace");
     }
 
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void mayanLayoutTemplatesAllGrow(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "mayanLayoutTemplatesAllGrow")) {
+            return;
+        }
         growEveryTemplate(helper, 14000, Culture.MAYAN, "mayan", "mayanpyramid");
     }
 
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void seljukLayoutTemplatesAllGrow(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "seljukLayoutTemplatesAllGrow")) {
+            return;
+        }
         growEveryTemplate(helper, 14600, Culture.SELJUK, "seljuk", "hamlettownhall");
     }
 
@@ -720,15 +805,56 @@ public class VillageGrowthTests {
     }
 
     /**
-     * 坡地上的佈局村庄：道路按坡度铺设（相邻路面高差不超过 1），建筑沿路排列，林中道路清除树木
+     * 坡地上的佈局村庄（每个诺曼模板各一次）：道路按坡度铺设（相邻路面高差不超过 1），
+     * 建筑沿路排列、门口接上街道，林中道路清除树干
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void normanLayoutOnHillside(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "normanLayoutOnHillside")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(new BlockPos(0, 0, 9800));
         setForced(level, centre, true);
+        var templates = com.jasoncian.millenaire_rewrite.village.layout.LayoutTemplate.forCulture("norman");
+        List<String> problems = new java.util.ArrayList<>();
+        for (int t = 0; t < templates.size(); t++) {
+            var template = templates.get(t);
+            helper.runAtTickTime(1 + t * 10, () -> {
+                buildHillside(level, centre);
+                String townHall = template.townHalls.isEmpty() ? "manor" : template.townHalls.get(0);
+                com.jasoncian.millenaire_rewrite.village.layout.VillageLayout.forcedTemplate = template.name;
+                Village village;
+                try {
+                    village = VillageGenerator.forceGenerateVillage(level, centre, Culture.NORMAN, townHall);
+                } finally {
+                    com.jasoncian.millenaire_rewrite.village.layout.VillageLayout.forcedTemplate = null;
+                }
+                if (village == null) {
+                    problems.add(template.name + ": generation failed");
+                    return;
+                }
+                try {
+                    checkHillsideVillage(level, village, template.name, problems);
+                } finally {
+                    VillageManager.get(level).removeVillage(village);
+                    village.getActiveVillagers().forEach(v -> v.discard());
+                }
+            });
+        }
+        helper.runAtTickTime(templates.size() * 10 + 5, () -> {
+            setForced(level, centre, false);
+            if (!problems.isEmpty()) {
+                helper.fail(String.join("; ", problems));
+            } else {
+                helper.succeed();
+            }
+        });
+    }
+
+    /** 平台上向东缓升的山坡（每 6 格升 1 格，最高 28 格）、东南的小丘，以及散布的树木 */
+    private static void buildHillside(ServerLevel level, BlockPos centre) {
         buildPlatform(level, centre);
-        // 向东缓升的山坡（每 6 格升 1 格，最高 28 格）、东南的小丘，以及散布的树木
         var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
         var grass = net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState();
         for (int dx = -PLATFORM_HALF_SIZE; dx <= PLATFORM_HALF_SIZE; dx++) {
@@ -757,67 +883,61 @@ public class VillageGrowthTests {
                 }
             }
         }
-        Village village = VillageGenerator.forceGenerateVillage(level, centre, Culture.NORMAN, "manor");
-        if (village == null) {
-            setForced(level, centre, false);
-            helper.fail("village generation failed");
+    }
+
+    private static void checkHillsideVillage(ServerLevel level, Village village, String name, List<String> problems) {
+        VillageGrowth growth = village.getGrowth();
+        if (growth.getLayout() == null) {
+            problems.add(name + ": no layout");
             return;
         }
-        VillageGrowth growth = village.getGrowth();
-        try {
-            if (growth.getLayout() == null) {
-                helper.fail("norman village has no layout");
-                return;
+        for (int i = 0; i < 25; i++) {
+            if (growth.forceNext(level) == null) {
+                break;
             }
-            for (int i = 0; i < 25; i++) {
-                if (growth.forceNext(level) == null) {
+        }
+        List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
+        // 佈局道路：相邻两格路面高差不超过 1，路上没有树干（林地的树冠伸到路上方是正常的）
+        int steep = 0;
+        int trees = 0;
+        java.util.Set<Long> road = new java.util.HashSet<>(growth.getLayout().roadCells());
+        road.retainAll(growth.getPathNetwork());
+        var heightmap = net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES;
+        for (long cell : road) {
+            int x = ChunkPos.getX(cell);
+            int z = ChunkPos.getZ(cell);
+            int y = level.getHeight(heightmap, x, z);
+            for (int[] d : new int[][] {{1, 0}, {0, 1}}) {
+                long n = ChunkPos.asLong(x + d[0], z + d[1]);
+                if (road.contains(n) && Math.abs(level.getHeight(heightmap, x + d[0], z + d[1]) - y) > 1) {
+                    steep++;
+                }
+            }
+            for (int dy = 0; dy < 10; dy++) {
+                if (level.getBlockState(new BlockPos(x, y + dy, z)).is(net.minecraft.tags.BlockTags.LOGS)) {
+                    trees++;
                     break;
                 }
             }
-            List<VillageGrowth.PlacedBuilding> buildings = growth.getBuildings();
-            // 佈局道路：相邻两格路面高差不超过 1，路上没有树
-            int steep = 0;
-            int trees = 0;
-            java.util.Set<Long> road = new java.util.HashSet<>(growth.getLayout().roadCells());
-            road.retainAll(growth.getPathNetwork());
-            for (long cell : road) {
-                int x = ChunkPos.getX(cell);
-                int z = ChunkPos.getZ(cell);
-                int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                for (int[] d : new int[][] {{1, 0}, {0, 1}}) {
-                    long n = ChunkPos.asLong(x + d[0], z + d[1]);
-                    if (road.contains(n) && Math.abs(level.getHeight(
-                        net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + d[0], z + d[1]) - y) > 1) {
-                        steep++;
-                    }
-                }
-                for (int dy = 0; dy < 10; dy++) {
-                    var above = level.getBlockState(new BlockPos(x, y + dy, z));
-                    // 树干挡路才算；林地的树冠伸到路上方是正常的
-                    if (above.is(net.minecraft.tags.BlockTags.LOGS)) {
-                        trees++;
-                        break;
-                    }
-                }
-            }
-            MillenaireRewrite.LOGGER.info("[gametest] hillside {}: {} road cells, {} steep steps, {} under trees, buildings {}",
-                growth.getLayout().template, road.size(), steep, trees, buildings.stream().map(b -> b.key).toList());
-            dumpMap(level, growth, 40);
+        }
+        MillenaireRewrite.LOGGER.info("[gametest] hillside {}: {} road cells, {} steep steps, {} under trees, {} buildings",
+            name, road.size(), steep, trees, buildings.size());
+        try {
             assertNoOverlap(buildings);
             assertPathsConnected(level, village);
-            if (steep > 0) {
-                helper.fail(steep + " road steps are higher than 1 block");
-            }
-            if (trees > 0) {
-                helper.fail(trees + " road cells are under trees");
-            }
-            if (buildings.size() < 8) {
-                helper.fail("only " + buildings.size() + " buildings were placed on the hillside");
-            }
-        } finally {
-            cleanup(level, village);
+        } catch (GameTestAssertException e) {
+            dumpMap(level, growth, 40);
+            problems.add(name + ": " + e.getMessage());
         }
-        helper.succeed();
+        if (steep > 0) {
+            problems.add(name + ": " + steep + " road steps are higher than 1 block");
+        }
+        if (trees > 0) {
+            problems.add(name + ": " + trees + " road cells are under trees");
+        }
+        if (buildings.size() < 8) {
+            problems.add(name + ": only " + buildings.size() + " buildings were placed on the hillside");
+        }
     }
 
     /**
@@ -825,6 +945,9 @@ public class VillageGrowthTests {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void indianPalaceKeepsPathsThroughUpgrades(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "indianPalaceKeepsPathsThroughUpgrades")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         Village village = createVillage(helper, 8000, Culture.INDIAN, "palace");
         VillageGrowth growth = village.getGrowth();
@@ -963,6 +1086,22 @@ public class VillageGrowthTests {
                         .append(pathCells.containsKey(ChunkPos.asLong(nx, nz)) ? "*" : "");
                 }
                 MillenaireRewrite.LOGGER.info("[gametest] orphan {} {}:{}", x, z, sb);
+                // 周围 7x7：地面高度（相对孤立格），P=路网格 p=路面但不在路网 #=建筑占地
+                StringBuilder grid = new StringBuilder();
+                int cy = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                for (int dz = -3; dz <= 3; dz++) {
+                    grid.append("\n   ");
+                    for (int dx = -3; dx <= 3; dx++) {
+                        int gx = x + dx;
+                        int gz = z + dz;
+                        int gy = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, gx, gz);
+                        long k = ChunkPos.asLong(gx, gz);
+                        char m = village.getGrowth().getPathNetwork().contains(k) ? 'P' : pathCells.containsKey(k) ? 'p'
+                            : com.jasoncian.millenaire_rewrite.village.VillagePaths.insideAnyFootprint(buildings, gx, gz) ? '#' : '.';
+                        grid.append(String.format("%+3d%c ", gy - cy, m));
+                    }
+                }
+                MillenaireRewrite.LOGGER.info("[gametest] around orphan:{}", grid);
             });
             throw new GameTestAssertException(orphaned + " path network cells are cut off from the town hall");
         }
@@ -1004,6 +1143,9 @@ public class VillageGrowthTests {
 
     @GameTest(template = "empty", timeoutTicks = 3000)
     public static void constructionCompletesOverTime(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "constructionCompletesOverTime")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         Village village = createVillage(helper, 2000, Culture.NORMAN);
         VillageGrowth growth = village.getGrowth();

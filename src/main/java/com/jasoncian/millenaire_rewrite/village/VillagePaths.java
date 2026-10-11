@@ -87,6 +87,21 @@ public final class VillagePaths {
             return -1;
         }
         rampDoorSteps(level, growth, route);
+        for (int i = 1; i < route.size(); i++) {
+            if (Math.abs(route.get(i).getY() - route.get(i - 1).getY()) > 1) {
+                StringBuilder sb = new StringBuilder();
+                for (BlockPos r : route) {
+                    sb.append(r.toShortString()).append(growth.getPathNetwork().contains(key(r.getX(), r.getZ())) ? "N" : "")
+                        .append(growth.getLayout() != null && growth.getLayout().roadCells().contains(key(r.getX(), r.getZ())) ? "L" : "")
+                        .append(insideAnyFootprint(growth.getBuildings(), r.getX(), r.getZ()) ? "F" : "")
+                        .append('=').append(net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                            .getKey(level.getBlockState(r).getBlock()).getPath()).append("; ");
+                }
+                MillenaireRewrite.LOGGER.debug("[pathdebug] {} step at {}: start {} goal {} route {}", building.key, i,
+                    start.toShortString(), hallStart.toShortString(), sb);
+                break;
+            }
+        }
         int placed = 0;
         for (BlockPos surface : route) {
             BlockState current = level.getBlockState(surface);
@@ -133,7 +148,15 @@ public final class VillagePaths {
             }
             heights[i] = heights[i - 1] + Integer.signum(diff);
         }
-        for (int i = n - 2; i >= 0; i--) {
+        // 从路线上第一个接到路网的格子往回修（起点 3 格内的路网会被寻路略过，路线可能沿着路网多走几格）
+        int join = n - 1;
+        for (int i = 1; i < n; i++) {
+            if (growth.getPathNetwork().contains(key(route.get(i).getX(), route.get(i).getZ()))) {
+                join = i;
+                break;
+            }
+        }
+        for (int i = join - 1; i >= 0; i--) {
             int diff = heights[i] - heights[i + 1];
             if (Math.abs(diff) <= 1 || growth.getPathNetwork().contains(key(route.get(i).getX(), route.get(i).getZ()))) {
                 break;
@@ -143,7 +166,9 @@ public final class VillagePaths {
         for (int i = 0; i < n; i++) {
             BlockPos old = route.get(i);
             int h = heights[i];
-            if (h == old.getY() || !isNaturalGround(level.getBlockState(old))) {
+            // 路网重建时这些格子可能已经铺成路面，也要能调整
+            BlockState current = level.getBlockState(old);
+            if (h == old.getY() || !isNaturalGround(current) && !isPath(current)) {
                 continue;
             }
             BlockState top = level.getBlockState(old);

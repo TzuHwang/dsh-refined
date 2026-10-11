@@ -33,6 +33,9 @@ public class VillagerBehaviourTests {
 
     @GameTest(template = "empty", timeoutTicks = NIGHT_CHECK_TICK + 200)
     public static void residentsStayInVillageAndSleepAtHome(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "residentsStayInVillageAndSleepAtHome")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         List<MillVillager> residents;
         BlockPos origin;

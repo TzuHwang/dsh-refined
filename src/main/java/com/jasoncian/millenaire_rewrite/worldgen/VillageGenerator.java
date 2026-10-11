@@ -303,6 +303,7 @@ public class VillageGenerator {
                 var hall = layout.townHall(level, plan);
                 pos = hall.origin();
                 orientation = hall.orientation();
+                layout = layout.withCentreY(pos.getY());
             }
             village.getGrowth().setLayout(layout);
             BuildingPlacer.Result result = BuildingPlacer.place(level, plan, pos, orientation);

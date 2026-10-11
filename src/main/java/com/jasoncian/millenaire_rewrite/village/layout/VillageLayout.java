@@ -73,6 +73,18 @@ public final class VillageLayout {
         }
     }
 
+    /**
+     * 同一个佈局，广场高度改为 y（地面上第一格空气）。市政厅落地后，广场对齐市政厅的地面，
+     * 门口才能平接广场，道路再从这个高度按坡度向外铺
+     */
+    public VillageLayout withCentreY(int y) {
+        VillageLayout copy = new VillageLayout(template, new BlockPos(centre.getX(), y, centre.getZ()), rotation, mirror);
+        for (int i = 0; i < occupied.size(); i++) {
+            copy.occupied.get(i).addAll(occupied.get(i));
+        }
+        return copy;
+    }
+
     // ================ 坐标变换 ================
 
     private int[] dir(int x, int z) {
@@ -254,14 +266,8 @@ public final class VillageLayout {
                     t += 2;
                     continue;
                 }
-                // 门前路面的高度：建筑地面尽量与道路齐平，街道才连贯
-                int roadX = a[0] + u[0] * (t + along / 2);
-                int roadZ = a[1] + u[1] * (t + along / 2);
-                int roadY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, roadX, roadZ);
-                if (Math.abs(roadY - ground) <= ALIGN_TO_ROAD) {
-                    ground = roadY;
-                }
-                BlockPos origin = originFor(plan, orientation, box, ground);
+                BlockPos origin = alignDoorWithRoad(level, plan, orientation, originFor(plan, orientation, box, ground),
+                    a, u, t + along / 2);
                 return new Placement(origin, orientation, BuildingPlacer.footprint(plan, origin, orientation), i, t,
                     t + along - 1);
             }
@@ -269,6 +275,32 @@ public final class VillageLayout {
                 plan.key, i, fr.tag(), along, depth, fr.end() - fr.start(), why[0], why[1], why[2]);
         }
         return null;
+    }
+
+    /**
+     * 让门口与门前的路面齐平：门口（道路起点）投影到道路中线上，取那里的路面高度，
+     * 建筑整体升降使门口的地面等于路面（相差不超过 ALIGN_TO_ROAD 时）。
+     * 街道沿坡度起伏时，门口不在建筑正中间也能接上街道，不会出现两格高的台阶。
+     *
+     * @param fallbackT 图纸没有道路起点时，用距道路起点 fallbackT 处的路面
+     */
+    private static BlockPos alignDoorWithRoad(ServerLevel level, BuildingPlan plan, int orientation, BlockPos origin,
+                                              int[] a, int[] u, int fallbackT) {
+        List<BlockPos> starts = BuildingPlacer.prepare(plan, origin, orientation).result.specialPoints
+            .getOrDefault("pathStartPos", List.of());
+        int t = fallbackT;
+        int doorOffset = 0;
+        if (!starts.isEmpty()) {
+            BlockPos door = starts.get(0);
+            t = (door.getX() - a[0]) * u[0] + (door.getZ() - a[1]) * u[1];
+            doorOffset = door.getY() - origin.getY();
+        }
+        int roadY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, a[0] + u[0] * t, a[1] + u[1] * t);
+        int y = roadY - doorOffset;
+        if (Math.abs(y - origin.getY()) > ALIGN_TO_ROAD) {
+            return origin;
+        }
+        return new BlockPos(origin.getX(), y, origin.getZ());
     }
 
     /**

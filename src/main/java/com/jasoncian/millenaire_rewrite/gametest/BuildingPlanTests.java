@@ -46,6 +46,9 @@ public class BuildingPlanTests {
      */
     @GameTest(template = "empty")
     public static void allTownHallPlansLoad(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "allTownHallPlansLoad")) {
+            return;
+        }
         List<String> failures = new ArrayList<>();
         int loaded = 0;
         for (Culture culture : Culture.values()) {
@@ -75,6 +78,9 @@ public class BuildingPlanTests {
      */
     @GameTest(template = "empty")
     public static void townHallResidentsValid(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "townHallResidentsValid")) {
+            return;
+        }
         java.nio.file.Path assets = net.minecraftforge.fml.ModList.get()
             .getModFileById(MillenaireRewrite.MOD_ID).getFile().findResource("assets", MillenaireRewrite.MOD_ID);
         List<String> problems = new ArrayList<>();
@@ -121,6 +127,9 @@ public class BuildingPlanTests {
      */
     @GameTest(template = "empty", timeoutTicks = 100)
     public static void manorResidentsSpawn(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "manorResidentsSpawn")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         try {
             BuildingPlan plan = BuildingPlan.load("norman", "manor", 'A', 0);
@@ -155,6 +164,9 @@ public class BuildingPlanTests {
      */
     @GameTest(template = "empty")
     public static void villageTypePickIsRandom(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "villageTypePickIsRandom")) {
+            return;
+        }
         java.util.Map<String, Integer> counts = new java.util.TreeMap<>();
         try {
             MillenaireRewrite.LOGGER.info("[gametest] norman village types: {}", VillageTypes.list(Culture.NORMAN));
@@ -178,6 +190,9 @@ public class BuildingPlanTests {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void townHallShapesSettled(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "townHallShapesSettled")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         List<String> problems = new ArrayList<>();
         int checked = 0;
@@ -224,6 +239,9 @@ public class BuildingPlanTests {
      */
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void manorDoorsAllOrientations(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "manorDoorsAllOrientations")) {
+            return;
+        }
         ServerLevel level = helper.getLevel();
         BuildingPlan plan;
         try {

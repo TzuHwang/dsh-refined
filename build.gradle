@@ -97,6 +97,10 @@ minecraft {
         gameTestServer {
             workingDirectory project.file('run-gametest')
             property 'forge.enabledGameTestNamespaces', mod_id
+            // MILL_TESTS=名称片段,名称片段 只运行名称包含这些片段的测试（其余直接通过），见 tools/run-gametests.sh
+            property 'millenaire.tests', System.getenv('MILL_TESTS') ?: ''
+            // 测试服务器的世界加速倍数（GameTest 按世界时间计时；全部测试一起跑时加速反而更慢，默认不加速）
+            property 'millenaire.warp', System.getenv('MILL_WARP') ?: '1'
         }
 
         data {
