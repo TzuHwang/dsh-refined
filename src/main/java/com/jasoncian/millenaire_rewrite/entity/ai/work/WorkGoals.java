@@ -49,8 +49,13 @@ public final class WorkGoals {
                 case "bringbackresourceshome" -> goals.add(new GoalDeliver());
                 default -> {
                     WorkGoalConfigs.WorkGoalConfig work = WorkGoalConfigs.get(name);
+                    var generic = com.jasoncian.millenaire_rewrite.entity.ai.generic.GenericGoalConfig.get(name);
+                    var genericGoal = generic == null ? null
+                        : com.jasoncian.millenaire_rewrite.entity.ai.generic.GenericGoalTypes.create(generic);
                     if (work != null) {
                         goals.add(work.kind() == WorkGoalConfigs.Kind.HARVEST ? new GoalHarvest(work) : new GoalMine(work));
+                    } else if (genericGoal != null) {
+                        goals.add(genericGoal);
                     } else if (MISSING.add(name)) {
                         MillenaireRewrite.LOGGER.info("Villager goal not implemented yet: {} ({})", name, type);
                     }

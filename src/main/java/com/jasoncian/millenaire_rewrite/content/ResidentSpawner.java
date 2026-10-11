@@ -51,6 +51,15 @@ public final class ResidentSpawner {
         return spawned;
     }
 
+    /**
+     * 生成一个指定类型的村民，家在 home（测试和指令用）
+     */
+    @javax.annotation.Nullable
+    public static MillVillager spawnResident(ServerLevel level, Village village, String culture, String typeKey,
+                                             BlockPos home) throws java.io.IOException {
+        return spawn(level, village, VillagerTypes.get(culture, typeKey), home);
+    }
+
     private static MillVillager spawn(ServerLevel level, Village village, VillagerTypes.VillagerType type,
                                       BlockPos home) {
         MillVillager villager = ModEntities.MILL_VILLAGER.get().create(level);

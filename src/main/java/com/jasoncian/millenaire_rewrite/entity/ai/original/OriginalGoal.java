@@ -22,6 +22,9 @@ public abstract class OriginalGoal extends MillGoal {
 
     protected OriginalGoal(String key) {
         super(key);
+        // 原版 Goal 默认只在白天做（睡觉等自行改为夜间）
+        this.canBeDoneInDayTime = true;
+        this.canBeDoneAtNight = false;
     }
 
     @Override

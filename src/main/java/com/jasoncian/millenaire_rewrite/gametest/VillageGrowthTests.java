@@ -75,7 +75,7 @@ public class VillageGrowthTests {
     /**
      * 村民在自家建筑的工作点工作：农夫收成、伐木工砍树林的树、矿工采石
      */
-    @GameTest(template = "empty", timeoutTicks = 1600)
+    @GameTest(template = "empty", timeoutTicks = 1600, batch = "time_work")
     public static void villagersWorkAtWorkPoints(GameTestHelper helper) {
         if (TestFilter.skip(helper, "villagersWorkAtWorkPoints")) {
             return;

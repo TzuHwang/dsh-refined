@@ -936,6 +936,38 @@ public class MillVillager extends PathfinderMob {
     /**
      * 添加物品到库存
      */
+    // ---- 以原版商品（Goods）计的库存 ----
+
+    public int countGood(com.jasoncian.millenaire_rewrite.economy.Goods.Good good) {
+        int count = 0;
+        for (Map.Entry<InvItem, Integer> e : inventory.entrySet()) {
+            if (good.matches(e.getKey().toItemStack(1))) {
+                count += e.getValue();
+            }
+        }
+        return count;
+    }
+
+    /**
+     * @return 实际取出的数量
+     */
+    public int takeGood(com.jasoncian.millenaire_rewrite.economy.Goods.Good good, int count) {
+        int taken = 0;
+        for (InvItem item : new java.util.ArrayList<>(inventory.keySet())) {
+            if (taken >= count) {
+                break;
+            }
+            if (good.matches(item.toItemStack(1))) {
+                taken += takeFromInventory(item, count - taken);
+            }
+        }
+        return taken;
+    }
+
+    public void addGood(com.jasoncian.millenaire_rewrite.economy.Goods.Good good, int count) {
+        addToInventory(good.create(1), count);
+    }
+
     public void addToInventory(Item item, int count) {
         addToInventory(InvItem.create(item), count);
     }
