@@ -1,0 +1,21 @@
+{
+  "_comment": "台地村：两条平行的东西向街道像梯田一样沿等高线排列，房屋面向南边的街道（向阳），由一条南北向坡道相连",
+  "weight": 10,
+  "plaza": 7,
+  "roads": [
+    {"from": [0, 8],    "to": [0, 62],   "width": 3},
+    {"from": [-72, 30], "to": [72, 30],  "width": 3},
+    {"from": [-72, 62], "to": [72, 62],  "width": 3},
+    {"from": [-8, 0],   "to": [-40, 0],  "width": 3},
+    {"from": [8, 0],    "to": [40, 0],   "width": 3}
+  ],
+  "frontages": [
+    {"road": 3, "side": "both",  "start": 2,  "end": 30,  "depth": 26, "tag": "plaza"},
+    {"road": 4, "side": "both",  "start": 2,  "end": 30,  "depth": 26, "tag": "plaza"},
+    {"road": 0, "side": "both",  "start": 2,  "end": 18,  "depth": 18, "tag": "plaza"},
+    {"road": 1, "side": "left",  "start": 0,  "end": 144, "depth": 18, "tag": "house"},
+    {"road": 1, "side": "right", "start": 0,  "end": 144, "depth": 12, "tag": "house"},
+    {"road": 2, "side": "left",  "start": 0,  "end": 144, "depth": 13, "tag": "house"},
+    {"road": 2, "side": "right", "start": 0,  "end": 144, "depth": 26, "tag": "field"}
+  ]
+}

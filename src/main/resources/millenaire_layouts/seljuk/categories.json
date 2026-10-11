@@ -1,0 +1,4 @@
+{
+  "plaza": ["mosque", "smallmosque", "market", "cesme", "well", "bigwell", "gölgealti", "abdesthane", "hamambath", "inn", "node", "passnode", "flowerplant", "flowerplantsmall"],
+  "field": ["wheatpaddy", "sheepfarm", "cowfarm", "olivefarm", "pistachiotrees", "sugarcanefarm", "cottonfarm", "cottonfield", "mill", "fishery", "brick", "mine_brick", "lumbermanshouse"]
+}

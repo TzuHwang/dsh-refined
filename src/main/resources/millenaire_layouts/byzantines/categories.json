@@ -1,0 +1,6 @@
+{
+  "plaza": ["chapel", "cross", "market", "taverna", "inn", "presbytery", "archives", "garden", "pergola", "theatre", "temple"],
+  "field": ["pinegrove", "acaciagrove", "pinegrovesmall", "acaciagrovesmall", "sheepfarm", "fishfarm", "mine", "sandpit",
+            "olivetree", "vineyard", "wheatfield", "carrotfield", "farm", "silkfarm", "windmill", "woodcutter",
+            "playersmallplot", "playerlargeplot", "playerhugeplot"]
+}

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "millenaire_rewrite:block/town_hall",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "millenaire_rewrite:block/town_hall"
+    },
+    "facing=south": {
+      "model": "millenaire_rewrite:block/town_hall",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "millenaire_rewrite:block/town_hall",
+      "y": 270
+    }
+  }
+}

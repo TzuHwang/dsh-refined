@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/icebrick",
+    "side": "millenaire_rewrite:block/icebrick",
+    "top": "millenaire_rewrite:block/icebrick"
+  }
+}

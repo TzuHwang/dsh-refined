@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "millenaire_rewrite:block/norman_stone_slab"
+    },
+    "type=double": {
+      "model": "millenaire_rewrite:block/norman_stone"
+    },
+    "type=top": {
+      "model": "millenaire_rewrite:block/norman_stone_slab_top"
+    }
+  }
+}

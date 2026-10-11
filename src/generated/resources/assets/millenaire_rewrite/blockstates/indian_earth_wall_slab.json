@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "millenaire_rewrite:block/indian_earth_wall_slab"
+    },
+    "type=double": {
+      "model": "millenaire_rewrite:block/indian_earth_wall"
+    },
+    "type=top": {
+      "model": "millenaire_rewrite:block/indian_earth_wall_slab_top"
+    }
+  }
+}

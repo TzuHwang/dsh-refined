@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "age=0": {
+      "model": "millenaire_rewrite:block/leaves_appletree_age0"
+    },
+    "age=1": {
+      "model": "millenaire_rewrite:block/leaves_appletree_age1"
+    },
+    "age=2": {
+      "model": "millenaire_rewrite:block/leaves_appletree_age2"
+    },
+    "age=3": {
+      "model": "millenaire_rewrite:block/leaves_appletree_age3"
+    }
+  }
+}

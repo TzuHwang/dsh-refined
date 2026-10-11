@@ -1,0 +1,21 @@
+{
+  "_comment": "十字广场：两条大道在仪式广场交会",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10], "to": [0, 72], "width": 3},
+    {"from": [-10, 0], "to": [-72, 0], "width": 3},
+    {"from": [10, 0], "to": [72, 0], "width": 3},
+    {"from": [-64, 43], "to": [64, 43], "width": 3}
+  ],
+  "frontages": [
+    {"road": 1, "side": "both", "start": 2, "end": 28, "depth": 24, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2, "end": 28, "depth": 24, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 2, "end": 30, "depth": 16, "tag": "house"},
+    {"road": 1, "side": "both", "start": 30, "end": 60, "depth": 16, "tag": "house"},
+    {"road": 2, "side": "both", "start": 30, "end": 60, "depth": 16, "tag": "house"},
+    {"road": 0, "side": "both", "start": 36, "end": 60, "depth": 16, "tag": "house"},
+    {"road": 3, "side": "both", "start": 0, "end": 36, "depth": 20, "tag": "field"},
+    {"road": 3, "side": "both", "start": 92, "end": 128, "depth": 20, "tag": "field"}
+  ]
+}

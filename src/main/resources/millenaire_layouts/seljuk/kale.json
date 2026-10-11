@@ -1,0 +1,28 @@
+{
+  "_comment": "城堡（kale）：环城路围住宫殿和广场，环内住宅，环外田地",
+  "weight": 30,
+  "townhalls": ["sarayfort", "sarayfortplayer"],
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10], "to": [0, 54], "width": 3},
+    {"from": [-54, 54], "to": [54, 54], "width": 3},
+    {"from": [-54, -55], "to": [-54, 54], "width": 3},
+    {"from": [54, -55], "to": [54, 54], "width": 3},
+    {"from": [-54, -55], "to": [54, -55], "width": 3},
+    {"from": [-10, 0], "to": [-54, 0], "width": 3},
+    {"from": [10, 0], "to": [54, 0], "width": 3}
+  ],
+  "frontages": [
+    {"road": 5, "side": "both", "start": 2, "end": 22, "depth": 26, "tag": "plaza"},
+    {"road": 6, "side": "both", "start": 2, "end": 22, "depth": 26, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 2, "end": 41, "depth": 18, "tag": "house"},
+    {"road": 2, "side": "left", "start": 2, "end": 107, "depth": 18, "tag": "house"},
+    {"road": 3, "side": "right", "start": 2, "end": 107, "depth": 18, "tag": "house"},
+    {"road": 1, "side": "left", "start": 2, "end": 106, "depth": 18, "tag": "house"},
+    {"road": 4, "side": "right", "start": 2, "end": 106, "depth": 18, "tag": "house"},
+    {"road": 2, "side": "right", "start": 2, "end": 107, "depth": 26, "tag": "field"},
+    {"road": 3, "side": "left", "start": 2, "end": 107, "depth": 26, "tag": "field"},
+    {"road": 1, "side": "right", "start": 2, "end": 106, "depth": 26, "tag": "field"},
+    {"road": 4, "side": "left", "start": 2, "end": 106, "depth": 26, "tag": "field"}
+  ]
+}

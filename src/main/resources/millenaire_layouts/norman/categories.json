@@ -1,0 +1,5 @@
+{
+  "plaza": ["church", "market", "largefountain", "fountain", "well", "tavern", "inn", "presbytery", "guesthouse", "archives"],
+  "field": ["farm", "grove", "lumbermanhut", "largeorchard", "smallorchard", "cattlefarm", "sheepchickenfarm", "pigfarm",
+            "chickenfarmnorm", "quarry", "playersmallfield", "playerlargefield", "playerhugefield"]
+}

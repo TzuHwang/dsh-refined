@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "millenaire_rewrite:block/planks_oak",
+    "east": "millenaire_rewrite:block/crafting_table_side",
+    "north": "millenaire_rewrite:block/crafting_table_front",
+    "particle": "millenaire_rewrite:block/crafting_table_front",
+    "south": "millenaire_rewrite:block/crafting_table_side",
+    "up": "millenaire_rewrite:block/crafting_table_top",
+    "west": "millenaire_rewrite:block/crafting_table_front"
+  }
+}

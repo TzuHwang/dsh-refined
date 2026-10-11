@@ -1,0 +1,21 @@
+{
+  "_comment": "十字路村（Kreuzdorf）：市政厅在广场北侧，南北主街与东西街交于广场，南边一条东西向的田间小路",
+  "weight": 10,
+  "plaza": 7,
+  "roads": [
+    {"from": [0, 8],   "to": [0, 72],  "width": 3},
+    {"from": [-8, 0],  "to": [-72, 0], "width": 3},
+    {"from": [8, 0],   "to": [72, 0],  "width": 3},
+    {"from": [-64, 42], "to": [64, 42], "width": 3}
+  ],
+  "frontages": [
+    {"road": 1, "side": "both", "start": 2,  "end": 30, "depth": 28, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2,  "end": 30, "depth": 28, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 2,  "end": 31, "depth": 20, "tag": "house"},
+    {"road": 1, "side": "both", "start": 32, "end": 64, "depth": 20, "tag": "house"},
+    {"road": 2, "side": "both", "start": 32, "end": 64, "depth": 20, "tag": "house"},
+    {"road": 0, "side": "both", "start": 37, "end": 64, "depth": 20, "tag": "house"},
+    {"road": 3, "side": "both", "start": 0,  "end": 42, "depth": 26, "tag": "field"},
+    {"road": 3, "side": "both", "start": 86, "end": 128, "depth": 26, "tag": "field"}
+  ]
+}

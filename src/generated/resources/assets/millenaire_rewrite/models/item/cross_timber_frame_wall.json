@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/wall_inventory",
+  "textures": {
+    "wall": "millenaire_rewrite:block/cross_timber_frame"
+  }
+}

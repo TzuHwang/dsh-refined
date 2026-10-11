@@ -1,0 +1,21 @@
+{
+  "_comment": "宿场町：两条街道在广场交会，路口有旅店和市场",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [0, 10], "to": [0, 86], "width": 3},
+    {"from": [-10, 0], "to": [-86, 0], "width": 3},
+    {"from": [10, 0], "to": [86, 0], "width": 3},
+    {"from": [-78, 51], "to": [78, 51], "width": 3}
+  ],
+  "frontages": [
+    {"road": 1, "side": "both", "start": 2, "end": 47, "depth": 32, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2, "end": 47, "depth": 32, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 2, "end": 38, "depth": 20, "tag": "house"},
+    {"road": 1, "side": "both", "start": 49, "end": 74, "depth": 20, "tag": "house"},
+    {"road": 2, "side": "both", "start": 49, "end": 74, "depth": 20, "tag": "house"},
+    {"road": 0, "side": "both", "start": 44, "end": 74, "depth": 20, "tag": "house"},
+    {"road": 3, "side": "both", "start": 0, "end": 31, "depth": 30, "tag": "field"},
+    {"road": 3, "side": "both", "start": 125, "end": 156, "depth": 30, "tag": "field"}
+  ]
+}

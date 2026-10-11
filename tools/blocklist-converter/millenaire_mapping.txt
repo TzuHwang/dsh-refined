@@ -1,0 +1,207 @@
+// Millénaire 1.12 方块 -> 1.20.1 方块
+// 语法见 BlocklistConverter.convertMapped：
+//   name;metaOrProps = ns:block[k=v]   精确匹配
+//   name = ns:block                    保留原属性
+//   name = ns:block[]                  丢弃原属性
+//   name = ns:block{a,b>c}             只保留列出的属性，b 改名为 c
+// 没有对应 1.20.1 方块的，暂用外观相近的原版方块代替。
+
+// ---------- 原版：1.12 双高植物下半部（转换表中缺失） ----------
+minecraft:double_plant;facing=north,half=lower,variant=sunflower = minecraft:sunflower[half=lower]
+minecraft:double_plant;facing=north,half=lower,variant=syringa = minecraft:lilac[half=lower]
+minecraft:double_plant;facing=north,half=lower,variant=double_fern = minecraft:large_fern[half=lower]
+minecraft:double_plant;facing=north,half=lower,variant=double_rose = minecraft:rose_bush[half=lower]
+
+// ---------- 装饰木材 / 石材 / 土 ----------
+millenaire:wood_deco;0 = millenaire_rewrite:simple_timber_frame
+millenaire:wood_deco;1 = millenaire_rewrite:cross_timber_frame
+millenaire:wood_deco;2 = millenaire_rewrite:thatch
+millenaire:wood_deco;3 = minecraft:beehive[facing=north]
+millenaire:stone_deco;0 = millenaire_rewrite:mud_bricks
+millenaire:stone_deco;2 = millenaire_rewrite:mayan_gold_block
+millenaire:stone_deco;5 = minecraft:quartz_bricks
+millenaire:stone_deco;6 = minecraft:chiseled_quartz_block
+millenaire:stone_deco;variant=byzantine_mosaic_blue = millenaire_rewrite:byzantine_mosaic_blue
+millenaire:stone_deco;variant=byzantine_mosaic_red = millenaire_rewrite:byzantine_mosaic_red
+millenaire:earth_deco = millenaire_rewrite:earth_wall[]
+millenaire:extended_mud_brick;variant=mudbrick_smooth = millenaire_rewrite:plaster_block
+millenaire:extended_mud_brick = millenaire_rewrite:mud_bricks[]
+millenaire:paper_wall = millenaire_rewrite:paper_wall_block[]
+millenaire:icebrick = millenaire_rewrite:ice_bricks[]
+millenaire:snowbrick = millenaire_rewrite:snow_bricks[]
+millenaire:snowwall = millenaire_rewrite:snow_bricks_wall[]
+millenaire:sod = minecraft:grass_block[]
+
+// ---------- 台阶（1.12 half -> 1.20 type） ----------
+millenaire:slab_stone_deco;half=bottom,variant=mudbrick = millenaire_rewrite:mud_bricks_slab[type=bottom]
+millenaire:slab_stone_deco;half=top,variant=mudbrick = millenaire_rewrite:mud_bricks_slab[type=top]
+millenaire:slab_stone_deco;half=bottom,variant=cookedbrick = millenaire_rewrite:cooked_bricks_slab[type=bottom]
+millenaire:slab_stone_deco;half=top,variant=cookedbrick = millenaire_rewrite:cooked_bricks_slab[type=top]
+millenaire:slab_wood_deco;half=bottom,variant=thatch = millenaire_rewrite:thatch_slab[type=bottom]
+millenaire:slab_wood_deco;half=top,variant=thatch = millenaire_rewrite:thatch_slab[type=top]
+millenaire:slab_wood_deco;half=bottom,variant=timberframeplain = millenaire_rewrite:timber_frame_slab[type=bottom]
+millenaire:slab_wood_deco;half=top,variant=timberframeplain = millenaire_rewrite:timber_frame_slab[type=top]
+
+// ---------- 楼梯 / 墙 ----------
+millenaire:stairs_mudbrick = millenaire_rewrite:mud_bricks_stairs{facing,half}
+millenaire:stairs_thatch = millenaire_rewrite:thatch_stairs{facing,half}
+millenaire:stairs_timberframe = millenaire_rewrite:timber_frame_stairs{facing,half}
+millenaire:wall_mud_brick = millenaire_rewrite:mud_bricks_wall[]
+
+// ---------- 瓦片 ----------
+millenaire:byzantine_tiles = millenaire_rewrite:byzantine_tiles[]
+millenaire:byzantine_stone_tiles = millenaire_rewrite:byzantine_tiles[]
+millenaire:byzantine_sandstone_tiles = millenaire_rewrite:byzantine_tiles[]
+millenaire:byzantine_stone_ornament = millenaire_rewrite:byzantine_tiles[]
+millenaire:byzantine_sandstone_ornament = millenaire_rewrite:byzantine_tiles[]
+millenaire:byzantine_tiles_slab = millenaire_rewrite:byzantine_tiles_slab{half>type}
+millenaire:stairs_byzantine_tiles = millenaire_rewrite:byzantine_tiles_stairs{facing,half}
+millenaire:gray_tiles = millenaire_rewrite:gray_tiles[]
+millenaire:gray_tiles_slab = millenaire_rewrite:gray_tiles_slab{half>type}
+millenaire:stairs_gray_tiles = millenaire_rewrite:gray_tiles_stairs{facing,half}
+millenaire:green_tiles = millenaire_rewrite:green_tiles[]
+millenaire:green_tiles_slab = millenaire_rewrite:green_tiles_slab{half>type}
+millenaire:stairs_green_tiles = millenaire_rewrite:green_tiles_stairs{facing,half}
+millenaire:red_tiles = millenaire_rewrite:red_tiles[]
+millenaire:red_tiles_slab = millenaire_rewrite:red_tiles_slab{half>type}
+millenaire:stairs_red_tiles = millenaire_rewrite:red_tiles_stairs{facing,half}
+
+// ---------- 雕花砂岩（暂用原版雕纹砂岩） ----------
+millenaire:sandstone_carved = minecraft:chiseled_sandstone[]
+millenaire:sandstone_ochre_carved = minecraft:chiseled_sandstone[]
+millenaire:sandstone_red_carved = minecraft:chiseled_red_sandstone[]
+millenaire:stairs_sandstone_carved = minecraft:sandstone_stairs{facing,half}
+millenaire:stairs_sandstone_ochre_carved = minecraft:sandstone_stairs{facing,half}
+millenaire:stairs_sandstone_red_carved = minecraft:red_sandstone_stairs{facing,half}
+millenaire:slab_sandstone_carved = minecraft:sandstone_slab{half>type}
+millenaire:slab_sandstone_ochre_carved = minecraft:sandstone_slab{half>type}
+millenaire:slab_sandstone_red_carved = minecraft:red_sandstone_slab{half>type}
+millenaire:wall_sandstone_carved = minecraft:sandstone_wall[]
+millenaire:wall_sandstone_ochre_carved = minecraft:sandstone_wall[]
+millenaire:wall_sandstone_red_carved = minecraft:red_sandstone_wall[]
+
+// ---------- 彩绘砖（暂用原版陶瓦） ----------
+millenaire:painted_brick_white = minecraft:white_terracotta[]
+millenaire:painted_brick_orange = minecraft:orange_terracotta[]
+millenaire:painted_brick_magenta = minecraft:magenta_terracotta[]
+millenaire:painted_brick_light_blue = minecraft:light_blue_terracotta[]
+millenaire:painted_brick_yellow = minecraft:yellow_terracotta[]
+millenaire:painted_brick_lime = minecraft:lime_terracotta[]
+millenaire:painted_brick_pink = minecraft:pink_terracotta[]
+millenaire:painted_brick_gray = minecraft:gray_terracotta[]
+millenaire:painted_brick_silver = minecraft:light_gray_terracotta[]
+millenaire:painted_brick_cyan = minecraft:cyan_terracotta[]
+millenaire:painted_brick_purple = minecraft:purple_terracotta[]
+millenaire:painted_brick_blue = minecraft:blue_terracotta[]
+millenaire:painted_brick_brown = minecraft:brown_terracotta[]
+millenaire:painted_brick_green = minecraft:green_terracotta[]
+millenaire:painted_brick_red = minecraft:red_terracotta[]
+millenaire:painted_brick_black = minecraft:black_terracotta[]
+millenaire:painted_brick_decorated_white = minecraft:white_glazed_terracotta[]
+millenaire:painted_brick_decorated_orange = minecraft:orange_glazed_terracotta[]
+millenaire:painted_brick_decorated_magenta = minecraft:magenta_glazed_terracotta[]
+millenaire:painted_brick_decorated_light_blue = minecraft:light_blue_glazed_terracotta[]
+millenaire:painted_brick_decorated_yellow = minecraft:yellow_glazed_terracotta[]
+millenaire:painted_brick_decorated_lime = minecraft:lime_glazed_terracotta[]
+millenaire:painted_brick_decorated_pink = minecraft:pink_glazed_terracotta[]
+millenaire:painted_brick_decorated_gray = minecraft:gray_glazed_terracotta[]
+millenaire:painted_brick_decorated_silver = minecraft:light_gray_glazed_terracotta[]
+millenaire:painted_brick_decorated_cyan = minecraft:cyan_glazed_terracotta[]
+millenaire:painted_brick_decorated_purple = minecraft:purple_glazed_terracotta[]
+millenaire:painted_brick_decorated_blue = minecraft:blue_glazed_terracotta[]
+millenaire:painted_brick_decorated_brown = minecraft:brown_glazed_terracotta[]
+millenaire:painted_brick_decorated_green = minecraft:green_glazed_terracotta[]
+millenaire:painted_brick_decorated_red = minecraft:red_glazed_terracotta[]
+millenaire:painted_brick_decorated_black = minecraft:black_glazed_terracotta[]
+millenaire:stairs_painted_brick_white = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_orange = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_magenta = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_light_blue = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_yellow = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_lime = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_pink = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_gray = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_silver = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_cyan = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_purple = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_blue = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_brown = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_green = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_red = minecraft:brick_stairs{facing,half}
+millenaire:stairs_painted_brick_black = minecraft:brick_stairs{facing,half}
+millenaire:slab_painted_brick_white = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_orange = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_magenta = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_light_blue = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_yellow = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_lime = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_pink = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_gray = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_silver = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_cyan = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_purple = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_blue = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_brown = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_green = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_red = minecraft:brick_slab{half>type}
+millenaire:slab_painted_brick_black = minecraft:brick_slab{half>type}
+millenaire:wall_painted_brick_white = minecraft:brick_wall[]
+millenaire:wall_painted_brick_orange = minecraft:brick_wall[]
+millenaire:wall_painted_brick_magenta = minecraft:brick_wall[]
+millenaire:wall_painted_brick_light_blue = minecraft:brick_wall[]
+millenaire:wall_painted_brick_yellow = minecraft:brick_wall[]
+millenaire:wall_painted_brick_lime = minecraft:brick_wall[]
+millenaire:wall_painted_brick_pink = minecraft:brick_wall[]
+millenaire:wall_painted_brick_gray = minecraft:brick_wall[]
+millenaire:wall_painted_brick_silver = minecraft:brick_wall[]
+millenaire:wall_painted_brick_cyan = minecraft:brick_wall[]
+millenaire:wall_painted_brick_purple = minecraft:brick_wall[]
+millenaire:wall_painted_brick_blue = minecraft:brick_wall[]
+millenaire:wall_painted_brick_brown = minecraft:brick_wall[]
+millenaire:wall_painted_brick_green = minecraft:brick_wall[]
+millenaire:wall_painted_brick_red = minecraft:brick_wall[]
+millenaire:wall_painted_brick_black = minecraft:brick_wall[]
+
+// ---------- 道路（半格道路暂用整格） ----------
+millenaire:pathdirt = minecraft:dirt_path[]
+millenaire:pathdirt_slab = minecraft:dirt_path[]
+millenaire:pathgravel = millenaire_rewrite:gravel_path[]
+millenaire:pathgravel_slab = millenaire_rewrite:gravel_path[]
+millenaire:pathgravelslabs = millenaire_rewrite:gravel_path[]
+millenaire:pathgravelslabs_slab = millenaire_rewrite:gravel_path[]
+millenaire:pathslabs = millenaire_rewrite:stone_path[]
+millenaire:pathslabs_slab = millenaire_rewrite:stone_path[]
+millenaire:pathsandstone = millenaire_rewrite:sandstone_path[]
+millenaire:pathsandstone_slab = millenaire_rewrite:sandstone_path[]
+millenaire:pathochretiles = millenaire_rewrite:sandstone_path[]
+millenaire:pathochretiles_slab = millenaire_rewrite:sandstone_path[]
+millenaire:pathsnow = minecraft:snow_block[]
+millenaire:pathsnow_slab = minecraft:snow_block[]
+
+// ---------- 玻璃 / 栅栏 / 家具 ----------
+millenaire:stained_glass;variant=white = minecraft:white_stained_glass
+millenaire:stained_glass;variant=yellow = minecraft:yellow_stained_glass
+millenaire:stained_glass;variant=yellow_red = minecraft:orange_stained_glass
+millenaire:stained_glass;variant=red_blue = minecraft:purple_stained_glass
+millenaire:stained_glass;variant=green_blue = minecraft:cyan_stained_glass
+millenaire:rosette = minecraft:white_stained_glass[]
+millenaire:wooden_bars = minecraft:oak_fence[]
+millenaire:wooden_bars_dark = minecraft:dark_oak_fence[]
+millenaire:wooden_bars_indian = minecraft:jungle_fence[]
+millenaire:wooden_bars_rosette = minecraft:oak_fence[]
+millenaire:panel = minecraft:oak_wall_sign{facing}
+millenaire:bed_straw = minecraft:yellow_carpet[]
+millenaire:bed_charpoy = minecraft:brown_carpet[]
+millenaire:mayan_carpet = minecraft:red_carpet[]
+millenaire:mayan_carpet_thatch = minecraft:yellow_carpet[]
+millenaire:fire_pit = millenaire_rewrite:fire_pit[]
+
+// ---------- 雕刻装饰（暂用原版雕纹方块） ----------
+millenaire:mayan_calendar = minecraft:chiseled_sandstone[]
+millenaire:feathered_serpent = minecraft:chiseled_stone_bricks[]
+millenaire:inuitcarving = minecraft:bone_block[]
+
+// ---------- 作物 / 树叶 ----------
+millenaire:crop_maize;0 = millenaire_rewrite:crop_maize[age=0]
+millenaire:crop_maize;7 = millenaire_rewrite:crop_maize[age=7]
+millenaire:leaves_olivetree = millenaire_rewrite:leaves_olivetree[persistent=true]

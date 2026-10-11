@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "millenaire_rewrite:block/paper_wall_block"
+    }
+  }
+}

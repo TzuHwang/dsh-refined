@@ -1,0 +1,26 @@
+{
+  "_comment": "绿地村（Angerdorf）：广场往南延伸成长条公共草地，两条街夹着草地，房屋在街的外侧面向草地；草地里放水井、喷泉；外侧各有一条田间小路",
+  "weight": 10,
+  "plaza": 7,
+  "roads": [
+    {"from": [-12, 8], "to": [-12, 72], "width": 3},
+    {"from": [12, 8],  "to": [12, 72],  "width": 3},
+    {"from": [-12, 72], "to": [12, 72], "width": 3},
+    {"from": [-8, 0],  "to": [-64, 0],  "width": 3},
+    {"from": [8, 0],   "to": [64, 0],   "width": 3},
+    {"from": [-44, 2], "to": [-44, 72], "width": 3},
+    {"from": [44, 2],  "to": [44, 72],  "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "left",  "start": 2,  "end": 62, "depth": 8,  "tag": "plaza"},
+    {"road": 1, "side": "right", "start": 2,  "end": 62, "depth": 8,  "tag": "plaza"},
+    {"road": 3, "side": "both",  "start": 2,  "end": 24, "depth": 28, "tag": "plaza"},
+    {"road": 4, "side": "both",  "start": 2,  "end": 24, "depth": 28, "tag": "plaza"},
+    {"road": 0, "side": "right", "start": 2,  "end": 64, "depth": 26, "tag": "house"},
+    {"road": 1, "side": "left",  "start": 2,  "end": 64, "depth": 26, "tag": "house"},
+    {"road": 3, "side": "both",  "start": 26, "end": 54, "depth": 20, "tag": "house"},
+    {"road": 4, "side": "both",  "start": 26, "end": 54, "depth": 20, "tag": "house"},
+    {"road": 5, "side": "right", "start": 4,  "end": 70, "depth": 26, "tag": "field"},
+    {"road": 6, "side": "left",  "start": 4,  "end": 70, "depth": 26, "tag": "field"}
+  ]
+}

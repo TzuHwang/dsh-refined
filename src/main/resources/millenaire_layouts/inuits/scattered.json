@@ -1,0 +1,27 @@
+{
+  "_comment": "散居村：几条弯曲的小径从聚会广场伸出，住所沿小径散布",
+  "weight": 10,
+  "plaza": 6,
+  "roads": [
+    {"from": [0, 7], "to": [0, 21], "width": 3},
+    {"from": [0, 21], "to": [-26, 21], "width": 3},
+    {"from": [-26, 21], "to": [-26, 48], "width": 3},
+    {"from": [7, 0], "to": [20, 0], "width": 3},
+    {"from": [20, 0], "to": [20, 26], "width": 3},
+    {"from": [20, 26], "to": [48, 26], "width": 3},
+    {"from": [-7, 0], "to": [-18, 0], "width": 3},
+    {"from": [-18, 0], "to": [-18, -33], "width": 3},
+    {"from": [-18, -33], "to": [-48, -33], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2, "end": 11, "depth": 18, "tag": "plaza"},
+    {"road": 3, "side": "both", "start": 2, "end": 10, "depth": 18, "tag": "plaza"},
+    {"road": 6, "side": "both", "start": 2, "end": 8, "depth": 18, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 3, "end": 24, "depth": 12, "tag": "house"},
+    {"road": 4, "side": "both", "start": 3, "end": 24, "depth": 12, "tag": "house"},
+    {"road": 7, "side": "both", "start": 3, "end": 30, "depth": 12, "tag": "house"},
+    {"road": 2, "side": "both", "start": 3, "end": 27, "depth": 14, "tag": "field"},
+    {"road": 5, "side": "both", "start": 3, "end": 28, "depth": 14, "tag": "field"},
+    {"road": 8, "side": "both", "start": 3, "end": 30, "depth": 14, "tag": "field"}
+  ]
+}

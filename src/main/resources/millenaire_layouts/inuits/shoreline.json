@@ -1,0 +1,21 @@
+{
+  "_comment": "海岸村：沿岸一条东西向的小路，住所面向小路，两端通往湖边和林地",
+  "weight": 10,
+  "plaza": 6,
+  "roads": [
+    {"from": [-7, 0], "to": [-56, 0], "width": 3},
+    {"from": [7, 0], "to": [56, 0], "width": 3},
+    {"from": [0, 7], "to": [0, 25], "width": 3},
+    {"from": [-31, 2], "to": [-31, 43], "width": 3},
+    {"from": [31, 2], "to": [31, 43], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2, "end": 18, "depth": 18, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 2, "end": 18, "depth": 18, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2, "end": 16, "depth": 12, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 20, "end": 48, "depth": 12, "tag": "house"},
+    {"road": 1, "side": "both", "start": 20, "end": 48, "depth": 12, "tag": "house"},
+    {"road": 3, "side": "both", "start": 16, "end": 39, "depth": 14, "tag": "field"},
+    {"road": 4, "side": "both", "start": 16, "end": 39, "depth": 14, "tag": "field"}
+  ]
+}

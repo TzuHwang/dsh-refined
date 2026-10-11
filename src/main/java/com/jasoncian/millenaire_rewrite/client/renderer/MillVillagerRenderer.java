@@ -1,0 +1,111 @@
+package com.jasoncian.millenaire_rewrite.client.renderer;
+
+import com.jasoncian.millenaire_rewrite.MillenaireRewrite;
+import com.jasoncian.millenaire_rewrite.client.model.MillVillagerModel;
+import com.jasoncian.millenaire_rewrite.entity.villager.VillagerModelType;
+import com.jasoncian.millenaire_rewrite.entity.MillVillager;
+import com.jasoncian.millenaire_rewrite.entity.culture.Culture;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
+import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
+import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
+import net.minecraft.resources.ResourceLocation;
+import com.jasoncian.millenaire_rewrite.client.renderer.layer.VillagerClothesLayer;
+
+/**
+ * Millenaire村民渲染器
+ *
+ * 特性：
+ * - 基于文化选择纹理
+ * - 基于性别选择纹理
+ * - 基于职业选择纹理
+ * - 儿童缩放支持
+ * - 护甲层渲染
+ *
+ * @author Based on OldSource RenderMillVillager
+ * @version 1.0.0
+ */
+public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, MillVillagerModel> {
+
+    // ================ 纹理路径 ================
+
+    private static final String TEXTURE_BASE = "textures/entity/villager/";
+
+    /** 默认纹理（诺曼男性农民） */
+    private static final ResourceLocation DEFAULT_TEXTURE =
+        new ResourceLocation(MillenaireRewrite.MOD_ID,
+            TEXTURE_BASE + "norman/male_farmer.png");
+
+    // ================ 构造函数 ================
+
+    /** 各模型类型的身体模型；渲染时按村民切换 */
+    private final java.util.Map<VillagerModelType, MillVillagerModel> bodyModels =
+        new java.util.EnumMap<>(VillagerModelType.class);
+
+    public MillVillagerRenderer(EntityRendererProvider.Context context) {
+        super(context, new MillVillagerModel(
+            context.bakeLayer(MillVillagerModel.layer(VillagerModelType.DEFAULT, -1))), 0.5F);
+        for (VillagerModelType type : VillagerModelType.values()) {
+            bodyModels.put(type, new MillVillagerModel(context.bakeLayer(MillVillagerModel.layer(type, -1))));
+        }
+
+        // 添加护甲层
+        this.addLayer(new HumanoidArmorLayer<>(this,
+            new MillVillagerModel(context.bakeLayer(ModelLayers.PLAYER_INNER_ARMOR)),
+            new MillVillagerModel(context.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR)),
+            context.getModelManager()));
+
+        // 添加手持物品渲染层
+        this.addLayer(new ItemInHandLayer<>(this, context.getItemInHandRenderer()));
+
+        // 添加衣服渲染层（2层）
+        this.addLayer(new VillagerClothesLayer(this, 0, context));
+        this.addLayer(new VillagerClothesLayer(this, 1, context));
+    }
+
+    // ================ 纹理获取 ================
+
+    @Override
+    public ResourceLocation getTextureLocation(MillVillager entity) {
+        ResourceLocation skin = entity.getSkinTexture();
+        return skin != null ? skin : DEFAULT_TEXTURE;
+    }
+
+    // ================ 缩放处理 ================
+
+    @Override
+    protected void scale(MillVillager entity, PoseStack poseStack, float partialTickTime) {
+        float scale = entity.getVillagerScale();
+
+        // 儿童按成长值从 0.5 倍长到接近大人（原版 computeChildScale）
+        if (entity.isChild()) {
+            scale *= 0.5f + 0.4f * Math.min(entity.getChildSize(), 20) / 20f;
+            // 儿童的头部相对更大
+            poseStack.scale(scale, scale, scale);
+        } else {
+            // 成人正常缩放
+            poseStack.scale(scale, scale, scale);
+        }
+    }
+
+    // ================ 渲染 ================
+
+    @Override
+    public void render(MillVillager entity, float entityYaw, float partialTicks,
+                       PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+        this.model = bodyModels.get(entity.getModelType());
+        super.render(entity, entityYaw, partialTicks, poseStack, bufferSource, packedLight);
+
+        // TODO: 渲染职业特定物品（如农民的锄头）
+        // TODO: 渲染名字标签（如果在范围内）
+    }
+
+    @Override
+    protected boolean shouldShowName(MillVillager entity) {
+        // 只有当玩家靠近时显示名字
+        return super.shouldShowName(entity);
+    }
+}

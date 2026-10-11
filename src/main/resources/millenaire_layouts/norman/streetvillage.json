@@ -1,0 +1,21 @@
+{
+  "_comment": "街村（Straßendorf）：一条东西向长街穿过广场，房屋沿街两侧排列；两端各有一条往南的田间小路",
+  "weight": 10,
+  "plaza": 7,
+  "roads": [
+    {"from": [-8, 0],  "to": [-80, 0], "width": 3},
+    {"from": [8, 0],   "to": [80, 0],  "width": 3},
+    {"from": [0, 8],   "to": [0, 26],  "width": 3},
+    {"from": [-52, 2], "to": [-52, 66], "width": 3},
+    {"from": [52, 2],  "to": [52, 66], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2,  "end": 28, "depth": 28, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 2,  "end": 28, "depth": 28, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2,  "end": 18, "depth": 20, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 30, "end": 72, "depth": 20, "tag": "house"},
+    {"road": 1, "side": "both", "start": 30, "end": 72, "depth": 20, "tag": "house"},
+    {"road": 3, "side": "both", "start": 24, "end": 64, "depth": 26, "tag": "field"},
+    {"road": 4, "side": "both", "start": 24, "end": 64, "depth": 26, "tag": "field"}
+  ]
+}

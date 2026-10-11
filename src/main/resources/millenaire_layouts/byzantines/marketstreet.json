@@ -1,0 +1,21 @@
+{
+  "_comment": "市集长街：一条东西向的长街穿过广场，两侧是作坊和住宅，两端各一条往南的田间小路",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [-10, 0], "to": [-80, 0], "width": 3},
+    {"from": [10, 0],  "to": [80, 0],  "width": 3},
+    {"from": [0, 10],  "to": [0, 30],  "width": 3},
+    {"from": [-52, 2], "to": [-52, 66], "width": 3},
+    {"from": [52, 2],  "to": [52, 66], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2,  "end": 28, "depth": 28, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 2,  "end": 28, "depth": 28, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2,  "end": 20, "depth": 22, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 30, "end": 70, "depth": 20, "tag": "house"},
+    {"road": 1, "side": "both", "start": 30, "end": 70, "depth": 20, "tag": "house"},
+    {"road": 3, "side": "both", "start": 24, "end": 64, "depth": 26, "tag": "field"},
+    {"road": 4, "side": "both", "start": 24, "end": 64, "depth": 26, "tag": "field"}
+  ]
+}

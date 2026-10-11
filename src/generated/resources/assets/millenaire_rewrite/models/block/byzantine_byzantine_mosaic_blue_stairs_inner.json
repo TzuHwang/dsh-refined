@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "millenaire_rewrite:block/byzantine_mosaic_blue",
+    "side": "millenaire_rewrite:block/byzantine_mosaic_blue",
+    "top": "millenaire_rewrite:block/byzantine_mosaic_blue"
+  }
+}

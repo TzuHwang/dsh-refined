@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "millenaire_rewrite:block/byzantine_byzantine_mosaic_blue_slab"
+    },
+    "type=double": {
+      "model": "millenaire_rewrite:block/byzantine_byzantine_mosaic_blue"
+    },
+    "type=top": {
+      "model": "millenaire_rewrite:block/byzantine_byzantine_mosaic_blue_slab_top"
+    }
+  }
+}

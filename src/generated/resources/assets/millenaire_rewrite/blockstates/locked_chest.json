@@ -1,0 +1,40 @@
+{
+  "variants": {
+    "facing=east,type=left": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=east,type=right": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=east,type=single": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=north,type=left": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=north,type=right": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=north,type=single": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=south,type=left": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=south,type=right": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=south,type=single": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=west,type=left": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=west,type=right": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    },
+    "facing=west,type=single": {
+      "model": "millenaire_rewrite:block/locked_chest"
+    }
+  }
+}

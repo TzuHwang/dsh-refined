@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/template_wall_side_tall",
+  "textures": {
+    "wall": "millenaire_rewrite:block/green_tiles_0"
+  }
+}

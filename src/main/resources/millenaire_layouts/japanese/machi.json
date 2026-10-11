@@ -1,0 +1,21 @@
+{
+  "_comment": "町屋街：一条东西向的街道，两侧是町屋和商家，两端通往田地",
+  "weight": 10,
+  "plaza": 9,
+  "roads": [
+    {"from": [-10, 0], "to": [-94, 0], "width": 3},
+    {"from": [10, 0], "to": [94, 0], "width": 3},
+    {"from": [0, 10], "to": [0, 28], "width": 3},
+    {"from": [-55, 2], "to": [-55, 77], "width": 3},
+    {"from": [55, 2], "to": [55, 77], "width": 3}
+  ],
+  "frontages": [
+    {"road": 0, "side": "both", "start": 2, "end": 47, "depth": 32, "tag": "plaza"},
+    {"road": 1, "side": "both", "start": 2, "end": 47, "depth": 32, "tag": "plaza"},
+    {"road": 2, "side": "both", "start": 2, "end": 16, "depth": 20, "tag": "plaza"},
+    {"road": 0, "side": "both", "start": 49, "end": 86, "depth": 20, "tag": "house"},
+    {"road": 1, "side": "both", "start": 49, "end": 86, "depth": 20, "tag": "house"},
+    {"road": 3, "side": "both", "start": 24, "end": 73, "depth": 30, "tag": "field"},
+    {"road": 4, "side": "both", "start": 24, "end": 73, "depth": 30, "tag": "field"}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "gui.millenaire_rewrite.trade.controls": "左鍵 1 個，右鍵 8 個，Shift+左鍵 64 個",
+  "gui.millenaire_rewrite.trade.needs_reputation": "需要聲望 %s",
+  "gui.millenaire_rewrite.trade.price_buy": "價格：%s",
+  "gui.millenaire_rewrite.trade.price_sell": "收購價：%s",
+  "gui.millenaire_rewrite.trade.problem.full": "商店的箱子滿了",
+  "gui.millenaire_rewrite.trade.problem.inventory": "背包滿了",
+  "gui.millenaire_rewrite.trade.problem.money": "錢不夠",
+  "gui.millenaire_rewrite.trade.problem.nothing": "你沒有這件物品",
+  "gui.millenaire_rewrite.trade.problem.reputation": "聲望不夠",
+  "gui.millenaire_rewrite.trade.problem.stock": "缺貨",
+  "gui.millenaire_rewrite.trade.problem.unknown": "這裡不賣這個",
+  "gui.millenaire_rewrite.trade.reputation": "聲望：%s",
+  "gui.millenaire_rewrite.trade.stock": "庫存：%s",
+  "gui.millenaire_rewrite.trade.stock_unlimited": "庫存：充足",
+  "gui.millenaire_rewrite.trade.village_buys": "村莊收購",
+  "gui.millenaire_rewrite.trade.village_sells": "村莊出售",
+  "gui.millenaire_rewrite.trade.you_have": "你有：%s",
+  "message.millenaire_rewrite.seller_boycott": "%s 拒絕和你交易。",
+  "message.millenaire_rewrite.seller_coming": "%s 過來招呼你了。",
+  "message.millenaire_rewrite.trade_complete": "%s 回去工作了。"
+}
