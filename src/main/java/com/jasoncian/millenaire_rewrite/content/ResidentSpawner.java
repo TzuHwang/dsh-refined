@@ -72,6 +72,7 @@ public final class ResidentSpawner {
 
         villager.setCulture(village.getCulture());
         villager.setVillagerType(type.key());
+        villager.setChild(type.isChild());
         villager.setProfession(professionFor(type));
         villager.setGender(type.female() ? MillVillager.GENDER_FEMALE : MillVillager.GENDER_MALE);
         villager.setFirstName(VillagerTypes.randomName(type.culture(), type.firstNameList(), level.random));

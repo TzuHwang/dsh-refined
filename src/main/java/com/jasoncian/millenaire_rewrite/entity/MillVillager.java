@@ -71,6 +71,9 @@ public class MillVillager extends PathfinderMob {
         SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_FAMILY_NAME =
         SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.STRING);
+    /** 小孩的成长值（0~20，原版 size），决定体型 */
+    private static final EntityDataAccessor<Integer> DATA_CHILD_SIZE =
+        SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_IS_CHILD =
         SynchedEntityData.defineId(MillVillager.class, EntityDataSerializers.BOOLEAN);
     /** 原版村民类型键名（如 seneschal），决定外观和行为 */
@@ -256,6 +259,7 @@ public class MillVillager extends PathfinderMob {
         this.entityData.define(DATA_FIRST_NAME, "");
         this.entityData.define(DATA_FAMILY_NAME, "");
         this.entityData.define(DATA_IS_CHILD, false);
+        this.entityData.define(DATA_CHILD_SIZE, 0);
         this.entityData.define(DATA_VILLAGER_TYPE, "");
         this.entityData.define(DATA_SKIN, "");
         this.entityData.define(DATA_CLOTHES_0, "");
@@ -468,6 +472,7 @@ public class MillVillager extends PathfinderMob {
         tag.putString("FirstName", getFirstName());
         tag.putString("FamilyName", getFamilyName());
         tag.putBoolean("IsChild", isChild());
+        tag.putInt("ChildSize", getChildSize());
         tag.putString("VillagerType", getVillagerType());
         tag.putString("Skin", this.entityData.get(DATA_SKIN));
         tag.putString("Clothes0", this.entityData.get(DATA_CLOTHES_0));
@@ -534,6 +539,7 @@ public class MillVillager extends PathfinderMob {
         setFirstName(tag.getString("FirstName"));
         setFamilyName(tag.getString("FamilyName"));
         setChild(tag.getBoolean("IsChild"));
+        setChildSize(tag.getInt("ChildSize"));
         setVillagerType(tag.getString("VillagerType"));
         this.entityData.set(DATA_SKIN, tag.getString("Skin"));
         this.entityData.set(DATA_CLOTHES_0, tag.getString("Clothes0"));
@@ -702,6 +708,25 @@ public class MillVillager extends PathfinderMob {
 
     public void setChild(boolean isChild) {
         this.entityData.set(DATA_IS_CHILD, isChild);
+    }
+
+    public int getChildSize() {
+        return this.entityData.get(DATA_CHILD_SIZE);
+    }
+
+    public void setChildSize(int size) {
+        this.entityData.set(DATA_CHILD_SIZE, size);
+    }
+
+    /** 当晚的夜间动作（长大、怀孕）已经做过（不存档，醒来时重置） */
+    private boolean nightActionPerformed;
+
+    public boolean nightActionPerformed() {
+        return nightActionPerformed;
+    }
+
+    public void setNightActionPerformed(boolean performed) {
+        this.nightActionPerformed = performed;
     }
 
     @Nullable

@@ -367,4 +367,114 @@ public class VillagerBehaviourTests {
             helper.fail(e.toString());
         }
     }
+
+    /** 每个"天"在测试里占的游戏 tick：前半夜里睡觉，后半白天 */
+    private static final int TEST_DAY = 600;
+
+    /**
+     * 从第 start 天开始，安排 days 个昼夜（setDayTime 切换夜晚/白天）
+     */
+    private static void scheduleDays(GameTestHelper helper, int start, int days) {
+        var level = helper.getLevel();
+        for (int d = 0; d < days; d++) {
+            int t = start + d * TEST_DAY;
+            helper.runAtTickTime(t, () -> level.setDayTime(14000));
+            helper.runAtTickTime(t + TEST_DAY / 2, () -> level.setDayTime(1000));
+        }
+    }
+
+    /**
+     * 原版家庭：夫妻住在一起，夜里妻子有机会怀孕生下小孩（每晚 2/10）
+     */
+    @GameTest(template = "empty", timeoutTicks = 14000, batch = "time_family")
+    public static void coupleHasChild(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "coupleHasChild")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 20000));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        try {
+            var plan = BuildingPlan.get("norman", "carpenterhouse", 'A', 0);
+            var origin = TestTerrain.ground(centre);
+            var result = BuildingPlacer.place(level, plan, origin, 0);
+            var village = new Village(origin, Culture.NORMAN);
+            com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).registerVillage(village);
+            var house = village.getGrowth().recordBuilding(plan, origin, 0, result, false);
+            var home = house.points("sleepingPos").isEmpty() ? origin : house.points("sleepingPos").get(0);
+            ResidentSpawner.spawnResident(level, village, "norman", "carpenter", home);
+            ResidentSpawner.spawnResident(level, village, "norman", "wife", home);
+            int previous = com.jasoncian.millenaire_rewrite.command.TickWarp.factor();
+            com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(10);
+            scheduleDays(helper, 1, 20);
+            helper.runAtTickTime(20 * TEST_DAY + 100, () -> {
+                com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(previous);
+                var children = village.getActiveVillagers().stream().filter(MillVillager::isChild).toList();
+                MillenaireRewrite.LOGGER.info("[gametest] family: {} children {}", children.size(),
+                    children.stream().map(c -> c.getFullName() + " " + c.getVillagerType() + " size " + c.getChildSize()).toList());
+                com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).removeVillage(village);
+                village.getActiveVillagers().forEach(v -> v.discard());
+                TestTerrain.setForced(level, centre, false);
+                if (children.isEmpty()) {
+                    helper.fail("no child was born in 20 nights");
+                }
+                helper.succeed();
+            });
+        } catch (java.io.IOException e) {
+            TestTerrain.setForced(level, centre, false);
+            helper.fail(e.toString());
+        }
+    }
+
+    /**
+     * 原版成年：长大的男孩搬进空着的守卫屋，成为守卫
+     */
+    @GameTest(template = "empty", timeoutTicks = 3000, batch = "time_family")
+    public static void childGrowsUpAndMovesOut(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "childGrowsUpAndMovesOut")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 20600));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        try {
+            var homePlan = BuildingPlan.get("norman", "carpenterhouse", 'A', 0);
+            var guardPlan = BuildingPlan.get("norman", "guardhouse", 'A', 0);
+            var origin = TestTerrain.ground(centre);
+            var guardOrigin = origin.offset(30, 0, 0);
+            var homeResult = BuildingPlacer.place(level, homePlan, origin, 0);
+            var guardResult = BuildingPlacer.place(level, guardPlan, guardOrigin, 0);
+            var village = new Village(origin, Culture.NORMAN);
+            com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).registerVillage(village);
+            var home = village.getGrowth().recordBuilding(homePlan, origin, 0, homeResult, false);
+            village.getGrowth().recordBuilding(guardPlan, guardOrigin, 0, guardResult, false);
+            var bed = home.points("sleepingPos").isEmpty() ? origin : home.points("sleepingPos").get(0);
+            MillVillager boy = ResidentSpawner.spawnResident(level, village, "norman", "boy", bed);
+            boy.setChildSize(18);
+            String name = boy.getFullName();
+            int previous = com.jasoncian.millenaire_rewrite.command.TickWarp.factor();
+            com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(10);
+            scheduleDays(helper, 1, 2);
+            helper.runAtTickTime(2 * TEST_DAY + 600, () -> {
+                com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(previous);
+                var adult = village.getActiveVillagers().stream()
+                    .filter(v -> !v.isChild() && v.getFullName().equals(name)).findFirst().orElse(null);
+                MillenaireRewrite.LOGGER.info("[gametest] grown up: {} -> {} (boy removed {})", name,
+                    adult == null ? null : adult.getVillagerType() + " at " + adult.getHousePos(), boy.isRemoved());
+                com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).removeVillage(village);
+                village.getActiveVillagers().forEach(v -> v.discard());
+                boy.discard();
+                TestTerrain.setForced(level, centre, false);
+                if (adult == null || !adult.getVillagerType().equals("guard")) {
+                    helper.fail("the boy did not grow up into a guard");
+                }
+                helper.succeed();
+            });
+        } catch (java.io.IOException e) {
+            TestTerrain.setForced(level, centre, false);
+            helper.fail(e.toString());
+        }
+    }
 }

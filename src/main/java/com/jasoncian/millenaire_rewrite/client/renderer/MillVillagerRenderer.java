@@ -80,9 +80,9 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
     protected void scale(MillVillager entity, PoseStack poseStack, float partialTickTime) {
         float scale = entity.getVillagerScale();
 
-        // 儿童缩放（0.5倍）
+        // 儿童按成长值从 0.5 倍长到接近大人（原版 computeChildScale）
         if (entity.isChild()) {
-            scale *= 0.5f;
+            scale *= 0.5f + 0.4f * Math.min(entity.getChildSize(), 20) / 20f;
             // 儿童的头部相对更大
             poseStack.scale(scale, scale, scale);
         } else {

@@ -60,6 +60,11 @@ public final class LifeGoals {
                 villager.getNavigation().stop();
                 villager.startSleeping(villager.blockPosition());
             }
+            // 原版 performNightAction：每晚一次（小孩长大、妻子怀孕）
+            if (!villager.nightActionPerformed()) {
+                villager.setNightActionPerformed(true);
+                FamilyGoals.nightAction(villager);
+            }
             // 一直睡到天亮（夜间限制失效时目标结束）
             return false;
         }
@@ -80,6 +85,7 @@ public final class LifeGoals {
         }
 
         private static void wake(MillVillager villager) {
+            villager.setNightActionPerformed(false);
             if (villager.isSleeping() || villager.hasPose(Pose.SLEEPING)) {
                 villager.stopSleeping();
             }

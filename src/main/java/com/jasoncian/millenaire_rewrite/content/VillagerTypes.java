@@ -29,7 +29,13 @@ public final class VillagerTypes {
                                List<String> textures, Map<Integer, List<String>> clothes,
                                float baseHeight, int health, List<String> tags, String model,
                                List<String> goals, Map<String, Integer> requiredGoods, List<String> collectGoods,
-                               List<String> bringBackHomeGoods, @Nullable String defaultWeapon, int baseAttackStrength) {
+                               List<String> bringBackHomeGoods, @Nullable String defaultWeapon, int baseAttackStrength,
+                               @Nullable String maleChild, @Nullable String femaleChild) {
+
+        /** 原版 tag=child */
+        public boolean isChild() {
+            return tags.stream().anyMatch(t -> t.equalsIgnoreCase("child"));
+        }
 
         /** 原版 tag=helpInAttacks：村里有人被攻击时会来帮忙 */
         public boolean helpsInAttacks() {
@@ -106,6 +112,8 @@ public final class VillagerTypes {
         List<String> collectGoods = new ArrayList<>();
         List<String> bringBackHomeGoods = new ArrayList<>();
         String defaultWeapon = null;
+        String maleChild = null;
+        String femaleChild = null;
         int baseAttackStrength = 1;
 
         for (String raw : MillContent.readLines(file)) {
@@ -140,6 +148,8 @@ public final class VillagerTypes {
                 }
                 case "collectgood" -> collectGoods.add(v.toLowerCase());
                 case "defaultweapon" -> defaultWeapon = v.toLowerCase();
+                case "malechild" -> maleChild = v.toLowerCase();
+                case "femalechild" -> femaleChild = v.toLowerCase();
                 case "baseattackstrength" -> {
                     try {
                         baseAttackStrength = Integer.parseInt(v);
@@ -163,6 +173,6 @@ public final class VillagerTypes {
         return new VillagerType(culture, key, nativeName, female, firstNames, familyNames,
             List.copyOf(textures), clothes, baseHeight, health, List.copyOf(tags), model, List.copyOf(goals),
             Map.copyOf(requiredGoods), List.copyOf(collectGoods), List.copyOf(bringBackHomeGoods), defaultWeapon,
-            baseAttackStrength);
+            baseAttackStrength, maleChild, femaleChild);
     }
 }
