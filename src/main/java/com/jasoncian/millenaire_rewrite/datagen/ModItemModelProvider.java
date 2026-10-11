@@ -139,8 +139,36 @@ public class ModItemModelProvider extends ItemModelProvider {
         }
     }
 
+    /**
+     * 自动注册的建筑方块物品（AutoBlockItems）：沿用同名方块模型；墙没有整体模型，
+     * 用原版 wall_inventory 加上墙柱模型里的材质
+     */
+    private void autoBlockItemModels() {
+        java.nio.file.Path blockModels = java.nio.file.Path.of("..", "src", "generated", "resources", "assets",
+            MillenaireRewrite.MOD_ID, "models", "block");
+        for (net.minecraft.resources.ResourceLocation id : com.jasoncian.millenaire_rewrite.core.AutoBlockItems.REGISTERED) {
+            String name = id.getPath();
+            java.nio.file.Path post = blockModels.resolve(name + "_post.json");
+            if (java.nio.file.Files.exists(blockModels.resolve(name + ".json"))) {
+                withExistingParent(name, modLoc("block/" + name));
+            } else if (java.nio.file.Files.exists(post)) {
+                try {
+                    var json = com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(post)).getAsJsonObject();
+                    String texture = json.getAsJsonObject("textures").get("wall").getAsString();
+                    withExistingParent(name, mcLoc("block/wall_inventory")).texture("wall", texture);
+                } catch (Exception e) {
+                    MillenaireRewrite.LOGGER.warn("No item model for wall {}: {}", name, e.getMessage());
+                }
+            } else {
+                MillenaireRewrite.LOGGER.warn("No block model for block item {}", name);
+            }
+        }
+    }
+
     @Override
     protected void registerModels() {
+        autoBlockItemModels();
+
         // 货币系统
         simpleItem(ModItems.DENIER);
         simpleItem(ModItems.DENIER_OR);
