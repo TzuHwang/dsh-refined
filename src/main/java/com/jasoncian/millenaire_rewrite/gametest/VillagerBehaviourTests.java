@@ -99,4 +99,59 @@ public class VillagerBehaviourTests {
             helper.succeed();
         });
     }
+
+    /**
+     * 原版日常：夜里回家躺下睡觉，白天起来工作或休闲（回家休息、社交、聊天）
+     */
+    @GameTest(template = "empty", timeoutTicks = 3000)
+    public static void villagersSleepAtNightAndLiveByDay(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "villagersSleepAtNightAndLiveByDay")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 17000));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        var village = com.jasoncian.millenaire_rewrite.worldgen.VillageGenerator.forceGenerateVillage(level, centre,
+            com.jasoncian.millenaire_rewrite.entity.culture.Culture.NORMAN, "manor");
+        if (village == null) {
+            helper.fail("village generation failed");
+            return;
+        }
+        for (int i = 0; i < 6; i++) {
+            village.getGrowth().forceNext(level);
+        }
+        int previous = com.jasoncian.millenaire_rewrite.command.TickWarp.factor();
+        com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(10);
+        level.setDayTime(14000);
+        java.util.function.Supplier<String> goals = () -> village.getActiveVillagers().stream()
+            .map(v -> v.getGoalManager().getCurrentGoal() == null ? "none" : v.getGoalManager().getCurrentGoal().getKey())
+            .collect(java.util.stream.Collectors.groupingBy(k -> k, java.util.TreeMap::new, java.util.stream.Collectors.counting()))
+            .toString();
+        int[] asleep = new int[1];
+        int[] adults = new int[1];
+        helper.runAtTickTime(1500, () -> {
+            var villagers = village.getActiveVillagers();
+            adults[0] = (int) villagers.stream().filter(v -> !v.isChild()).count();
+            asleep[0] = (int) villagers.stream().filter(v -> !v.isChild() && v.isSleeping()).count();
+            MillenaireRewrite.LOGGER.info("[gametest] night: {}/{} adults asleep, goals {}", asleep[0], adults[0], goals.get());
+            level.setDayTime(1000);
+        });
+        helper.runAtTickTime(2400, () -> {
+            com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(previous);
+            var villagers = village.getActiveVillagers();
+            int stillAsleep = (int) villagers.stream().filter(v -> v.isSleeping()).count();
+            MillenaireRewrite.LOGGER.info("[gametest] day: {} still asleep, goals {}", stillAsleep, goals.get());
+            com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).removeVillage(village);
+            villagers.forEach(v -> v.discard());
+            TestTerrain.setForced(level, centre, false);
+            if (adults[0] == 0 || asleep[0] * 2 < adults[0]) {
+                helper.fail("only " + asleep[0] + "/" + adults[0] + " adults went to sleep at night");
+            }
+            if (stillAsleep > 0) {
+                helper.fail(stillAsleep + " villagers did not wake up in the morning");
+            }
+            helper.succeed();
+        });
+    }
 }

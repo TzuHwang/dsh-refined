@@ -42,6 +42,8 @@ public final class BuildingPlan {
     /** 这一级的商店（shops/&lt;名称&gt;.txt），升级没写时沿用之前的商店 */
     @javax.annotation.Nullable
     public String shop;
+    /** 这一级加上的建筑标签（如 leasure、bakery、kitchen），通用目标按标签找建筑 */
+    public final List<String> tags = new ArrayList<>();
 
     public int nbFloors;
     /** [楼层][长度方向][宽度方向]，null 表示未知颜色（按空处理） */
@@ -138,6 +140,11 @@ public final class BuildingPlan {
                 case "initial.male" -> maleResidents.add(v);
                 case "initial.female" -> femaleResidents.add(v);
                 case "building.issubbuilding" -> subBuilding = Boolean.parseBoolean(v);
+                case "initial.tag" -> {
+                    if (level == 0) {
+                        tags.add(v.toLowerCase());
+                    }
+                }
                 case "initial.shop" -> {
                     if (level == 0) {
                         shop = v.toLowerCase();
@@ -146,6 +153,8 @@ public final class BuildingPlan {
                 default -> {
                     if (k.equals((level == 0 ? "initial." : upgradePrefix) + "subbuilding")) {
                         subBuildings.add(v);
+                    } else if (k.equals(upgradePrefix + "tag")) {
+                        tags.add(v.toLowerCase());
                     } else if (k.equals(upgradePrefix + "shop")) {
                         shop = v.toLowerCase();
                     } else if (k.equals(upgradePrefix + "startlevel")) {

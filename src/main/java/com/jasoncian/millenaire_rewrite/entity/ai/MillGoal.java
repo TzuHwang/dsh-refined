@@ -86,7 +86,7 @@ public abstract class MillGoal {
     public abstract int priority(MillVillager villager);
 
     /** 目标目的地离村庄中心的最大距离 */
-    public static final int MAX_DISTANCE_FROM_VILLAGE = 48;
+    public static final int MAX_DISTANCE_FROM_VILLAGE = 128;
 
     /**
      * 获取目标的目的地信息

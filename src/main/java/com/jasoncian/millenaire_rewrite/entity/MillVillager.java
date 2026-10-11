@@ -193,13 +193,7 @@ public class MillVillager extends PathfinderMob {
      * 添加基础通用目标和职业特定目标
      */
     private void initializeGoals() {
-        // 通用目标（所有村民都有）
-        goalManager.addGoal(new GoalIdle());
-        goalManager.addGoal(new GoalWander());
-        goalManager.addGoal(new GoalSleep());
-        goalManager.addGoal(new GoalEat());
-
-        // 职业特定目标会在tick中根据当前职业动态添加
+        // 原版：目标全部来自村民类型（refreshWorkGoals），所有村民另外都会睡觉
     }
 
     /**
@@ -207,14 +201,10 @@ public class MillVillager extends PathfinderMob {
      * 当职业变化时调用
      */
     public void refreshWorkGoals() {
-        // 移除现有的工作目标
-        goalManager.getAvailableGoals().removeIf(goal ->
-            goal.getTags().contains("work"));
-
-        // 按原版村民类型的 goal= 列表，在自家建筑的工作点上工作（收成、采矿、砍树、送货）。
-        // 1.21 版的 GoalFarm/GoalChop/GoalMine 会在村民身边随意翻地、砍树、挖方块，不再使用。
+        // 按原版村民类型的 goal= 列表建立全部目标（睡觉、休息、社交、聊天、工作）。
+        // 1.21 版的 GoalIdle/GoalWander/GoalEat/GoalFarm 等不再使用。
         if (!this.level().isClientSide()) {
-            com.jasoncian.millenaire_rewrite.entity.ai.work.WorkGoals.forVillager(this).forEach(goalManager::addGoal);
+            goalManager.setGoals(com.jasoncian.millenaire_rewrite.entity.ai.work.WorkGoals.forVillager(this));
         }
     }
 
@@ -289,7 +279,7 @@ public class MillVillager extends PathfinderMob {
      * 根据当前目标更新导航
      */
     private void updateNavigationFromGoal() {
-        if (!goalManager.hasGoal()) {
+        if (!goalManager.hasGoal() || isSleeping()) {
             return;
         }
 

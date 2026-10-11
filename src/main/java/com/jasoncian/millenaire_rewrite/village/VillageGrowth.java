@@ -68,6 +68,9 @@ public class VillageGrowth {
         /** 商店（shops/&lt;名称&gt;.txt），没有商店为 null */
         @Nullable
         public String shop;
+        /** 建筑标签（各级图纸标签的并集）；null 表示旧存档还没算过 */
+        @Nullable
+        public Set<String> tags;
 
         PlacedBuilding(String key, char variation, int level, BlockPos origin, int orientation,
                        BoundingBox footprint, boolean townHall, List<BlockPos> pathStarts,
@@ -127,6 +130,11 @@ public class VillageGrowth {
             if (shop != null) {
                 tag.putString("Shop", shop);
             }
+            if (tags != null) {
+                ListTag tagList = new ListTag();
+                tags.forEach(t -> tagList.add(net.minecraft.nbt.StringTag.valueOf(t)));
+                tag.put("Tags", tagList);
+            }
             return tag;
         }
 
@@ -152,6 +160,13 @@ public class VillageGrowth {
                 new BoundingBox(f[0], f[1], f[2], f[3], f[4], f[5]), tag.getBoolean("TownHall"), starts, points);
             building.subBuilding = tag.getBoolean("Sub");
             building.shop = tag.contains("Shop") ? tag.getString("Shop") : null;
+            if (tag.contains("Tags")) {
+                building.tags = new HashSet<>();
+                ListTag tagList = tag.getList("Tags", 8);
+                for (int i = 0; i < tagList.size(); i++) {
+                    building.tags.add(tagList.getString(i));
+                }
+            }
             return building;
         }
     }
@@ -293,6 +308,31 @@ public class VillageGrowth {
             }
         }
         return building.shop;
+    }
+
+    /**
+     * 建筑标签：各级图纸标签的并集（按需计算并缓存）
+     */
+    public Set<String> tagsOf(PlacedBuilding building) {
+        if (building.tags == null) {
+            Set<String> tags = new HashSet<>();
+            for (int level = 0; level <= building.level; level++) {
+                BuildingPlan plan = plan(building.key, building.variation, level);
+                if (plan != null) {
+                    tags.addAll(plan.tags);
+                }
+            }
+            building.tags = tags;
+        }
+        return building.tags;
+    }
+
+    /**
+     * 带某个标签的建筑
+     */
+    public List<PlacedBuilding> buildingsWithTag(String tag) {
+        String lower = tag.toLowerCase();
+        return buildings.stream().filter(b -> tagsOf(b).contains(lower)).toList();
     }
 
     /**
@@ -510,6 +550,9 @@ public class VillageGrowth {
             upgraded.addPoints(c.result.specialPoints);
             if (c.plan.shop != null) {
                 upgraded.shop = c.plan.shop;
+            }
+            if (upgraded.tags != null) {
+                upgraded.tags.addAll(c.plan.tags);
             }
             buildSubBuildings(level, c.plan, upgraded);
             // 升级可能在庭院里加了栅栏等，把穿过庭院的道路截断：重建路网绕开它们
