@@ -57,8 +57,12 @@ public final class WorkGoals {
                     var generic = com.jasoncian.millenaire_rewrite.entity.ai.generic.GenericGoalConfig.get(name);
                     var genericGoal = generic == null ? null
                         : com.jasoncian.millenaire_rewrite.entity.ai.generic.GenericGoalTypes.create(generic);
-                    if (work != null) {
-                        goals.add(work.kind() == WorkGoalConfigs.Kind.HARVEST ? new GoalHarvest(work) : new GoalMine(work));
+                    if (genericGoal == null && generic != null) {
+                        genericGoal = com.jasoncian.millenaire_rewrite.entity.ai.generic.FarmGoalTypes.create(generic);
+                    }
+                    // 采矿沿用 GoalMine；收成改用原版的通用收成（收完不补种，由种植目标补种）
+                    if (work != null && work.kind() == WorkGoalConfigs.Kind.MINE) {
+                        goals.add(new GoalMine(work));
                     } else if (genericGoal != null) {
                         goals.add(genericGoal);
                     } else if (MISSING.add(name)) {
