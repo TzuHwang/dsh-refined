@@ -409,6 +409,39 @@ public final class VillageLayout {
      *
      * @return 铺好的格子（加入村庄路网）
      */
+    /** 市政厅前院最多往里铺几格 */
+    private static final int FORECOURT_DEPTH = 6;
+
+    /**
+     * 市政厅前院：图纸前缘常有几排空地，墙离广场还有好几格草地，门口接不上广场。
+     * 沿市政厅宽度从广场边往里铺路面，碰到建筑方块就停（只改天然地面）
+     *
+     * @return 铺好的格子
+     */
+    public Set<Long> paveForecourt(ServerLevel level, BuildingPlan townHallPlan, BlockState material) {
+        Set<Long> paved = new HashSet<>();
+        int front = directionIndex(dir(0, 1)[0], dir(0, 1)[1]);
+        BoundingBox f = BuildingPlacer.footprint(townHallPlan, BlockPos.ZERO, orientationFacing(townHallPlan, front));
+        int along = dir(1, 0)[0] != 0 ? f.getXSpan() : f.getZSpan();
+        int plazaY = centre.getY() - 1;
+        for (int t = -along / 2; t < -along / 2 + along; t++) {
+            for (int k = template.plaza + 1; k <= template.plaza + 1 + FORECOURT_DEPTH; k++) {
+                int[] w = point(t, -k);
+                Integer g = groundAt(level, w[0], w[1]);
+                if (g == null || Math.abs(g - plazaY) > 1) {
+                    break;
+                }
+                BlockState ground = level.getBlockState(new BlockPos(w[0], g, w[1]));
+                if (!isPath(ground) && !isNaturalGround(ground)) {
+                    break;
+                }
+                setColumn(level, w[0], w[1], g, plazaY, material);
+                paved.add(ChunkPos.asLong(w[0], w[1]));
+            }
+        }
+        return paved;
+    }
+
     public Set<Long> paveRoads(ServerLevel level, BlockState material, Predicate<BlockPos> protectedColumn) {
         Map<Long, Integer> heights = gradeRoads(level);
         Set<Long> paved = new HashSet<>();

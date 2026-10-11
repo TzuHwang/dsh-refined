@@ -123,8 +123,44 @@ public final class VillagePaths {
             clearPlants(level, surface.above(2));
             placed++;
         }
+        placed += widen(level, growth, route, material, start, hallStart);
         MillenaireRewrite.LOGGER.debug("Path from {} to the town hall: {} cells, {} blocks placed",
             building.key, route.size(), placed);
+        return placed;
+    }
+
+    /**
+     * 一格宽的路面比草地矮，看起来像一条沟：路线两侧各加铺一格，和主街一样 3 格宽。
+     * 只铺在同高度的天然地面上，避开建筑占地和门口
+     */
+    private static int widen(ServerLevel level, VillageGrowth growth, List<BlockPos> route, BlockState material,
+                             BlockPos start, BlockPos hallStart) {
+        int placed = 0;
+        for (int i = 0; i < route.size(); i++) {
+            BlockPos here = route.get(i);
+            BlockPos other = route.get(i + 1 < route.size() ? i + 1 : Math.max(0, i - 1));
+            int dx = Integer.signum(other.getX() - here.getX());
+            int dz = Integer.signum(other.getZ() - here.getZ());
+            if (dx != 0 && dz != 0 || dx == 0 && dz == 0) {
+                continue;
+            }
+            for (int side = -1; side <= 1; side += 2) {
+                int x = here.getX() - dz * side;
+                int z = here.getZ() + dx * side;
+                if (insideAnyFootprint(growth.getBuildings(), x, z) || isDoorCell(x, z, start, hallStart)) {
+                    continue;
+                }
+                BlockPos surface = new BlockPos(x, here.getY(), z);
+                BlockState current = level.getBlockState(surface);
+                if (isPath(current) || !isNaturalGround(current) || !level.getBlockState(surface.above()).canBeReplaced()) {
+                    continue;
+                }
+                level.setBlock(surface, material, Block.UPDATE_CLIENTS);
+                clearPlants(level, surface.above());
+                clearPlants(level, surface.above(2));
+                placed++;
+            }
+        }
         return placed;
     }
 

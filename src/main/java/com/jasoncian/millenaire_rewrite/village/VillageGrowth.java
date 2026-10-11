@@ -395,6 +395,7 @@ public class VillageGrowth {
             // 先铺好佈局的道路和广场，之后的建筑沿道路排列
             pathNetwork.addAll(layout.paveRoads(level, pathMaterial(type),
                 column -> VillagePaths.insideAnyFootprint(buildings, column.getX(), column.getZ())));
+            pathNetwork.addAll(layout.paveForecourt(level, townHall, pathMaterial(type)));
         }
 
         for (String key : type.start()) {
@@ -755,6 +756,15 @@ public class VillageGrowth {
                 upgraded.tags.addAll(c.plan.tags);
             }
             buildSubBuildings(level, c.plan, upgraded);
+            // 市政厅升级可能把前院画回草地：重新铺好前院
+            if (upgraded.townHall && layout != null) {
+                try {
+                    pathNetwork.addAll(layout.paveForecourt(level, c.plan,
+                        pathMaterial(VillageTypes.get(village.getCulture(), villageTypeFile))));
+                } catch (IOException e) {
+                    MillenaireRewrite.LOGGER.warn("Village {}: cannot read village type for paths", village.getName());
+                }
+            }
             // 升级可能在庭院里加了栅栏等，把穿过庭院的道路截断：重建路网绕开它们
             if (pathsIncomplete || VillagePaths.coversNetwork(this, upgraded.footprint)) {
                 try {

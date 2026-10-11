@@ -59,7 +59,7 @@ public class MillVillagerRenderer extends HumanoidMobRenderer<MillVillager, Mill
             context.getModelManager()));
 
         // 添加手持物品渲染层
-        this.addLayer(new ItemInHandLayer<>(this, context.getItemInHandRenderer()));
+        this.addLayer(new MillItemInHandLayer(this, context.getItemInHandRenderer()));
 
         // 添加衣服渲染层（2层）
         this.addLayer(new VillagerClothesLayer(this, 0, context));
