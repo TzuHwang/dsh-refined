@@ -129,6 +129,70 @@ public class EconomyTests {
     }
 
     /**
+     * 原版交易界面：价格换成钱币（最多两种）；买面包后箱子少一个，卖小麦后箱子多一个
+     */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void merchantOffersForBakery(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "merchantOffersForBakery")) {
+            return;
+        }
+        var c10 = com.jasoncian.millenaire_rewrite.economy.VillageMerchant.coins(10);
+        var c70 = com.jasoncian.millenaire_rewrite.economy.VillageMerchant.coins(70);
+        var c4166 = com.jasoncian.millenaire_rewrite.economy.VillageMerchant.coins(4096 + 70);
+        MillenaireRewrite.LOGGER.info("[gametest] coins 10={} {}, 70={} {}, 4166={} {}", c10[0], c10[1], c70[0], c70[1],
+            c4166[0], c4166[1]);
+        if (c10[0].getCount() != 10 || c70[0].getCount() != 1 || c70[1].getCount() != 6
+            || c4166[0].getCount() != 1 || c4166[1].getCount() != 2) {
+            helper.fail("coin conversion is wrong");
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 16400));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        try {
+            var plan = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("norman", "bakery", 'A', 0);
+            var origin = TestTerrain.ground(centre);
+            var result = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, plan, origin, 0);
+            var village = new com.jasoncian.millenaire_rewrite.village.Village(origin,
+                com.jasoncian.millenaire_rewrite.entity.culture.Culture.NORMAN);
+            var bakery = village.getGrowth().recordBuilding(plan, origin, 0, result, false);
+            var bread = Goods.get("bread");
+            var wheat = Goods.get("wheat");
+            com.jasoncian.millenaire_rewrite.economy.BuildingStock.store(level, bakery, bread, 20);
+            var player = helper.makeMockPlayer();
+            var merchant = new com.jasoncian.millenaire_rewrite.economy.VillageMerchant(level, village, bakery, null);
+            merchant.setTradingPlayer(player);
+            com.jasoncian.millenaire_rewrite.economy.VillageMerchantAccess.rebuild(merchant, player);
+            var offers = merchant.getOffers();
+            var breadOffer = offers.stream().filter(o -> o.getResult().is(net.minecraft.world.item.Items.BREAD)).findFirst()
+                .orElse(null);
+            var wheatOffer = offers.stream().filter(o -> o.getBaseCostA().is(net.minecraft.world.item.Items.WHEAT)).findFirst()
+                .orElse(null);
+            MillenaireRewrite.LOGGER.info("[gametest] merchant offers: {}", offers.stream().map(o -> o.getBaseCostA() + "+"
+                + o.getCostB() + "->" + o.getResult() + " max " + o.getMaxUses()).toList());
+            if (breadOffer == null || wheatOffer == null) {
+                helper.fail("bakery should sell bread and buy wheat");
+                return;
+            }
+            merchant.notifyTrade(breadOffer);
+            merchant.notifyTrade(wheatOffer);
+            int breadLeft = com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, bakery, bread);
+            int wheatStored = com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, bakery, wheat);
+            MillenaireRewrite.LOGGER.info("[gametest] merchant: bread max uses {}, bread left {}, wheat stored {}",
+                breadOffer.getMaxUses(), breadLeft, wheatStored);
+            if (breadOffer.getMaxUses() != 15 || breadLeft != 19 || wheatStored != 1) {
+                helper.fail("merchant trade: max uses " + breadOffer.getMaxUses() + ", bread " + breadLeft + ", wheat "
+                    + wheatStored);
+            }
+        } catch (java.io.IOException e) {
+            helper.fail(e.toString());
+        } finally {
+            TestTerrain.setForced(level, centre, false);
+        }
+        helper.succeed();
+    }
+
+    /**
      * 货币（原版比例：1 银 = 64 铜，1 金 = 64 银）：2 银 5 铜 = 133，付 70 剩 63，再收 1 金
      */
     @GameTest(template = "empty", timeoutTicks = 20)

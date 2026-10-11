@@ -117,7 +117,7 @@ public class VillageGenerator {
      * 在指定区块生成村庄
      */
     @Nullable
-    private static Village generateVillageAt(ServerLevel level, ChunkPos chunkPos, RandomSource random) {
+    public static Village generateVillageAt(ServerLevel level, ChunkPos chunkPos, RandomSource random) {
         // 获取区块中心位置
         int centerX = chunkPos.getMiddleBlockX();
         int centerZ = chunkPos.getMiddleBlockZ();
@@ -149,6 +149,11 @@ public class VillageGenerator {
             return null;
         }
 
+        // 佈局模板需要周围的区块：自然生成时只有触发的区块已加载，先把整片村庄范围加载（必要时生成），
+        // 否则所有朝向都会因为市政厅所在区块未加载而被淘汰，村庄退回旧的随机选址
+        loadVillageArea(level, chunkPos);
+        centerPos = new BlockPos(centerX, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, centerX, centerZ), centerZ);
+
         // 创建村庄
         Village village = new Village(centerPos, culture);
         village.setDimension(level.dimension().location().toString());
@@ -163,6 +168,17 @@ public class VillageGenerator {
             culture.getDisplayName(), village.getName(), centerPos);
 
         return village;
+    }
+
+    /** 村庄范围（区块半径）：佈局的道路、临街带和外围田地约在广场 110 格以内 */
+    private static final int VILLAGE_CHUNK_RADIUS = 7;
+
+    private static void loadVillageArea(ServerLevel level, ChunkPos centre) {
+        for (int dx = -VILLAGE_CHUNK_RADIUS; dx <= VILLAGE_CHUNK_RADIUS; dx++) {
+            for (int dz = -VILLAGE_CHUNK_RADIUS; dz <= VILLAGE_CHUNK_RADIUS; dz++) {
+                level.getChunk(centre.x + dx, centre.z + dz);
+            }
+        }
     }
 
     // ================ 检查方法 ================

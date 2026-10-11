@@ -180,8 +180,6 @@ public class MillenaireRewrite {
             MenuScreens.register(ModMenuTypes.TOWN_HALL.get(), TownHallScreen::new);
             // 注册交易GUI屏幕
             MenuScreens.register(ModMenuTypes.TRADING.get(), TradingScreen::new);
-            MenuScreens.register(ModMenuTypes.VILLAGE_TRADE.get(),
-                com.jasoncian.millenaire_rewrite.client.gui.VillageTradeScreen::new);
         }
 
         @SubscribeEvent

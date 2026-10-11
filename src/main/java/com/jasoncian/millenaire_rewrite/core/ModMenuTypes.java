@@ -60,10 +60,6 @@ public class ModMenuTypes {
     public static final RegistryObject<MenuType<TradingMenu>> TRADING =
         MENUS.register("trading", () -> IForgeMenuType.create(TradingMenu::new));
 
-    /** 村庄商店交易菜单（原版式：按商店的买卖清单交易） */
-    public static final RegistryObject<MenuType<com.jasoncian.millenaire_rewrite.menu.VillageTradeMenu>> VILLAGE_TRADE =
-        MENUS.register("village_trade", () -> IForgeMenuType.create(com.jasoncian.millenaire_rewrite.menu.VillageTradeMenu::new));
-
     /**
      * 注册所有菜单类型到模组事件总线
      *

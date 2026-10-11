@@ -51,12 +51,10 @@ public class ModNetworking {
         playToClient(EconomySyncPacket.class, EconomySyncPacket.STREAM_CODEC, EconomySyncPacket::handle);
         playToClient(ReputationSyncPacket.class, ReputationSyncPacket.STREAM_CODEC, ReputationSyncPacket::handle);
         playToClient(VillageListSyncPacket.class, VillageListSyncPacket.STREAM_CODEC, VillageListSyncPacket::handle);
-        playToClient(VillageTradePackets.State.class, VillageTradePackets.State.STREAM_CODEC, VillageTradePackets.State::handle);
 
         // 客户端 -> 服务端 包
         playToServer(RequestVillageDataPacket.class, RequestVillageDataPacket.STREAM_CODEC, RequestVillageDataPacket::handle);
         playToServer(QuestActionPacket.class, QuestActionPacket.STREAM_CODEC, QuestActionPacket::handle);
-        playToServer(VillageTradePackets.Action.class, VillageTradePackets.Action.STREAM_CODEC, VillageTradePackets.Action::handle);
 
         MillenaireRewrite.LOGGER.info("Millenaire network packets registered");
     }
