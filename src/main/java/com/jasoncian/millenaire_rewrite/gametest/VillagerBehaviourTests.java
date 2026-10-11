@@ -200,4 +200,64 @@ public class VillagerBehaviourTests {
             helper.fail(e.toString());
         }
     }
+
+    /**
+     * 原版物资流动：木匠家里缺木头（requiredGood=wood,64）时去市政厅拿木头带回家，再在家里做木框架
+     */
+    @GameTest(template = "empty", timeoutTicks = 3000, batch = "time_goods")
+    public static void carpenterFetchesWoodForHousehold(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "carpenterFetchesWoodForHousehold")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 18200));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        try {
+            var hallPlan = BuildingPlan.get("norman", "manor", 'A', 0);
+            var housePlan = BuildingPlan.get("norman", "carpenterhouse", 'A', 0);
+            var hallOrigin = TestTerrain.ground(centre);
+            var houseOrigin = hallOrigin.offset(40, 0, 0);
+            var hallResult = BuildingPlacer.place(level, hallPlan, hallOrigin, 0);
+            var houseResult = BuildingPlacer.place(level, housePlan, houseOrigin, 0);
+            var village = new Village(hallOrigin, Culture.NORMAN);
+            com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).registerVillage(village);
+            var hall = village.getGrowth().recordBuilding(hallPlan, hallOrigin, 0, hallResult, true);
+            var house = village.getGrowth().recordBuilding(housePlan, houseOrigin, 0, houseResult, false);
+            var wood = com.jasoncian.millenaire_rewrite.economy.Goods.get("wood");
+            var frame = com.jasoncian.millenaire_rewrite.economy.Goods.get("timberframeplain");
+            com.jasoncian.millenaire_rewrite.economy.BuildingStock.store(level, hall, wood, 200);
+            var home = house.points("sleepingPos").isEmpty() ? houseOrigin : house.points("sleepingPos").get(0);
+            MillVillager carpenter = ResidentSpawner.spawnResident(level, village, "norman", "carpenter", home);
+            // 原版由同一户的妻子替家里取物资
+            MillVillager wife = ResidentSpawner.spawnResident(level, village, "norman", "wife", home);
+            level.setDayTime(1000);
+            int previous = com.jasoncian.millenaire_rewrite.command.TickWarp.factor();
+            com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(10);
+            helper.runAtTickTime(2500, () -> {
+                com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(previous);
+                int woodAtHome = com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, house, wood);
+                int framesAtHome = com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, house, frame);
+                int woodInHall = com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, hall, wood);
+                MillenaireRewrite.LOGGER.info("[gametest] carpenter: hall wood {}, house wood {}, frames {}, carrying wood {}, goal {}",
+                    woodInHall, woodAtHome, framesAtHome, carpenter == null ? 0 : carpenter.countGood(wood),
+                    carpenter == null ? null : carpenter.getGoalManager().getCurrentGoal());
+                com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).removeVillage(village);
+                if (carpenter != null) {
+                    carpenter.discard();
+                }
+                if (wife != null) {
+                    wife.discard();
+                }
+                TestTerrain.setForced(level, centre, false);
+                if (woodInHall >= 200) {
+                    helper.fail("the carpenter did not fetch any wood from the town hall");
+                }
+                helper.succeed();
+            });
+        } catch (java.io.IOException e) {
+            TestTerrain.setForced(level, centre, false);
+            helper.fail(e.toString());
+        }
+    }
 }

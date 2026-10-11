@@ -28,7 +28,8 @@ public final class VillagerTypes {
                                @Nullable String firstNameList, @Nullable String familyNameList,
                                List<String> textures, Map<Integer, List<String>> clothes,
                                float baseHeight, int health, List<String> tags, String model,
-                               List<String> goals) {
+                               List<String> goals, Map<String, Integer> requiredGoods, List<String> collectGoods,
+                               List<String> bringBackHomeGoods) {
 
         public String randomTexture(RandomSource random) {
             return textures.isEmpty() ? "" : textures.get(random.nextInt(textures.size()));
@@ -96,6 +97,9 @@ public final class VillagerTypes {
         List<String> tags = new ArrayList<>();
         String model = "";
         List<String> goals = new ArrayList<>();
+        Map<String, Integer> requiredGoods = new java.util.LinkedHashMap<>();
+        List<String> collectGoods = new ArrayList<>();
+        List<String> bringBackHomeGoods = new ArrayList<>();
 
         for (String raw : MillContent.readLines(file)) {
             String line = raw.trim();
@@ -115,6 +119,20 @@ public final class VillagerTypes {
                 case "tag" -> tags.add(v);
                 case "model" -> model = v;
                 case "goal" -> goals.add(v.toLowerCase());
+                case "requiredgood" -> {
+                    // requiredGood=商品,数量：家里应该常备的物资（原版 requiredGoods）
+                    String[] p = v.split(",");
+                    if (p.length == 2) {
+                        try {
+                            requiredGoods.merge(p[0].trim().toLowerCase(),
+                                com.jasoncian.millenaire_rewrite.economy.CultureEconomy.readInteger(p[1]), Integer::sum);
+                        } catch (NumberFormatException e) {
+                            // 忽略写错的行
+                        }
+                    }
+                }
+                case "collectgood" -> collectGoods.add(v.toLowerCase());
+                case "bringbackhomegood" -> bringBackHomeGoods.add(v.toLowerCase());
                 case "clothes" -> {
                     // clothes=名称,材质 或 clothes=名称,层,材质；只使用默认衣服 "free"
                     String[] parts = v.split(",");
@@ -128,6 +146,7 @@ public final class VillagerTypes {
             }
         }
         return new VillagerType(culture, key, nativeName, female, firstNames, familyNames,
-            List.copyOf(textures), clothes, baseHeight, health, List.copyOf(tags), model, List.copyOf(goals));
+            List.copyOf(textures), clothes, baseHeight, health, List.copyOf(tags), model, List.copyOf(goals),
+            Map.copyOf(requiredGoods), List.copyOf(collectGoods), List.copyOf(bringBackHomeGoods));
     }
 }

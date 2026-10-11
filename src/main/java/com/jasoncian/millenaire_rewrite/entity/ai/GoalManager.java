@@ -322,6 +322,8 @@ public class GoalManager {
      * 完成目标
      */
     private void completeGoal(GoalState finalState) {
+        // 原版 nextGoal：有些目标完成后接着做指定的目标（取物资 -> 送回家）
+        MillGoal next = finalState == GoalState.COMPLETED && currentGoal != null ? currentGoal.nextGoal(villager) : null;
         if (currentGoal != null) {
             switch (finalState) {
                 case COMPLETED -> currentGoal.onComplete(villager);
@@ -340,7 +342,9 @@ public class GoalManager {
         villager.setCurrentGoalKey("");
 
         // 立即尝试选择新目标
-        if (finalState != GoalState.INTERRUPTED) {
+        if (next != null) {
+            acceptGoal(next);
+        } else if (finalState != GoalState.INTERRUPTED) {
             selectNextGoal();
         }
     }

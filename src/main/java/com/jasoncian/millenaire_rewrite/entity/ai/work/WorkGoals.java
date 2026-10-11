@@ -45,6 +45,11 @@ public final class WorkGoals {
                 case "gorest" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.LifeGoals.GoRest());
                 case "gosocialise" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.LifeGoals.GoSocialise());
                 case "chat" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.LifeGoals.Chat());
+                case "getgoodshousehold" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.GetGoodsForHousehold());
+                case "delivergoodshousehold" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.DeliverGoodsHousehold());
+                case "deliverresourcesshop" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.DeliverResourcesShop());
+                case "gethousethresources" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.GetResourcesForShops());
+                case "gathergoods" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.GatherGoods());
                 case "choptrees" -> goals.add(new GoalChopTrees());
                 case "bringbackresourceshome" -> goals.add(new GoalDeliver());
                 default -> {

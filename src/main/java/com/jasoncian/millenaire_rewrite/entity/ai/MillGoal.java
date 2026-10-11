@@ -140,6 +140,14 @@ public abstract class MillGoal {
     /**
      * 检查目标是否仍然有效
      */
+    /**
+     * 原版 nextGoal：完成后接着要做的目标（没有时返回 null，照常重新选择）
+     */
+    @javax.annotation.Nullable
+    public MillGoal nextGoal(MillVillager villager) {
+        return null;
+    }
+
     public boolean isStillValid(MillVillager villager) {
         return true;
     }
