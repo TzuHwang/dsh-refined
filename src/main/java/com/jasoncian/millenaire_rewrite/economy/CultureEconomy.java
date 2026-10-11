@@ -195,9 +195,20 @@ public final class CultureEconomy {
             return fallback;
         }
         try {
-            return Integer.parseInt(v[i].trim());
+            return readInteger(v[i]);
         } catch (NumberFormatException e) {
             return fallback;
         }
+    }
+
+    /**
+     * 原版 MillCommonUtilities.readInteger：数字可以写成乘式，如 2*64*64
+     */
+    public static int readInteger(String text) {
+        int result = 1;
+        for (String part : text.trim().split("\\*")) {
+            result *= Integer.parseInt(part.trim());
+        }
+        return result;
     }
 }

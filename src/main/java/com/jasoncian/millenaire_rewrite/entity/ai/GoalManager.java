@@ -139,6 +139,16 @@ public class GoalManager {
     }
 
     /**
+     * 立即改做指定目标（打断当前目标），例如村庄派卖家去商店
+     */
+    public void forceGoal(MillGoal goal) {
+        if (currentGoal != null) {
+            currentGoal.onInterrupt(villager);
+        }
+        acceptGoal(goal);
+    }
+
+    /**
      * 从列表中选择最高优先级的目标
      */
     @Nullable

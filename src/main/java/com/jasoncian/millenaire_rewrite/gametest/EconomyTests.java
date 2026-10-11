@@ -62,6 +62,73 @@ public class EconomyTests {
     }
 
     /**
+     * 与面包店交易：买面包扣钱、减库存、加声望；卖小麦进箱子、收钱
+     */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void tradeWithBakery(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "tradeWithBakery")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 15800));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        try {
+            var plan = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlan.get("norman", "bakery", 'A', 0);
+            var origin = TestTerrain.ground(centre);
+            var result = com.jasoncian.millenaire_rewrite.buildingplan.BuildingPlacer.place(level, plan, origin, 0);
+            var village = new com.jasoncian.millenaire_rewrite.village.Village(origin,
+                com.jasoncian.millenaire_rewrite.entity.culture.Culture.NORMAN);
+            var bakery = village.getGrowth().recordBuilding(plan, origin, 0, result, false);
+            var bread = Goods.get("bread");
+            var wheat = Goods.get("wheat");
+            com.jasoncian.millenaire_rewrite.economy.BuildingStock.store(level, bakery, bread, 20);
+            var player = helper.makeMockPlayer();
+            player.getInventory().clearContent();
+            player.getInventory().add(new net.minecraft.world.item.ItemStack(
+                com.jasoncian.millenaire_rewrite.core.ModItems.DENIER_ARGENT.get(), 10));
+            player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.WHEAT, 10));
+            var offers = com.jasoncian.millenaire_rewrite.economy.VillageTrade.offers(level, village, bakery, player);
+            MillenaireRewrite.LOGGER.info("[gametest] bakery offers: {}", offers.stream()
+                .map(o -> (o.villageSells() ? "sells " : "buys ") + o.key() + "@" + o.price() + " stock " + o.stock()).toList());
+            var breadOffer = offers.stream().filter(o -> o.villageSells() && o.key().equals("bread")).findFirst().orElse(null);
+            var wheatOffer = offers.stream().filter(o -> !o.villageSells() && o.key().equals("wheat")).findFirst().orElse(null);
+            if (breadOffer == null || wheatOffer == null) {
+                helper.fail("bakery should sell bread and buy wheat: " + offers);
+                return;
+            }
+            int money = com.jasoncian.millenaire_rewrite.util.CurrencyUtils.getPlayerTotalCurrency(player);
+            var bought = com.jasoncian.millenaire_rewrite.economy.VillageTrade.execute(level, village, bakery, player, true,
+                "bread", 5);
+            int afterBuy = com.jasoncian.millenaire_rewrite.util.CurrencyUtils.getPlayerTotalCurrency(player);
+            int breadInChest = com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, bakery, bread);
+            int breadOnPlayer = com.jasoncian.millenaire_rewrite.economy.VillageTrade.countInInventory(player, bread);
+            var sold = com.jasoncian.millenaire_rewrite.economy.VillageTrade.execute(level, village, bakery, player, false,
+                "wheat", 10);
+            int afterSell = com.jasoncian.millenaire_rewrite.util.CurrencyUtils.getPlayerTotalCurrency(player);
+            int wheatInChest = com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, bakery, wheat);
+            int reputation = village.getGrowth().getReputation(player.getUUID());
+            MillenaireRewrite.LOGGER.info("[gametest] bakery trade: bought {} ({}), money {} -> {}, bread chest {} player {}; "
+                + "sold {} ({}), money {}, wheat chest {}, reputation {}", bought.count(), bought.problem(), money, afterBuy,
+                breadInChest, breadOnPlayer, sold.count(), sold.problem(), afterSell, wheatInChest, reputation);
+            if (bought.count() != 5 || afterBuy != money - 5 * breadOffer.price() || breadInChest != 15 || breadOnPlayer != 5) {
+                helper.fail("buying bread went wrong");
+            }
+            if (sold.count() != 10 || afterSell != afterBuy + 10 * wheatOffer.price() || wheatInChest != 10) {
+                helper.fail("selling wheat went wrong");
+            }
+            if (reputation != 5 * breadOffer.price() + 10 * wheatOffer.price()) {
+                helper.fail("reputation is " + reputation);
+            }
+        } catch (java.io.IOException e) {
+            helper.fail(e.toString());
+        } finally {
+            TestTerrain.setForced(level, centre, false);
+        }
+        helper.succeed();
+    }
+
+    /**
      * 货币（原版比例：1 银 = 64 铜，1 金 = 64 银）：2 银 5 铜 = 133，付 70 剩 63，再收 1 金
      */
     @GameTest(template = "empty", timeoutTicks = 20)

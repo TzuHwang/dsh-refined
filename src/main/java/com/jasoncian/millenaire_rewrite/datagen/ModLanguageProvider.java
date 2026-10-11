@@ -44,6 +44,47 @@ public class ModLanguageProvider extends LanguageProvider {
         } else if ("zh_cn".equals(locale)) {
             addChineseTranslations();
         }
+        addTradeTranslations();
+    }
+
+    /**
+     * 村庄商店交易界面（三种语言）
+     */
+    private void addTradeTranslations() {
+        String[][] keys = {
+            // key, en_us, zh_cn, zh_tw
+            {"gui.millenaire_rewrite.trade.village_sells", "Village sells", "村庄出售", "村莊出售"},
+            {"gui.millenaire_rewrite.trade.village_buys", "Village buys", "村庄收购", "村莊收購"},
+            {"gui.millenaire_rewrite.trade.reputation", "Reputation: %s", "声望：%s", "聲望：%s"},
+            {"gui.millenaire_rewrite.trade.price_buy", "Price: %s", "价格：%s", "價格：%s"},
+            {"gui.millenaire_rewrite.trade.price_sell", "Village pays: %s", "收购价：%s", "收購價：%s"},
+            {"gui.millenaire_rewrite.trade.stock", "In stock: %s", "库存：%s", "庫存：%s"},
+            {"gui.millenaire_rewrite.trade.stock_unlimited", "In stock: plenty", "库存：充足", "庫存：充足"},
+            {"gui.millenaire_rewrite.trade.you_have", "You have: %s", "你有：%s", "你有：%s"},
+            {"gui.millenaire_rewrite.trade.needs_reputation", "Needs reputation %s", "需要声望 %s", "需要聲望 %s"},
+            {"gui.millenaire_rewrite.trade.controls", "Click: 1, right click: 8, shift click: 64",
+                "左键 1 个，右键 8 个，Shift+左键 64 个", "左鍵 1 個，右鍵 8 個，Shift+左鍵 64 個"},
+            {"gui.millenaire_rewrite.trade.problem.money", "Not enough money", "钱不够", "錢不夠"},
+            {"gui.millenaire_rewrite.trade.problem.stock", "Out of stock", "缺货", "缺貨"},
+            {"gui.millenaire_rewrite.trade.problem.inventory", "Your inventory is full", "背包满了", "背包滿了"},
+            {"gui.millenaire_rewrite.trade.problem.nothing", "You have none", "你没有这件物品", "你沒有這件物品"},
+            {"gui.millenaire_rewrite.trade.problem.full", "The shop's chests are full", "商店的箱子满了", "商店的箱子滿了"},
+            {"gui.millenaire_rewrite.trade.problem.reputation", "Reputation too low", "声望不够", "聲望不夠"},
+            {"gui.millenaire_rewrite.trade.problem.unknown", "Not traded here", "这里不卖这个", "這裡不賣這個"},
+            {"message.millenaire_rewrite.seller_coming", "%s is coming to serve you.", "%s 过来招呼你了。",
+                "%s 過來招呼你了。"},
+            {"message.millenaire_rewrite.trade_complete", "%s goes back to work.", "%s 回去工作了。", "%s 回去工作了。"},
+            {"message.millenaire_rewrite.seller_boycott", "%s refuses to trade with you.", "%s 拒绝和你交易。",
+                "%s 拒絕和你交易。"},
+        };
+        int column = switch (locale) {
+            case "zh_cn" -> 2;
+            case "zh_tw" -> 3;
+            default -> 1;
+        };
+        for (String[] k : keys) {
+            add(k[0], k[column]);
+        }
     }
 
     private void addEnglishTranslations() {

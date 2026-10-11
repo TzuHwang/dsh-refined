@@ -26,9 +26,14 @@ public final class VillageTypes {
      * @param secondary  核心建筑之后建造的建筑
      * @param pathMaterials 道路材料（原版名称，如 pathdirt），第一个为当前使用的材料
      */
+    /**
+     * @param sellingPrices 这个村庄类型自己的卖价（商品键 -> 铜币），覆盖 traded_goods 的价格
+     * @param buyingPrices  这个村庄类型自己的收购价
+     */
     public record VillageType(String fileName, String name, String centre, int weight,
                               List<String> start, List<String> core, List<String> secondary,
-                              List<String> pathMaterials) {
+                              List<String> pathMaterials, java.util.Map<String, Integer> sellingPrices,
+                              java.util.Map<String, Integer> buyingPrices) {
     }
 
     /**
@@ -101,6 +106,8 @@ public final class VillageTypes {
         List<String> core = new ArrayList<>();
         List<String> secondary = new ArrayList<>();
         List<String> pathMaterials = new ArrayList<>();
+        java.util.Map<String, Integer> sellingPrices = new java.util.HashMap<>();
+        java.util.Map<String, Integer> buyingPrices = new java.util.HashMap<>();
         for (String raw : MillContent.readLines(file)) {
             String line = raw.trim();
             if (line.startsWith("//") || !line.contains("=")) {
@@ -115,12 +122,25 @@ public final class VillageTypes {
                 case "core" -> core.add(kv[1].trim());
                 case "secondary" -> secondary.add(kv[1].trim());
                 case "pathmaterial" -> pathMaterials.add(kv[1].trim());
+                case "sellingprice", "buyingprice" -> {
+                    String[] gp = kv[1].split(",");
+                    if (gp.length == 2) {
+                        try {
+                            (kv[0].trim().equalsIgnoreCase("sellingprice") ? sellingPrices : buyingPrices)
+                                .put(gp[0].trim().toLowerCase(), com.jasoncian.millenaire_rewrite.economy.CultureEconomy
+                                    .readInteger(gp[1]));
+                        } catch (NumberFormatException e) {
+                            // 忽略写错的价格
+                        }
+                    }
+                }
                 default -> {
                 }
             }
         }
         return centre == null ? null
             : new VillageType(fileName, name, centre, weight, List.copyOf(start), List.copyOf(core),
-                List.copyOf(secondary), List.copyOf(pathMaterials));
+                List.copyOf(secondary), List.copyOf(pathMaterials), java.util.Map.copyOf(sellingPrices),
+                java.util.Map.copyOf(buyingPrices));
     }
 }

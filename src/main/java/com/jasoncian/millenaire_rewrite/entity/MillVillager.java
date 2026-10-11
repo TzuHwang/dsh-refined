@@ -368,6 +368,11 @@ public class MillVillager extends PathfinderMob {
 
     @Override
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+        // 站在商店里的卖家：打开商店交易界面（原版 interactSpecial）
+        if (!this.level().isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+            && com.jasoncian.millenaire_rewrite.menu.VillageTradeMenu.open(serverPlayer, this)) {
+            return InteractionResult.SUCCESS;
+        }
         if (!this.level().isClientSide()) {
             // 打开村民交互GUI
             net.minecraftforge.network.NetworkHooks.openScreen((net.minecraft.server.level.ServerPlayer) player, new SimpleMenuProvider(

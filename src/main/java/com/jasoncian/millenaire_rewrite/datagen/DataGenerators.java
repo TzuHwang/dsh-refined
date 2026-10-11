@@ -54,6 +54,7 @@ public class DataGenerators {
         if (event.includeClient()) {
             generator.addProvider(true, new ModLanguageProvider(packOutput, "en_us"));
             generator.addProvider(true, new ModLanguageProvider(packOutput, "zh_cn"));
+            generator.addProvider(true, new ModLanguageProvider(packOutput, "zh_tw"));
         }
 
         // 注册配方数据生成器（当我们有配方时）

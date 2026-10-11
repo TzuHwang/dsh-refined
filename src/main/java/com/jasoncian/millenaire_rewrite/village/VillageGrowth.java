@@ -200,6 +200,12 @@ public class VillageGrowth {
     private com.jasoncian.millenaire_rewrite.village.layout.VillageLayout layout;
     /** 佈局放不下、改为自由选址的建筑数（不存档，测试和调试用） */
     private int freePlacements;
+    /** 玩家在这个村庄的声望（原版尺度，单位为铜币；交易额计入声望） */
+    private final Map<java.util.UUID, Integer> reputation = new HashMap<>();
+    /** 原版：声望低于这个值时村民拒绝交易 */
+    public static final int MIN_REPUTATION_FOR_TRADE = -1024;
+    /** 原版：声望上限 */
+    public static final int MAX_REPUTATION = 32768;
 
     public VillageGrowth(Village village) {
         this.village = village;
@@ -216,6 +222,19 @@ public class VillageGrowth {
     @Nullable
     public com.jasoncian.millenaire_rewrite.village.layout.VillageLayout getLayout() {
         return layout;
+    }
+
+    public String getVillageTypeFile() {
+        return villageTypeFile;
+    }
+
+    public int getReputation(java.util.UUID player) {
+        return reputation.getOrDefault(player, 0);
+    }
+
+    public void adjustReputation(java.util.UUID player, int amount) {
+        reputation.put(player, Math.min(MAX_REPUTATION, getReputation(player) + amount));
+        village.markDirty();
     }
 
     public int getFreePlacements() {
@@ -362,6 +381,9 @@ public class VillageGrowth {
         // 未生成成长数据的旧村庄，或玩家不在附近（市政厅区块未加载）时暂停
         if (villageTypeFile.isEmpty() || !level.isLoaded(village.getTownHallPos())) {
             return;
+        }
+        if (level.getGameTime() % 20 == 0) {
+            com.jasoncian.millenaire_rewrite.economy.SellerDispatch.tick(level, village);
         }
         if (project != null) {
             BuildingPlacer.Construction c = construction(level);
@@ -769,6 +791,9 @@ public class VillageGrowth {
         if (layout != null) {
             tag.put("Layout", layout.save());
         }
+        CompoundTag rep = new CompoundTag();
+        reputation.forEach((id, value) -> rep.putInt(id.toString(), value));
+        tag.put("Reputation", rep);
         if (project != null) {
             CompoundTag p = new CompoundTag();
             p.putString("Key", project.key);
@@ -794,6 +819,15 @@ public class VillageGrowth {
         pathNetwork.clear();
         for (long cell : tag.getLongArray("PathNetwork")) {
             pathNetwork.add(cell);
+        }
+        reputation.clear();
+        CompoundTag rep = tag.getCompound("Reputation");
+        for (String id : rep.getAllKeys()) {
+            try {
+                reputation.put(java.util.UUID.fromString(id), rep.getInt(id));
+            } catch (IllegalArgumentException e) {
+                // 忽略坏掉的条目
+            }
         }
         layout = tag.contains("Layout")
             ? com.jasoncian.millenaire_rewrite.village.layout.VillageLayout.load(tag.getCompound("Layout")) : null;
