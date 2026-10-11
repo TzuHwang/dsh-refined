@@ -673,18 +673,27 @@ public class VillageGrowth {
         if (project == null || hall == null || !v.getUUID().equals(project.builder)) {
             return false;
         }
-        boolean complete = true;
-        for (var e : projectCost().entrySet()) {
-            int missing = e.getValue() - v.countGood(e.getKey());
-            if (missing > 0) {
-                int taken = com.jasoncian.millenaire_rewrite.economy.BuildingStock.take(level, hall, e.getKey(), missing);
-                v.addGood(e.getKey(), taken);
-                complete &= taken >= missing;
+        Map<com.jasoncian.millenaire_rewrite.economy.Goods.Good, Integer> cost = projectCost();
+        for (var e : cost.entrySet()) {
+            int have = v.countGood(e.getKey())
+                + com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, hall, e.getKey());
+            if (have < e.getValue()) {
+                // 材料不够（被别人拿走了）：先不拿，免得材料散在村民身上
+                MillenaireRewrite.LOGGER.info("Village {}: not enough {} for {} ({}/{})", village.getName(),
+                    e.getKey().key(), project.key, have, e.getValue());
+                return false;
             }
         }
-        project.supplied = complete;
+        for (var e : cost.entrySet()) {
+            int missing = e.getValue() - v.countGood(e.getKey());
+            if (missing > 0) {
+                v.addGood(e.getKey(),
+                    com.jasoncian.millenaire_rewrite.economy.BuildingStock.take(level, hall, e.getKey(), missing));
+            }
+        }
+        project.supplied = true;
         village.markDirty();
-        return complete;
+        return true;
     }
 
     /** 建造者要去的施工位置 */
