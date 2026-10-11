@@ -46,14 +46,22 @@ public final class BlockList {
                 int colour = (Integer.parseInt(rgb[0]) << 16) | (Integer.parseInt(rgb[1]) << 8) | Integer.parseInt(rgb[2]);
                 String label = p[0];
                 String stateString = p[1];
+                // 原版 cost：costItem;costValues;costQuantity，没写时方块按 1 个自身计，特殊标记免费
+                String costItem = p.length > 4 && !p[4].isBlank() ? p[4].trim() : null;
+                Integer costQuantity = null;
+                if (p.length > 6 && !p[6].isBlank()) {
+                    costQuantity = Integer.parseInt(p[6].trim());
+                }
                 if (stateString.isEmpty()) {
-                    map.put(colour, new PointType(label, label, null, false));
+                    map.put(colour, new PointType(label, label, null, false, costItem,
+                        costQuantity == null ? 0 : costQuantity));
                     continue;
                 }
                 try {
                     BlockState state = BlockStateParser.parseForBlock(
                         BuiltInRegistries.BLOCK.asLookup(), stateString, false).blockState();
-                    map.put(colour, new PointType(label, null, state, Boolean.parseBoolean(p[2])));
+                    map.put(colour, new PointType(label, null, state, Boolean.parseBoolean(p[2]), costItem,
+                        costQuantity != null ? costQuantity : state.isAir() ? 0 : 1));
                 } catch (CommandSyntaxException e) {
                     errors++;
                     MillenaireRewrite.LOGGER.warn("blocklist: cannot parse block state '{}' for '{}': {}",

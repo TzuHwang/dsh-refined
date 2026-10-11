@@ -387,6 +387,17 @@ public class GoalManager {
         return goalInfo;
     }
 
+    /**
+     * 进行中的目标换目的地（原版 setGoalDestPoint，如施工换到下一块）
+     */
+    public void updateDestination(BlockPos pos) {
+        BlockPos old = getDestination();
+        if (old == null || !old.equals(pos)) {
+            goalInfo = GoalInformation.ofDestination(pos);
+            villager.getNavigation().stop();
+        }
+    }
+
     @Nullable
     public BlockPos getDestination() {
         return goalInfo != null ? goalInfo.getEffectiveDestination() : null;

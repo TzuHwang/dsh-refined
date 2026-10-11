@@ -1149,6 +1149,11 @@ public class VillageGrowthTests {
         ServerLevel level = helper.getLevel();
         Village village = createVillage(helper, 2000, Culture.NORMAN);
         VillageGrowth growth = village.getGrowth();
+        // 没有建造者的村庄（如村民都死了）：按时间自动施工
+        for (var v : List.copyOf(village.getActiveVillagers())) {
+            village.unregisterVillager(v);
+            v.discard();
+        }
         int before = growth.getBuildings().size();
         if (!growth.startNextProject(level)) {
             cleanup(level, village);

@@ -55,6 +55,8 @@ public final class WorkGoals {
                 case "plantsugarcane" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.WorkSpecials.SugarCane(false));
                 case "harvestsugarcane" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.WorkSpecials.SugarCane(true));
                 case "huntmonster" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.CombatGoals.HuntMonster());
+                case "getresourcesforbuild" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.ConstructionGoals.GetResourcesForBuild());
+                case "construction" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.ConstructionGoals.Construction());
                 case "keepstall" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.VisitorGoals.KeepStall());
                 case "becomeadult" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.FamilyGoals.BecomeAdult());
                 case "gathergoods" -> goals.add(new com.jasoncian.millenaire_rewrite.entity.ai.original.GoodsGoals.GatherGoods());

@@ -182,6 +182,11 @@ public class VillageGrowth {
         final int orientation;
         final int upgradeOf;
         int progress;
+        /** 建造者已从市政厅取走材料（原版 GoalGetResourcesForBuild） */
+        boolean supplied;
+        /** 负责这个工程的建造者 */
+        @Nullable
+        java.util.UUID builder;
 
         Project(String key, char variation, int level, BlockPos origin, int orientation, int upgradeOf) {
             this.key = key;
@@ -361,6 +366,12 @@ public class VillageGrowth {
         return project == null ? null : project.key + " " + project.level;
     }
 
+    /** 调试用：施工进度（已做步骤/总步骤） */
+    public String projectProgress(ServerLevel level) {
+        BuildingPlacer.Construction c = project == null ? null : construction(level);
+        return c == null ? "-" : c.progress() + "/" + c.size() + (project.supplied ? " supplied" : "");
+    }
+
     private String cultureFolder() {
         return VillageTypes.cultureFolder(village.getCulture());
     }
@@ -425,6 +436,18 @@ public class VillageGrowth {
         if (level.getGameTime() % 20 == 0) {
             com.jasoncian.millenaire_rewrite.economy.SellerDispatch.tick(level, village);
             com.jasoncian.millenaire_rewrite.entity.ai.original.VisitorGoals.tick(level, village);
+            builderMode = hasBuilders();
+            checkBuilder();
+        }
+        if (builderMode == null) {
+            builderMode = hasBuilders();
+        }
+        if (builderMode) {
+            // 原版：村民取材料、一块一块地盖（ConstructionGoals）；村庄只负责挑选买得起的工程
+            if (project == null && level.getGameTime() >= nextProjectTime) {
+                startProject(level, true);
+            }
+            return;
         }
         if (project != null) {
             BuildingPlacer.Construction c = construction(level);
@@ -472,6 +495,13 @@ public class VillageGrowth {
      * @return 是否开始了工程
      */
     public boolean startNextProject(ServerLevel level) {
+        return startProject(level, false);
+    }
+
+    /**
+     * @param checkCost 只考虑市政厅里材料够的工程（原版 canAffordBuild）
+     */
+    private boolean startProject(ServerLevel level, boolean checkCost) {
         nextProjectTime = level.getGameTime() + PROJECT_INTERVAL;
         VillageTypes.VillageType type;
         try {
@@ -498,7 +528,7 @@ public class VillageGrowth {
         int bestUpgradeOf = -1;
         for (String key : newCandidates) {
             BuildingPlan plan = plan(key, 'A', 0);
-            if (plan != null && (best == null || plan.priority > best.priority)) {
+            if (plan != null && (!checkCost || canAfford(level, plan)) && (best == null || plan.priority > best.priority)) {
                 best = plan;
                 bestUpgradeOf = -1;
             }
@@ -509,7 +539,7 @@ public class VillageGrowth {
                 continue;
             }
             BuildingPlan plan = plan(b.key, b.variation, b.level + 1);
-            if (plan != null && (best == null || plan.priority > best.priority)) {
+            if (plan != null && (!checkCost || canAfford(level, plan)) && (best == null || plan.priority > best.priority)) {
                 best = plan;
                 bestUpgradeOf = i;
             }
@@ -526,7 +556,7 @@ public class VillageGrowth {
             if (site == null) {
                 MillenaireRewrite.LOGGER.info("Village {}: no site found for {}, skipping it", village.getName(), best.key);
                 unplaceable.add(best.key);
-                return startNextProject(level);
+                return startProject(level, checkCost);
             }
             project = new Project(best.key, best.variation, 0, site.origin(), site.orientation(), -1);
         }
@@ -534,6 +564,166 @@ public class VillageGrowth {
         village.markDirty();
         MillenaireRewrite.LOGGER.info("Village {} started {} {} (level {}) at {}", village.getName(),
             bestUpgradeOf >= 0 ? "upgrading" : "building", best.key, best.level, project.origin.toShortString());
+        return true;
+    }
+
+    // ================ 村民施工（原版 ConstructionIP） ================
+
+    /** 每个施工动作做几次（测试加速用，正常为 1） */
+    public static int buildSpeed = 1;
+
+    /** 村里有会盖房子的村民（目标里有 construction）：改由村民施工；null 为还没检查过 */
+    @Nullable
+    private Boolean builderMode;
+
+    private boolean hasBuilders() {
+        String culture = cultureFolder();
+        for (com.jasoncian.millenaire_rewrite.entity.MillVillager v : village.getActiveVillagers()) {
+            try {
+                var type = com.jasoncian.millenaire_rewrite.content.VillagerTypes.get(culture, v.getVillagerType());
+                if (type != null && type.goals().stream().anyMatch(g -> g.equalsIgnoreCase("construction"))) {
+                    return true;
+                }
+            } catch (IOException e) {
+                // 跳过
+            }
+        }
+        return false;
+    }
+
+    /** 建造者不在了（死亡、离开）：材料随他消失，工程等下一个建造者重新取材料 */
+    private void checkBuilder() {
+        if (project == null || project.builder == null) {
+            return;
+        }
+        java.util.UUID id = project.builder;
+        boolean present = village.getActiveVillagers().stream().anyMatch(v -> !v.isRemoved() && v.getUUID().equals(id));
+        if (!present) {
+            project.builder = null;
+            project.supplied = false;
+        }
+    }
+
+    public boolean isBuilderMode() {
+        return builderMode != null && builderMode;
+    }
+
+    @Nullable
+    public PlacedBuilding townHall() {
+        return buildings.stream().filter(b -> b.townHall).findFirst().orElse(null);
+    }
+
+    /** 当前工程的材料 */
+    public Map<com.jasoncian.millenaire_rewrite.economy.Goods.Good, Integer> projectCost() {
+        if (project == null) {
+            return Map.of();
+        }
+        BuildingPlan plan = plan(project.key, project.variation, project.level);
+        return plan == null ? Map.of() : com.jasoncian.millenaire_rewrite.buildingplan.BuildingCost.of(plan);
+    }
+
+    /** 原版 canAffordBuild：市政厅里的材料够盖这一级 */
+    public boolean canAfford(ServerLevel level, BuildingPlan plan) {
+        PlacedBuilding hall = townHall();
+        if (hall == null) {
+            return false;
+        }
+        for (var e : com.jasoncian.millenaire_rewrite.buildingplan.BuildingCost.of(plan).entrySet()) {
+            if (com.jasoncian.millenaire_rewrite.economy.BuildingStock.count(level, hall, e.getKey()) < e.getValue()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** 有工程在等建造者去市政厅取材料 */
+    public boolean projectNeedsSupplies() {
+        return project != null && !project.supplied && project.builder == null;
+    }
+
+    /** 工程材料已备好，由这个村民施工 */
+    public boolean isBuilderOf(com.jasoncian.millenaire_rewrite.entity.MillVillager v) {
+        return project != null && project.supplied && v.getUUID().equals(project.builder);
+    }
+
+    /** 认领工程（原版 cip.setBuilder） */
+    public boolean claimProject(com.jasoncian.millenaire_rewrite.entity.MillVillager v) {
+        if (project == null || project.builder != null && !project.builder.equals(v.getUUID())) {
+            return false;
+        }
+        project.builder = v.getUUID();
+        village.markDirty();
+        return true;
+    }
+
+    /** 放弃认领（取材料前就中断了） */
+    public void releaseProject(com.jasoncian.millenaire_rewrite.entity.MillVillager v) {
+        if (project != null && !project.supplied && v.getUUID().equals(project.builder)) {
+            project.builder = null;
+        }
+    }
+
+    /**
+     * 原版 GoalGetResourcesForBuild.performAction：从市政厅取出材料放进建造者身上
+     *
+     * @return 材料是否取齐
+     */
+    public boolean takeSupplies(ServerLevel level, com.jasoncian.millenaire_rewrite.entity.MillVillager v) {
+        PlacedBuilding hall = townHall();
+        if (project == null || hall == null || !v.getUUID().equals(project.builder)) {
+            return false;
+        }
+        boolean complete = true;
+        for (var e : projectCost().entrySet()) {
+            int missing = e.getValue() - v.countGood(e.getKey());
+            if (missing > 0) {
+                int taken = com.jasoncian.millenaire_rewrite.economy.BuildingStock.take(level, hall, e.getKey(), missing);
+                v.addGood(e.getKey(), taken);
+                complete &= taken >= missing;
+            }
+        }
+        project.supplied = complete;
+        village.markDirty();
+        return complete;
+    }
+
+    /** 建造者要去的施工位置 */
+    @Nullable
+    public BlockPos projectSite(ServerLevel level) {
+        BuildingPlacer.Construction c = project == null ? null : construction(level);
+        if (c == null) {
+            return null;
+        }
+        BlockPos pos = c.currentPos();
+        // 站在地面上施工：整地/清空步骤可能在建筑上方或地底
+        return pos == null ? project.origin
+            : new BlockPos(pos.getX(), Math.max(project.origin.getY(), Math.min(pos.getY(), project.origin.getY() + 4)), pos.getZ());
+    }
+
+    /**
+     * 建造者的一个施工动作（原版 GoalConstructionStepByStep.performAction）
+     *
+     * @return 工程是否完工
+     */
+    public boolean buildStep(ServerLevel level, com.jasoncian.millenaire_rewrite.entity.MillVillager builder) {
+        BuildingPlacer.Construction c = construction(level);
+        if (c == null || project == null) {
+            return true;
+        }
+        int done = 0;
+        for (int i = 0; i < buildSpeed && !c.isDone(); i++) {
+            done += c.stepWork(level, 8);
+        }
+        if (done > 0) {
+            project.progress = c.progress();
+            village.markDirty();
+        }
+        if (!c.isDone()) {
+            return false;
+        }
+        // 原版：放下最后一块时从建造者身上扣掉材料
+        projectCost().forEach(builder::takeGood);
+        complete(level);
         return true;
     }
 
@@ -847,6 +1037,10 @@ public class VillageGrowth {
             p.putInt("Orientation", project.orientation);
             p.putInt("UpgradeOf", project.upgradeOf);
             p.putInt("Progress", project.progress);
+            p.putBoolean("Supplied", project.supplied);
+            if (project.builder != null) {
+                p.putUUID("Builder", project.builder);
+            }
             tag.put("Project", p);
         }
         return tag;
@@ -882,6 +1076,8 @@ public class VillageGrowth {
             project = new Project(p.getString("Key"), p.getString("Variation").charAt(0), p.getInt("Level"),
                 NbtUtils.readBlockPos(p.getCompound("Origin")), p.getInt("Orientation"), p.getInt("UpgradeOf"));
             project.progress = p.getInt("Progress");
+            project.supplied = p.getBoolean("Supplied");
+            project.builder = p.hasUUID("Builder") ? p.getUUID("Builder") : null;
         }
     }
 }

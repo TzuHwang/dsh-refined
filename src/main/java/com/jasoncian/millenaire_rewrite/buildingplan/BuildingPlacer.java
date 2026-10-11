@@ -153,6 +153,34 @@ public final class BuildingPlacer {
             return done;
         }
 
+        /**
+         * 村民施工的一个动作（原版 GoalConstructionStepByStep 每次放一块）：
+         * 执行步骤直到放下一块真正的方块，或做完 airBudget 个整地/清空步骤
+         *
+         * @return 实际执行的步骤数
+         */
+        public int stepWork(ServerLevel level, int airBudget) {
+            int done = 0;
+            while (next < ops.size() && done < airBudget) {
+                Op op = ops.get(next);
+                boolean real = !op.foundation() && !op.clearAbove() && op.surround() == 0 && !op.state().isAir()
+                    && level.getBlockState(op.pos()) != op.state();
+                apply(level, op, true);
+                next++;
+                done++;
+                if (real) {
+                    break;
+                }
+            }
+            return done;
+        }
+
+        /** 下一个步骤的位置（村民走过去施工），做完时为 null */
+        @org.jetbrains.annotations.Nullable
+        public BlockPos currentPos() {
+            return next < ops.size() ? ops.get(next).pos() : null;
+        }
+
         private void apply(ServerLevel level, Op op, boolean sound) {
             if (op.foundation()) {
                 BlockPos.MutableBlockPos p = op.pos().mutable();
