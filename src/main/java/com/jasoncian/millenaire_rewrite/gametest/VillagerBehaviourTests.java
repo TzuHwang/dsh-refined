@@ -317,4 +317,54 @@ public class VillagerBehaviourTests {
             helper.fail(e.toString());
         }
     }
+
+    /**
+     * 原版打怪：守卫去打村里的怪物（近战，拿着村民类型的武器）
+     */
+    @GameTest(template = "empty", timeoutTicks = 2000, batch = "time_combat")
+    public static void guardHuntsMonster(GameTestHelper helper) {
+        if (TestFilter.skip(helper, "guardHuntsMonster")) {
+            return;
+        }
+        var level = helper.getLevel();
+        var centre = helper.absolutePos(new net.minecraft.core.BlockPos(0, 0, 19400));
+        TestTerrain.setForced(level, centre, true);
+        TestTerrain.buildPlatform(level, centre);
+        try {
+            var plan = BuildingPlan.get("norman", "guardhouse", 'A', 0);
+            var origin = TestTerrain.ground(centre);
+            var result = BuildingPlacer.place(level, plan, origin, 0);
+            var village = new Village(origin, Culture.NORMAN);
+            com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).registerVillage(village);
+            var house = village.getGrowth().recordBuilding(plan, origin, 0, result, false);
+            var home = house.points("sleepingPos").isEmpty() ? origin : house.points("sleepingPos").get(0);
+            MillVillager guard = ResidentSpawner.spawnResident(level, village, "norman", "guard", home);
+            var spider = net.minecraft.world.entity.EntityType.SPIDER.create(level);
+            spider.moveTo(origin.getX() + 0.5, origin.getY(), origin.getZ() - 10.5, 0, 0);
+            level.addFreshEntity(spider);
+            level.setDayTime(1000);
+            int previous = com.jasoncian.millenaire_rewrite.command.TickWarp.factor();
+            com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(10);
+            helper.runAtTickTime(1200, () -> {
+                com.jasoncian.millenaire_rewrite.command.TickWarp.setFactor(previous);
+                MillenaireRewrite.LOGGER.info("[gametest] guard: spider alive {}, guard health {}, holding {}, goal {}",
+                    spider.isAlive(), guard == null ? 0 : guard.getHealth(), guard == null ? null : guard.getMainHandItem(),
+                    guard == null ? null : guard.getGoalManager().getCurrentGoal());
+                boolean alive = spider.isAlive();
+                spider.discard();
+                com.jasoncian.millenaire_rewrite.village.VillageManager.get(level).removeVillage(village);
+                if (guard != null) {
+                    guard.discard();
+                }
+                TestTerrain.setForced(level, centre, false);
+                if (alive) {
+                    helper.fail("the guard did not kill the spider");
+                }
+                helper.succeed();
+            });
+        } catch (java.io.IOException e) {
+            TestTerrain.setForced(level, centre, false);
+            helper.fail(e.toString());
+        }
+    }
 }

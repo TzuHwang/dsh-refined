@@ -29,7 +29,12 @@ public final class VillagerTypes {
                                List<String> textures, Map<Integer, List<String>> clothes,
                                float baseHeight, int health, List<String> tags, String model,
                                List<String> goals, Map<String, Integer> requiredGoods, List<String> collectGoods,
-                               List<String> bringBackHomeGoods) {
+                               List<String> bringBackHomeGoods, @Nullable String defaultWeapon, int baseAttackStrength) {
+
+        /** 原版 tag=helpInAttacks：村里有人被攻击时会来帮忙 */
+        public boolean helpsInAttacks() {
+            return tags.stream().anyMatch(t -> t.equalsIgnoreCase("helpInAttacks"));
+        }
 
         public String randomTexture(RandomSource random) {
             return textures.isEmpty() ? "" : textures.get(random.nextInt(textures.size()));
@@ -100,6 +105,8 @@ public final class VillagerTypes {
         Map<String, Integer> requiredGoods = new java.util.LinkedHashMap<>();
         List<String> collectGoods = new ArrayList<>();
         List<String> bringBackHomeGoods = new ArrayList<>();
+        String defaultWeapon = null;
+        int baseAttackStrength = 1;
 
         for (String raw : MillContent.readLines(file)) {
             String line = raw.trim();
@@ -132,6 +139,14 @@ public final class VillagerTypes {
                     }
                 }
                 case "collectgood" -> collectGoods.add(v.toLowerCase());
+                case "defaultweapon" -> defaultWeapon = v.toLowerCase();
+                case "baseattackstrength" -> {
+                    try {
+                        baseAttackStrength = Integer.parseInt(v);
+                    } catch (NumberFormatException e) {
+                        // 忽略
+                    }
+                }
                 case "bringbackhomegood" -> bringBackHomeGoods.add(v.toLowerCase());
                 case "clothes" -> {
                     // clothes=名称,材质 或 clothes=名称,层,材质；只使用默认衣服 "free"
@@ -147,6 +162,7 @@ public final class VillagerTypes {
         }
         return new VillagerType(culture, key, nativeName, female, firstNames, familyNames,
             List.copyOf(textures), clothes, baseHeight, health, List.copyOf(tags), model, List.copyOf(goals),
-            Map.copyOf(requiredGoods), List.copyOf(collectGoods), List.copyOf(bringBackHomeGoods));
+            Map.copyOf(requiredGoods), List.copyOf(collectGoods), List.copyOf(bringBackHomeGoods), defaultWeapon,
+            baseAttackStrength);
     }
 }

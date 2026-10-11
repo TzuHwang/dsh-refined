@@ -129,6 +129,11 @@ public class MillVillager extends PathfinderMob {
 
     /** Millenaire目标管理器 */
     private final GoalManager goalManager;
+    /** 原版 tag=helpInAttacks（随村民类型设置，不存档） */
+    private boolean helpsInAttacks;
+    /** 战斗时拿在手上的武器（村民类型的 defaultweapon） */
+    private ItemStack weapon = ItemStack.EMPTY;
+
     private final com.jasoncian.millenaire_rewrite.entity.ai.DoorOpener doorOpener =
         new com.jasoncian.millenaire_rewrite.entity.ai.DoorOpener(this);
 
@@ -205,6 +210,28 @@ public class MillVillager extends PathfinderMob {
         // 1.21 版的 GoalIdle/GoalWander/GoalEat/GoalFarm 等不再使用。
         if (!this.level().isClientSide()) {
             goalManager.setGoals(com.jasoncian.millenaire_rewrite.entity.ai.work.WorkGoals.forVillager(this));
+            applyCombatStats();
+        }
+    }
+
+    /**
+     * 村民类型的战斗属性：会不会帮忙打架、武器、基础攻击力
+     */
+    private void applyCombatStats() {
+        try {
+            var type = com.jasoncian.millenaire_rewrite.content.VillagerTypes.get(
+                com.jasoncian.millenaire_rewrite.buildingplan.VillageTypes.cultureFolder(getCulture()), getVillagerType());
+            helpsInAttacks = type.helpsInAttacks();
+            var good = type.defaultWeapon() == null ? null
+                : com.jasoncian.millenaire_rewrite.economy.Goods.get(type.defaultWeapon());
+            weapon = good == null ? ItemStack.EMPTY : good.create(1);
+            var attack = getAttribute(Attributes.ATTACK_DAMAGE);
+            if (attack != null) {
+                attack.setBaseValue(Math.max(1, type.baseAttackStrength()));
+            }
+        } catch (Exception e) {
+            helpsInAttacks = false;
+            weapon = ItemStack.EMPTY;
         }
     }
 
@@ -242,7 +269,20 @@ public class MillVillager extends PathfinderMob {
     protected void registerGoals() {
         // 基础生存目标
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        this.goalSelector.addGoal(1, new PanicGoal(this, 1.4D));
+        // 原版：会帮忙打架的村民（helpInAttacks）被打时不逃，反击；其余村民逃跑
+        this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.2D, true));
+        this.goalSelector.addGoal(1, new PanicGoal(this, 1.4D) {
+            @Override
+            public boolean canUse() {
+                return !helpsInAttacks && super.canUse();
+            }
+        });
+        this.targetSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this) {
+            @Override
+            public boolean canUse() {
+                return helpsInAttacks && super.canUse();
+            }
+        });
         this.goalSelector.addGoal(2, new OpenDoorGoal(this, true));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
@@ -256,7 +296,13 @@ public class MillVillager extends PathfinderMob {
         super.tick();
 
         // 服务端更新Millenaire目标系统
-        if (!this.level().isClientSide()) {
+        if (!this.level().isClientSide() && fighting()) {
+            // 战斗中：由原版近战目标接管移动和攻击，暂停 Millénaire 目标
+            if (!weapon.isEmpty() && !ItemStack.isSameItem(getMainHandItem(), weapon)) {
+                setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, weapon.copy());
+            }
+            doorOpener.tick();
+        } else if (!this.level().isClientSide()) {
             // 更新目标管理器
             goalManager.tick();
 
@@ -273,6 +319,42 @@ public class MillVillager extends PathfinderMob {
         // 更新动画状态
         updateAnimationState();
         animationTicks++;
+    }
+
+    /**
+     * 正在打架（有活着的攻击目标）
+     */
+    public boolean fighting() {
+        LivingEntity target = getTarget();
+        if (target != null && (!target.isAlive() || target.distanceToSqr(this) > 64 * 64)) {
+            setTarget(null);
+            return false;
+        }
+        return target != null;
+    }
+
+    public boolean helpsInAttacks() {
+        return helpsInAttacks;
+    }
+
+    /**
+     * 原版 callForHelp：村民被攻击时，80 格内会帮忙打架的村民都来打攻击者
+     */
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        boolean result = super.hurt(source, amount);
+        if (result && !this.level().isClientSide() && source.getEntity() instanceof LivingEntity attacker
+            && !(attacker instanceof MillVillager)) {
+            Village village = getHomeVillage();
+            if (village != null) {
+                for (MillVillager v : village.getActiveVillagers()) {
+                    if (v != this && v.helpsInAttacks && v.getTarget() == null && v.distanceToSqr(attacker) < 80 * 80) {
+                        v.setTarget(attacker);
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**
